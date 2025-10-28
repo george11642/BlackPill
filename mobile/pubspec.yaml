@@ -1,0 +1,107 @@
+name: black_pill
+description: Be Honest About Yourself - AI-powered attractiveness analysis app
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+  
+  # UI & Animation
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+  flutter_animate: ^4.3.0
+  confetti: ^0.7.0
+  fl_chart: ^0.65.0
+  shimmer: ^3.0.0
+  
+  # Networking & API
+  dio: ^5.4.0
+  retrofit: ^4.0.3
+  json_annotation: ^4.8.1
+  
+  # Storage & Cache
+  shared_preferences: ^2.2.2
+  flutter_secure_storage: ^9.0.0
+  
+  # Authentication
+  supabase_flutter: ^2.0.2
+  google_sign_in: ^6.1.6
+  
+  # Image Handling
+  image_picker: ^1.0.7
+  image: ^4.1.3
+  cached_network_image: ^3.3.0
+  
+  # Payments
+  flutter_stripe: ^10.1.1
+  
+  # Deep Linking
+  uni_links: ^0.5.1
+  app_links: ^3.5.0
+  go_router: ^12.1.3
+  
+  # Analytics & Monitoring
+  posthog_flutter: ^4.0.1
+  sentry_flutter: ^7.14.0
+  
+  # Notifications
+  firebase_core: ^2.24.2
+  firebase_messaging: ^14.7.9
+  flutter_local_notifications: ^16.3.0
+  
+  # Sharing
+  share_plus: ^7.2.1
+  path_provider: ^2.1.1
+  qr_flutter: ^4.1.0
+  
+  # Utilities
+  uuid: ^4.2.2
+  intl: ^0.19.0
+  url_launcher: ^6.2.2
+  device_info_plus: ^9.1.1
+  package_info_plus: ^5.0.1
+  permission_handler: ^11.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  
+  # Code Generation
+  build_runner: ^2.4.7
+  riverpod_generator: ^2.3.9
+  retrofit_generator: ^8.0.4
+  json_serializable: ^6.7.1
+  
+  # Testing
+  mocktail: ^1.0.2
+  integration_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
+  
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
