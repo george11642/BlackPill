@@ -151,6 +151,19 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('Checkout creation error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Stripe config:', {
+      hasSecretKey: !!config.stripe.secretKey,
+      secretKeyPrefix: config.stripe.secretKey?.substring(0, 7),
+    });
+    console.error('Price map:', {
+      'basic-monthly': process.env.STRIPE_PRICE_BASIC_MONTHLY,
+      'basic-annual': process.env.STRIPE_PRICE_BASIC_ANNUAL,
+      'pro-monthly': process.env.STRIPE_PRICE_PRO_MONTHLY,
+      'pro-annual': process.env.STRIPE_PRICE_PRO_ANNUAL,
+      'unlimited-monthly': process.env.STRIPE_PRICE_UNLIMITED_MONTHLY,
+      'unlimited-annual': process.env.STRIPE_PRICE_UNLIMITED_ANNUAL,
+    });
     
     // Ensure CORS headers are set even on error
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -158,6 +171,7 @@ module.exports = async (req, res) => {
     res.status(500).json({
       error: 'Failed to create checkout session',
       message: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     });
   }
 };
