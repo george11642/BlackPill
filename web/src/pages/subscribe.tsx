@@ -74,18 +74,21 @@ export default function Subscribe() {
   
   const isAppSource = source === 'app';
 
-  // Pre-fill data if coming from app
+  // Pre-fill data from URL parameters (both app and web flows)
   useEffect(() => {
-    if (isAppSource) {
-      if (email) {
-        setEmailValue(email as string);
-      }
-      if (tier && ['basic', 'pro', 'unlimited'].includes(tier as string)) {
-        setSelectedTier(tier as 'basic' | 'pro' | 'unlimited');
-      }
-      if (interval && ['monthly', 'annual'].includes(interval as string)) {
-        setBillingInterval(interval as 'monthly' | 'annual');
-      }
+    // Handle email (app flow only)
+    if (isAppSource && email) {
+      setEmailValue(email as string);
+    }
+    
+    // Handle tier (both app and web flows)
+    if (tier && ['basic', 'pro', 'unlimited'].includes(tier as string)) {
+      setSelectedTier(tier as 'basic' | 'pro' | 'unlimited');
+    }
+    
+    // Handle interval (both app and web flows)
+    if (interval && ['monthly', 'annual'].includes(interval as string)) {
+      setBillingInterval(interval as 'monthly' | 'annual');
     }
   }, [isAppSource, email, tier, interval]);
 

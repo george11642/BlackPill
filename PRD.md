@@ -2,9 +2,9 @@
 
 ## Document Control
 
-**Version:** 1.0
+**Version:** 1.1
 
-**Last Updated:** October 27, 2025
+**Last Updated:** December 20, 2025
 
 **Status:** APPROVED - This document is LAW for all development
 
@@ -217,7 +217,9 @@ TEXT:
 **Requirements:**
 
 - Auto-generate unique referral code on signup (format: `INVITE-XXXX-YYYY`)
-- Deep link handling: `blackpill://ref/[code]` and `https://black-pill.app/ref/[code]`
+- Deep link handling: 
+  - Referral links: `blackpill://ref/[code]` and `https://black-pill.app/ref/[code]`
+  - Subscription success: `blackpill://subscribe/success?session_id=[id]`
 - Referral acceptance flow:
 
   1. New user clicks link
@@ -256,7 +258,7 @@ TEXT:
 
 | Pro | $9.99/mo, $109.89/yr | 20/month | Basic + priority analysis, referral bonuses |
 
-| Unlimited | $19.99/mo, $219.89/yr | Unlimited | Pro + AI coach mode, priority support |
+| Unlimited | $19.99/mo, $209.89/yr | Unlimited | Pro + AI coach mode, priority support |
 
 **Paywall Trigger:**
 
@@ -266,12 +268,32 @@ TEXT:
 
 **Checkout Flow:**
 
-1. User taps "Subscribe to [Tier]"
-2. Redirect to web: `https://black-pill.app/subscribe?tier=[tier]&user_id=[id]`
-3. Stripe Checkout (email pre-filled, card input)
-4. Success → Redirect to app: `blackpill://subscribe/success`
-5. Webhook updates `subscriptions` table
-6. App polls subscription status
+**Mobile App Flow:**
+1. User taps "Subscribe to [Tier]" in mobile app
+2. App redirects to web pricing page: `https://black-pill.app/subscribe?source=app&user_id=[id]&email=[email]&tier=[tier]&interval=[monthly|annual]`
+3. Web page auto-populates email and tier based on URL parameters
+4. User clicks subscribe → Stripe Checkout session created (email pre-filled, card input)
+5. After successful payment → Redirects to success page: `https://black-pill.app/subscribe/success?session_id=[id]&source=app`
+6. Success page detects `source=app` → Redirects via deep link: `blackpill://subscribe/success?session_id=[id]`
+7. Mobile app receives deep link → Polls subscription status (up to 10 attempts, 2-second intervals)
+8. Webhook updates `subscriptions` table with `source='app'` metadata
+9. App grants instant premium access once subscription status confirmed
+
+**Web Marketing Flow:**
+1. User discovers product via Google ads, social media, or other web channels
+2. User visits: `https://black-pill.app/subscribe`
+3. User enters email, selects tier and billing interval
+4. Stripe Checkout session created (email pre-filled, card input)
+5. After successful payment → Redirects to success page: `https://black-pill.app/subscribe/success?session_id=[id]&source=web`
+6. Success page shows download instructions (App Store, Google Play badges)
+7. Webhook updates `subscriptions` table with `source='web'` metadata
+8. When user downloads app and signs in with same email → Premium access granted
+
+**Key Features:**
+- Both flows use identical backend processing
+- Source tracking in Stripe metadata for analytics
+- Conversion rate measurement per channel (app vs web)
+- Unified subscription handling regardless of entry point
 
 **Subscription Management:**
 
@@ -614,11 +636,12 @@ CREATE TABLE analyses (
 -- subscriptions
 CREATE TABLE subscriptions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE, -- NULL allowed for web flow users before app signup
   stripe_customer_id TEXT UNIQUE,
   stripe_subscription_id TEXT UNIQUE,
   tier TEXT NOT NULL,
   status TEXT NOT NULL,
+  source TEXT DEFAULT 'web', -- 'app' or 'web' - tracks subscription origin for analytics
   current_period_start TIMESTAMPTZ,
   current_period_end TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -780,6 +803,7 @@ CREATE INDEX idx_analyses_created_at ON analyses(created_at DESC);
 CREATE INDEX idx_analyses_score ON analyses(score DESC);
 CREATE INDEX idx_subscriptions_user_id ON subscriptions(user_id);
 CREATE INDEX idx_subscriptions_stripe_customer ON subscriptions(stripe_customer_id);
+CREATE INDEX idx_subscriptions_source ON subscriptions(source); -- For analytics and conversion tracking
 CREATE INDEX idx_referrals_from_user ON referrals(from_user_id);
 CREATE INDEX idx_referrals_code ON referrals(referral_code);
 CREATE INDEX idx_leaderboard_week_score ON leaderboard_weekly(week_starting, score DESC);
@@ -903,10 +927,22 @@ GET /api/leaderboard/referrals
 
 ```
 POST /api/subscriptions/create-checkout
-  Headers: Authorization: Bearer [token]
-  Body: { tier: string, interval: 'monthly'|'annual', coupon_code?: string }
+  Headers: Authorization: Bearer [token] (optional - supports unauthenticated web flow)
+  Body: { 
+    tier: string, 
+    interval: 'monthly'|'annual', 
+    coupon_code?: string,
+    email?: string,  // Required for web flow (unauthenticated)
+    source?: 'app'|'web',  // Automatically determined if not provided
+    user_id?: string  // Required for app flow, optional for web flow
+  }
   Response: { session_id: string, checkout_url: string }
-  Errors: 400 (invalid tier), 409 (already subscribed)
+  Errors: 
+    400 (invalid tier, missing email for web flow)
+    409 (already subscribed)
+  
+  Note: Supports both authenticated (app) and unauthenticated (web) flows.
+        Success URL includes source parameter for proper routing.
 
 GET /api/subscriptions/status
   Headers: Authorization: Bearer [token]
@@ -927,7 +963,13 @@ POST /api/webhooks/stripe
   Headers: Stripe-Signature: [signature]
   Body: Stripe event object
   Response: { received: true }
-  Note: Handles subscription.created, subscription.updated, subscription.deleted, invoice.paid
+  Note: 
+    - Handles checkout.session.completed, subscription.created, subscription.updated, subscription.deleted, invoice.paid, invoice.payment_failed
+    - Extracts source ('app' or 'web') from checkout session metadata
+    - For web flow: Finds or creates user by email, links subscription
+    - For app flow: Uses user_id from metadata
+    - Tracks analytics by source for conversion measurement
+    - Stores source in subscriptions table for reporting
 ```
 
 ### 6.5 Creator Endpoints
@@ -1274,6 +1316,8 @@ tier_selected (tier: string)
 checkout_started
 payment_success (tier: string, amount: number)
 payment_failed (reason: string)
+subscription_success
+subscription_activated (tier: string)
 subscription_canceled
 
 // Community
@@ -1371,6 +1415,8 @@ coupon_applied (code: string)
 |---------|------|---------|--------|
 
 | 1.0 | Oct 27, 2025 | Initial PRD (comprehensive spec) | Product Team |
+
+| 1.1 | Dec 20, 2025 | Updated F5: Hybrid payment system (app + web flows), source tracking, deep link handling (`blackpill://subscribe/success`), subscription status polling, analytics events (`subscription_success`, `subscription_activated`). Updated API spec to support unauthenticated web flow. Updated database schema to include `source` field in subscriptions table. Fixed Unlimited tier annual price ($209.89/yr). | Product Team |
 
 ---
 Also i want just 2 env files, one in backend and one in mobile.

@@ -312,13 +312,23 @@ export default function Home() {
                 </div>
 
                 <div className="mb-lg">
-                  <Button
-                    className={tier.highlight ? 'btn-primary w-full' : 'btn-secondary w-full'}
-                    size="lg"
-                    href="https://apps.apple.com"
-                  >
-                    {tier.cta}
-                  </Button>
+                  {tier.tier === 'Free' ? (
+                    <Button
+                      className="btn-secondary w-full"
+                      size="lg"
+                      href="https://apps.apple.com/app/blackpill"
+                    >
+                      {tier.cta}
+                    </Button>
+                  ) : (
+                    <Button
+                      className={tier.highlight ? 'btn-primary w-full' : 'btn-secondary w-full'}
+                      size="lg"
+                      href={`/subscribe?tier=${tier.tier.toLowerCase()}&interval=${billingInterval}&source=web`}
+                    >
+                      Subscribe to {tier.tier}
+                    </Button>
+                  )}
                 </div>
 
                 <div className="border-t border-[rgba(255,255,255,0.1)] pt-md">
