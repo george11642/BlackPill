@@ -107,8 +107,8 @@ module.exports = async (req, res) => {
 
     // Build success URL with source detection
     const successUrl = checkoutSource === 'app'
-      ? `${config.app.url}/subscribe/success?session_id={CHECKOUT_SESSION_ID}&source=app`
-      : `${config.app.url}/subscribe/success?session_id={CHECKOUT_SESSION_ID}&source=web`;
+      ? `${config.app.url}/success?session_id={CHECKOUT_SESSION_ID}&source=app`
+      : `${config.app.url}/success?session_id={CHECKOUT_SESSION_ID}&source=web`;
 
     // Create checkout session
     const sessionParams = {

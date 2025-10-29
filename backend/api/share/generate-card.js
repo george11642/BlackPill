@@ -2,7 +2,7 @@ const { verifyAuth } = require('../../middleware/auth');
 const { createRateLimiter } = require('../../middleware/rate-limit');
 const { supabaseAdmin } = require('../../utils/supabase');
 const config = require('../../utils/config');
-const { generateShareCardImage } = require('../../utils/share-card-generator');
+const { generateShareCardImage } = require('../../utils/share-card-generator-og');
 const { v4: uuidv4 } = require('uuid');
 
 /**
@@ -52,8 +52,9 @@ module.exports = async (req, res) => {
           image_url: analysis.image_url,
         };
 
-        // Generate share card PNG image (1080x1920px)
-        const imageBuffer = await generateShareCardImage(shareData);
+        // Generate share card PNG image (1080x1920px) using Vercel OG
+        const imageArrayBuffer = await generateShareCardImage(shareData);
+        const imageBuffer = Buffer.from(imageArrayBuffer);
 
         // Upload to Supabase Storage
         const fileName = `share-cards/${analysis.id}.png`;
