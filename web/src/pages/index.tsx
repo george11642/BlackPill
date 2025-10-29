@@ -13,11 +13,17 @@ import { Footer } from '@/components/Footer';
 export default function Home() {
   const structuredData = {
     '@context': 'https://schema.org',
-    '@type': 'Organization',
+    '@type': 'MobileApplication',
     name: 'BlackPill',
+    description: 'AI-powered attractiveness analysis with honest feedback and actionable self-improvement tips.',
     url: 'https://black-pill.app',
-    logo: 'https://black-pill.app/logo.png',
-    description: 'Join BlackPill creator affiliate program and earn commissions by promoting products.',
+    applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'iOS, Android',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+    },
     sameAs: [
       'https://twitter.com/blackpillapp',
       'https://instagram.com/blackpillapp',
@@ -26,321 +32,303 @@ export default function Home() {
       '@type': 'ContactPoint',
       contactType: 'Customer Service',
       email: 'support@black-pill.app',
-      url: 'https://black-pill.app/apply',
     },
   };
 
-  const faqItems = [
+  const appFeatures = [
     {
-      question: 'How do I get approved to become a creator?',
-      answer: 'Apply through our creator program with your social media profiles and audience information. Our team reviews applications within 24-48 hours. We look for engaged audiences and genuine interest in promoting quality products.',
+      icon: '✨',
+      title: 'AI-Powered Analysis',
+      description: 'Advanced AI analyzes symmetry, jawline, eyes, lips, skin, and bone structure.',
     },
     {
-      question: 'When do I get paid my commissions?',
-      answer: 'Commissions are calculated monthly and paid out on the 15th of each month via PayPal or bank transfer. You can see your pending payouts and payment history in your dashboard anytime.',
+      icon: '💡',
+      title: 'Personalized Tips',
+      description: '3-5 actionable improvement tips with timeframes for results.',
     },
     {
-      question: 'What can I promote?',
-      answer: 'You can promote any products or services within our network. We provide marketing materials, share cards, and content assets to make promotion easier. Check our brand guidelines for approved promotional content.',
+      icon: '👥',
+      title: 'Referral System',
+      description: 'Share with friends, both get 5 free scans plus streak bonuses.',
     },
     {
-      question: 'How do commissions work?',
-      answer: 'Your commission percentage depends on your tier (Bronze 10%, Silver 15%, Gold 20%, Platinum 25%). You earn commission on every successful referral from your unique link, with no caps or limits.',
+      icon: '📈',
+      title: 'Progress Tracking',
+      description: 'See your improvement over time with historical comparisons.',
     },
     {
-      question: 'How do I track my performance?',
-      answer: 'Your dashboard shows real-time analytics including clicks, conversions, conversion rate, and revenue. You can filter by date range and export data for your records.',
+      icon: '🏆',
+      title: 'Leaderboard',
+      description: 'Compete weekly and rise the ranks with other users.',
     },
     {
-      question: 'Is there a minimum payout threshold?',
-      answer: 'No minimum threshold! You can cash out as soon as you earn your first commission. However, payments are processed monthly, so you\'ll need to wait until the next payout date.',
+      icon: '🔒',
+      title: 'Privacy First',
+      description: 'Your photos auto-delete after 90 days, encrypted storage.',
     },
   ];
 
   const pricingTiers = [
     {
-      tier: 'Bronze',
-      commission: 10,
-      requirement: 'Free to join',
-      isPopular: false,
+      tier: 'Free',
+      price: '$0',
+      interval: 'lifetime',
+      scans: '1 scan',
       features: [
-        { text: 'Real-time Analytics', included: true },
-        { text: 'Custom Affiliate Link', included: true },
-        { text: 'Basic Support', included: true },
-        { text: 'Marketing Assets', included: false },
-        { text: 'Priority Support', included: false },
-        { text: 'Dedicated Manager', included: false },
+        'Basic attractiveness score',
+        'Limited improvement tips',
+        'Photo auto-deletes after 90 days',
       ],
+      cta: 'Download App',
+      highlight: false,
     },
     {
-      tier: 'Silver',
-      commission: 15,
-      requirement: '100+ referrals to unlock',
-      isPopular: false,
+      tier: 'Basic',
+      price: '$4.99',
+      interval: '/month',
+      yearlyPrice: '$54.99/year',
+      scans: '5 scans/month',
       features: [
-        { text: 'Real-time Analytics', included: true },
-        { text: 'Custom Affiliate Link', included: true },
-        { text: 'Email Support', included: true },
-        { text: 'Marketing Assets Pack', included: true },
-        { text: 'Priority Support', included: false },
-        { text: 'Dedicated Manager', included: false },
+        'Full 6-dimension breakdown',
+        'Advanced AI tips',
+        'Ad-free experience',
+        'Referral bonuses',
       ],
+      cta: 'Download App',
+      highlight: false,
     },
     {
-      tier: 'Gold',
-      commission: 20,
-      requirement: '500+ referrals to unlock',
-      isPopular: true,
+      tier: 'Pro',
+      price: '$9.99',
+      interval: '/month',
+      yearlyPrice: '$109.89/year',
+      scans: '20 scans/month',
       features: [
-        { text: 'Real-time Analytics', included: true },
-        { text: 'Custom Affiliate Link', included: true },
-        { text: 'Priority Email Support', included: true },
-        { text: 'Premium Marketing Assets', included: true },
-        { text: '24/7 Priority Support', included: true },
-        { text: 'Quarterly Strategy Session', included: false },
+        'All Basic features',
+        'Priority analysis (<10 seconds)',
+        'Comparison mode',
+        'Weekly progress reports',
       ],
+      cta: 'Download App',
+      highlight: true,
     },
     {
-      tier: 'Platinum',
-      commission: 25,
-      requirement: '1000+ referrals to unlock',
-      isPopular: false,
+      tier: 'Unlimited',
+      price: '$19.99',
+      interval: '/month',
+      yearlyPrice: '$209.89/year',
+      scans: 'Unlimited scans',
       features: [
-        { text: 'Real-time Analytics', included: true },
-        { text: 'Custom Affiliate Link', included: true },
-        { text: 'VIP Email Support', included: true },
-        { text: 'Exclusive Marketing Assets', included: true },
-        { text: '24/7 VIP Support', included: true },
-        { text: 'Dedicated Account Manager', included: true },
+        'All Pro features',
+        'Unlimited analysis',
+        'Advanced analytics',
+        'Leaderboard badge',
+        'Priority support',
       ],
+      cta: 'Download App',
+      highlight: false,
+    },
+  ];
+
+  const faqItems = [
+    {
+      question: 'How accurate is the AI analysis?',
+      answer: 'Our analysis is based on established facial symmetry and aesthetics principles combined with advanced AI. Results are honest and constructive, focusing on actionable improvements rather than judgment.',
+    },
+    {
+      question: 'What happens to my photos?',
+      answer: 'Photos are stored encrypted and auto-delete after 90 days. You can manually delete any photo anytime. We never use your photos for facial recognition training or share them without your consent.',
+    },
+    {
+      question: 'Can I delete my data?',
+      answer: 'Yes, you have complete control. Delete individual photos anytime or delete your entire account and all associated data through settings.',
+    },
+    {
+      question: 'What\'s included in the free tier?',
+      answer: 'You get 1 lifetime scan with basic score and limited improvement tips. Share with friends via referral code and both of you get 5 bonus scans.',
+    },
+    {
+      question: 'How does the referral system work?',
+      answer: 'Get your unique referral code and share it with friends. When they accept, you both get 5 free scans. Build your streak and climb the referral leaderboard.',
+    },
+    {
+      question: 'Is this app for men or women?',
+      answer: 'Currently optimized for men aged 18-35. We\'re expanding to other audiences in future updates.',
     },
   ];
 
   return (
-    <div className="min-h-screen bg-[#0F0F1E] text-white">
+    <>
       <SEO
-        title="Creator Affiliate Program"
-        description="Join BlackPill's creator program and earn 10-25% commissions by promoting products. 10,000+ creators already earning with us."
-        keywords="affiliate program, creator program, passive income, commissions, affiliate marketing"
+        title="BlackPill - AI Attractiveness Analysis"
+        description="Get your real attractiveness score with honest AI feedback and actionable self-improvement tips. Download now on iOS and Android."
+        keywords="attractiveness analysis, AI face rating, self improvement, facial assessment, confidence builder"
         structuredData={structuredData}
       />
 
       <Navigation />
 
-      {/* HERO SECTION */}
-      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 opacity-30" style={{
-          background: 'radial-gradient(circle at 50% 50%, rgba(255,0,128,0.2) 0%, transparent 70%)',
-        }}></div>
-        
-        <div className="section-inner relative z-10 text-center">
-          {/* Statistics Banner */}
-          <div className="mb-lg flex justify-center gap-lg flex-wrap">
-            <div className="text-sm font-semibold">
-              <span className="text-[#00FF41]">10,000+</span> Active Creators
+      {/* Hero Section */}
+      <Section className="hero-gradient">
+        <div className="grid grid-2 gap-xl items-center">
+          <div>
+            <h1 className="text-6xl font-bold mb-md">Be Honest About Yourself</h1>
+            <p className="text-xl text-secondary mb-lg">
+              Get your real attractiveness score, detailed breakdown, and actionable tips to improve. Share with friends and earn free scans.
+            </p>
+            <div className="flex gap-md mb-lg flex-wrap">
+              <Button href="https://apps.apple.com" className="btn-primary" size="lg">
+                Download on App Store
+              </Button>
+              <Button href="https://play.google.com" className="btn-secondary" size="lg">
+                Get it on Google Play
+              </Button>
             </div>
-            <div className="text-sm font-semibold">
-              <span className="text-[#FF0080]">$5M+</span> Paid Out
-            </div>
-            <div className="text-sm font-semibold">
-              <span className="text-[#00D9FF]">25%</span> Avg Commission
-            </div>
+            <p className="text-sm text-tertiary">Available now on iOS and Android • 200K+ downloads</p>
           </div>
-
-          <h1 className="mb-md fade-in-up" style={{ animation: 'fadeInUp 0.8s ease-out' }}>
-            Turn Your Audience Into
-            <br />
-            <span className="text-gradient">Passive Income</span>
-          </h1>
-
-          <p className="text-xl text-secondary mb-lg max-w-2xl mx-auto">
-            Join BlackPill's creator program and earn generous commissions by promoting products to your engaged audience. Simple tracking, timely payouts, and total transparency.
-          </p>
-
-          <div className="flex gap-md justify-center flex-wrap mb-lg">
-            <Button href="/apply" variant="primary" size="lg">
-              Start Earning Now →
-            </Button>
-            <Button href="#how-it-works" variant="secondary" size="lg">
-              See How It Works
-            </Button>
+          <div className="phone-mockup-placeholder bg-gradient-to-br from-pink to-cyan rounded-2xl p-lg flex items-center justify-center min-h-96">
+            <div className="text-center text-white">
+              <div className="text-6xl font-bold text-pink mb-md">8.2</div>
+              <p className="text-lg">Your Score</p>
+              <div className="mt-md text-sm space-y-sm">
+                <div>✨ Symmetry: 8.5</div>
+                <div>🎯 Jawline: 7.9</div>
+                <div>👁️ Eyes: 8.1</div>
+              </div>
+            </div>
           </div>
         </div>
-      </section>
+      </Section>
 
-      {/* HOW IT WORKS */}
+      {/* How It Works */}
       <Section
         title="How It Works"
-        subtitle="Three simple steps to start earning"
+        subtitle="3 simple steps to get started"
         id="how-it-works"
         background="secondary"
       >
         <div className="grid grid-3 gap-lg">
-          <div className="card hover:false relative text-center">
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-8 h-8 rounded-full bg-[#FF0080] flex items-center justify-center font-bold">
-              1
-            </div>
-            <div className="card-icon text-5xl">📝</div>
-            <h3 className="card-title">Apply & Get Approved</h3>
-            <p className="card-description">
-              Apply through our simple form, share your audience info, and get approved within 24-48 hours.
-            </p>
-          </div>
-
-          <div className="card hover:false relative text-center">
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-8 h-8 rounded-full bg-[#00D9FF] flex items-center justify-center font-bold">
-              2
-            </div>
-            <div className="card-icon text-5xl">🔗</div>
-            <h3 className="card-title">Share Your Link</h3>
-            <p className="card-description">
-              Get your unique affiliate link and marketing assets. Share on social media, email, or your website.
-            </p>
-          </div>
-
-          <div className="card hover:false relative text-center">
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-8 h-8 rounded-full bg-[#00FF41] flex items-center justify-center font-bold">
-              3
-            </div>
-            <div className="card-icon text-5xl">💰</div>
-            <h3 className="card-title">Earn & Get Paid</h3>
-            <p className="card-description">
-              Earn commissions on every sale. Track everything in your dashboard. Get paid monthly, no minimum.
-            </p>
-          </div>
+          <Card icon="📸" title="Upload Your Photo" description="Take a selfie or upload from your gallery. We analyze in seconds." />
+          <Card icon="⚡" title="AI Analysis" description="Get your score and 6-dimension breakdown instantly with actionable insights." />
+          <Card icon="📈" title="Improve Yourself" description="Follow personalized tips and track your progress over time." />
         </div>
       </Section>
 
-      {/* FEATURES */}
-      <Section title="Powerful Features" subtitle="Everything you need to succeed">
-        <div className="grid grid-3 gap-lg">
-          <Card
-            icon="📊"
-            title="Real-time Analytics"
-            description="Track clicks, conversions, and revenue instantly. See exactly how your audience performs."
-          />
-          <Card
-            icon="💰"
-            title="Earn Commissions"
-            description="10-25% commissions depending on your tier. Unlock higher rates as you grow."
-          />
-          <Card
-            icon="🔗"
-            title="Custom Links"
-            description="Generate unlimited affiliate links. Track performance for each link separately."
-          />
-          <Card
-            icon="⭐"
-            title="Performance Tiers"
-            description="Bronze, Silver, Gold, Platinum. Earn higher commissions as you grow your referrals."
-          />
-          <Card
-            icon="🎨"
-            title="Marketing Assets"
-            description="Access pre-made share cards, images, and copy. Make promotion easy and professional."
-          />
-          <Card
-            icon="👥"
-            title="Creator Community"
-            description="Join 10,000+ creators. Network, share strategies, and learn from top performers."
-          />
-        </div>
-      </Section>
-
-      {/* PRICING / TIERS */}
+      {/* Features */}
       <Section
-        title="Creator Tiers"
-        subtitle="Earn more as you grow. Unlock higher rates automatically."
-        background="secondary"
+        title="Powerful Features"
+        subtitle="Everything you need for honest self-assessment"
+        id="features"
       >
-        <div className="grid grid-4 gap-lg">
-          {pricingTiers.map((tier, index) => (
-            <PricingCard key={index} {...tier} />
+        <div className="grid grid-3 gap-lg">
+          {appFeatures.map((feature, index) => (
+            <Card
+              key={index}
+              icon={feature.icon}
+              title={feature.title}
+              description={feature.description}
+            />
           ))}
         </div>
       </Section>
 
-      {/* SOCIAL PROOF */}
-      <Section title="Trusted by Creators Worldwide" subtitle="Real results from real creators">
+      {/* Pricing */}
+      <Section
+        title="Simple Pricing"
+        subtitle="Choose the plan that fits your needs"
+        id="pricing"
+        background="secondary"
+      >
         <div className="grid grid-4 gap-lg">
-          <StatCounter value={10000} label="Active Creators" />
-          <StatCounter value={5000000} label="Total Earnings Paid" prefix="$" />
-          <StatCounter value={95} label="Creator Satisfaction" suffix="%" />
-          <StatCounter value={150000} label="Avg Referrals/Month" />
+          {pricingTiers.map((tier, index) => (
+            <PricingCard
+              key={index}
+              tier={tier.tier}
+              price={tier.price}
+              interval={tier.interval}
+              yearlyPrice={tier.yearlyPrice}
+              scans={tier.scans}
+              features={tier.features}
+              cta={tier.cta}
+              highlight={tier.highlight}
+            />
+          ))}
         </div>
       </Section>
 
-      {/* PARTNERSHIP SECTION */}
-      <Section background="secondary">
-        <div className="grid grid-2 gap-xl items-center">
+      {/* Social Proof */}
+      <Section
+        title="Trusted by Thousands"
+        subtitle="Real users, real results"
+        id="social-proof"
+      >
+        <div className="grid grid-4 gap-lg text-center">
           <div>
-            <h2 className="mb-md">Join Our Creator Program</h2>
-            <p className="mb-md text-lg">
-              We're building a community of creators who turn their audience into income. Whether you have 1,000 or 1,000,000 followers, there's a place for you.
-            </p>
-            <ul className="space-y-md mb-lg">
-              <li className="flex gap-sm items-start">
-                <span className="text-[#00FF41] font-bold">✓</span>
-                <span>No minimum requirements to join as Bronze tier</span>
-              </li>
-              <li className="flex gap-sm items-start">
-                <span className="text-[#00FF41] font-bold">✓</span>
-                <span>Unlock higher tiers automatically based on performance</span>
-              </li>
-              <li className="flex gap-sm items-start">
-                <span className="text-[#00FF41] font-bold">✓</span>
-                <span>Get paid monthly with no minimum payout threshold</span>
-              </li>
-              <li className="flex gap-sm items-start">
-                <span className="text-[#00FF41] font-bold">✓</span>
-                <span>Access exclusive marketing materials and support</span>
-              </li>
-            </ul>
-            <Button href="/apply" variant="primary" size="lg">
-              Apply to Creator Program
+            <StatCounter end={200000} duration={2000} className="text-5xl font-bold text-pink" />
+            <p className="text-secondary mt-md">Downloads</p>
+          </div>
+          <div>
+            <StatCounter end={50000} duration={2000} className="text-5xl font-bold text-cyan" />
+            <p className="text-secondary mt-md">Monthly Analyses</p>
+          </div>
+          <div>
+            <div className="text-5xl font-bold text-green">4.8★</div>
+            <p className="text-secondary mt-md">Average Rating</p>
+          </div>
+          <div>
+            <div className="text-5xl font-bold text-yellow">95%</div>
+            <p className="text-secondary mt-md">Recommend to Friends</p>
+          </div>
+        </div>
+      </Section>
+
+      {/* Creator Program Teaser */}
+      <Section
+        title="Are You a Content Creator?"
+        subtitle="Earn 10-25% commission promoting BlackPill to your audience"
+        id="creators-teaser"
+        background="secondary"
+      >
+        <div className="max-w-2xl mx-auto text-center">
+          <p className="text-lg text-secondary mb-lg">
+            Join our affiliate program and earn commissions from every user you bring. Get marketing assets, tracking dashboard, and weekly payouts.
+          </p>
+          <Link href="/creators">
+            <Button className="btn-primary" size="lg">
+              Learn More About Our Creator Program
             </Button>
-          </div>
-          <div className="card">
-            <div className="text-center">
-              <div className="text-6xl mb-md">🚀</div>
-              <h3>Success Stories</h3>
-              <p className="text-secondary mt-md">
-                Top creator earned <span className="text-[#00FF41] font-bold">$15,000</span> in their first month. You could be next.
-              </p>
-            </div>
-          </div>
+          </Link>
         </div>
       </Section>
 
       {/* FAQ */}
-      <Section title="Frequently Asked Questions" subtitle="Have questions? We have answers." id="faq">
+      <Section
+        title="Frequently Asked Questions"
+        subtitle="Everything you need to know"
+        id="faq"
+      >
         <div className="max-w-2xl mx-auto">
           <FAQ items={faqItems} />
         </div>
       </Section>
 
-      {/* FINAL CTA */}
-      <Section background="secondary">
-        <div className="text-center">
-          <h2 className="mb-md">Ready to Maximize Your Earnings?</h2>
-          <p className="text-lg text-secondary mb-lg max-w-xl mx-auto">
-            Join 10,000+ creators who are turning their audience into passive income. Apply now and start earning today.
-          </p>
-          <div className="flex gap-md justify-center flex-wrap">
-            <Button href="/apply" variant="primary" size="lg">
-              Apply Now
-            </Button>
-            <Button href="/pricing" variant="secondary" size="lg">
-              View Pricing
-            </Button>
-            <Button href="/dashboard" variant="ghost" size="lg">
-              Go to Dashboard
-            </Button>
-          </div>
+      {/* Final CTA */}
+      <Section
+        title="Ready to Get Started?"
+        subtitle="Download BlackPill today and discover your true potential"
+        background="secondary"
+      >
+        <div className="flex gap-md justify-center flex-wrap">
+          <Button href="https://apps.apple.com" className="btn-primary" size="lg">
+            Download on App Store
+          </Button>
+          <Button href="https://play.google.com" className="btn-secondary" size="lg">
+            Get it on Google Play
+          </Button>
         </div>
       </Section>
 
       <Footer />
-    </div>
+    </>
   );
 }

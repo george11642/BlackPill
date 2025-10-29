@@ -15,19 +15,19 @@ export const Navigation: React.FC = () => {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex gap-md items-center">
-            <Link href="/pricing" className="text-secondary hover:text-white transition">
+            <Link href="/#pricing" className="text-secondary hover:text-white transition">
               Pricing
             </Link>
-            <Link href="#how-it-works" className="text-secondary hover:text-white transition">
+            <Link href="/#how-it-works" className="text-secondary hover:text-white transition">
               How It Works
             </Link>
-            <a href="#faq" className="text-secondary hover:text-white transition">
+            <Link href="/creators" className="text-secondary hover:text-white transition">
+              For Creators
+            </Link>
+            <a href="/#faq" className="text-secondary hover:text-white transition">
               FAQ
             </a>
-            <Button href="/apply" variant="primary" size="sm">
-              Apply Now
-            </Button>
-            <Button href="/dashboard" variant="secondary" size="sm">
+            <Button href="/dashboard" variant="primary" size="sm">
               Dashboard
             </Button>
           </div>
@@ -45,19 +45,19 @@ export const Navigation: React.FC = () => {
         {/* Mobile Menu */}
         {isOpen && (
           <div className="md:hidden mt-md pt-md border-t border-[rgba(255,255,255,0.1)] space-y-md">
-            <Link href="/pricing" className="block text-secondary hover:text-white transition">
+            <Link href="/#pricing" className="block text-secondary hover:text-white transition">
               Pricing
             </Link>
-            <Link href="#how-it-works" className="block text-secondary hover:text-white transition">
+            <Link href="/#how-it-works" className="block text-secondary hover:text-white transition">
               How It Works
             </Link>
-            <a href="#faq" className="block text-secondary hover:text-white transition">
+            <Link href="/creators" className="block text-secondary hover:text-white transition">
+              For Creators
+            </Link>
+            <a href="/#faq" className="block text-secondary hover:text-white transition">
               FAQ
             </a>
-            <Button href="/apply" variant="primary" size="sm" className="w-full">
-              Apply Now
-            </Button>
-            <Button href="/dashboard" variant="secondary" size="sm" className="w-full">
+            <Button href="/dashboard" variant="primary" size="sm" className="w-full">
               Dashboard
             </Button>
           </div>
