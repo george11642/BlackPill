@@ -3,7 +3,42 @@ const { supabaseAdmin } = require('../../utils/supabase');
 const config = require('../../utils/config');
 const { sendRenewalReminder, sendPaymentFailedEmail } = require('../../utils/email-service');
 
-const stripe = new Stripe(config.stripe.secretKey);
+// Initialize PostHog for analytics if available
+let posthog = null;
+try {
+  if (config.posthog?.apiKey) {
+    const PostHog = require('posthog-node');
+    posthog = new PostHog.PostHog(config.posthog.apiKey, {
+      host: config.posthog.host || 'https://app.posthog.com',
+    });
+  }
+} catch (error) {
+  console.warn('PostHog not available for analytics:', error.message);
+}
+
+/**
+ * Track event in PostHog analytics
+ */
+async function trackAnalytics(userId, event, properties = {}) {
+  if (!posthog) {
+    console.warn('PostHog not configured - analytics not tracked');
+    return;
+  }
+
+  try {
+    posthog.capture({
+      distinctId: userId,
+      event,
+      properties: {
+        ...properties,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error('Error tracking analytics:', error);
+    // Don't throw - analytics failure shouldn't block webhook
+  }
+}
 
 /**
  * POST /api/webhooks/stripe
@@ -35,7 +70,7 @@ module.exports = async (req, res) => {
 
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
-        await handleSubscriptionUpdate(event.data.object);
+        await handleSubscriptionUpdated(event.data.object);
         break;
 
       case 'customer.subscription.deleted':
@@ -126,76 +161,76 @@ async function handleCheckoutCompleted(session) {
   }
 
   // Create or update subscription record
-  const subscriptionData = {
-    stripe_customer_id: customerId,
-    stripe_subscription_id: subscriptionId,
-    tier,
-    status: subscription.status,
-    current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-    current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-    source, // Track where subscription came from
-  };
-
-  if (finalUserId) {
-    subscriptionData.user_id = finalUserId;
-  }
-
-  await supabaseAdmin
+  const { error: subscriptionError } = await supabaseAdmin
     .from('subscriptions')
-    .upsert(subscriptionData, {
-      onConflict: 'stripe_subscription_id',
+    .upsert({
+      user_id: finalUserId,
+      stripe_customer_id: customerId,
+      stripe_subscription_id: subscriptionId,
+      tier: tier || 'basic',
+      status: 'active',
+      source,
+      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
     });
 
-  // Update user tier and scans if user_id is available
-  if (finalUserId) {
-    const scansMap = {
-      basic: 5,
-      pro: 20,
-      unlimited: -1, // unlimited
-    };
-
-    await supabaseAdmin
-      .from('users')
-      .update({
-        tier,
-        scans_remaining: scansMap[tier],
-      })
-      .eq('id', finalUserId);
+  if (subscriptionError) {
+    console.error('Error creating subscription record:', subscriptionError);
   }
 
-  // Track analytics by source
-  console.log('Subscription completed', {
-    source,
-    tier,
-    userId: finalUserId,
-    customerEmail,
-    subscriptionId,
-  });
+  // Update user tier if we have a user ID
+  if (finalUserId) {
+    await supabaseAdmin
+      .from('users')
+      .update({ tier: tier || 'basic' })
+      .eq('id', finalUserId);
 
-  // TODO: Send to analytics service (PostHog, etc.)
-  // analytics.track('subscription_completed', {
-  //   source,
-  //   tier,
-  //   user_id: finalUserId,
-  // });
+    // Track subscription success in analytics
+    await trackAnalytics(finalUserId, 'payment_success', {
+      tier: tier || 'basic',
+      amount: (session.amount_total || 0) / 100,
+      currency: session.currency || 'usd',
+      source,
+    });
+
+    // Track subscription activation
+    await trackAnalytics(finalUserId, 'subscription_activated', {
+      tier: tier || 'basic',
+      source,
+    });
+  }
+
+  console.log(`Subscription created for user ${finalUserId}:`, {
+    subscriptionId,
+    tier: tier || 'basic',
+    source,
+  });
 }
 
 /**
- * Handle subscription update
+ * Handle subscription created
  */
-async function handleSubscriptionUpdate(subscription) {
-  const customerId = subscription.customer;
+async function handleSubscriptionCreated(subscription) {
+  console.log('Subscription created:', subscription.id);
+  // Additional logic if needed
+}
 
-  // Get user ID from subscription
-  const { data: subData } = await supabaseAdmin
+/**
+ * Handle subscription updated
+ */
+async function handleSubscriptionUpdated(subscription) {
+  const subscriptionRecord = await supabaseAdmin
     .from('subscriptions')
-    .select('user_id')
-    .eq('stripe_customer_id', customerId)
+    .select('user_id, tier')
+    .eq('stripe_subscription_id', subscription.id)
     .single();
 
-  if (!subData) {
-    console.error('User not found for subscription update');
-    return;
+  if (subscriptionRecord?.data?.user_id) {
+    // Track subscription update
+    await trackAnalytics(subscriptionRecord.data.user_id, 'subscription_updated', {
+      status: subscription.status,
+      tier: subscriptionRecord.data.tier,
+    });
   }
 
   // Update subscription status
@@ -203,28 +238,29 @@ async function handleSubscriptionUpdate(subscription) {
     .from('subscriptions')
     .update({
       status: subscription.status,
-      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
       current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
     })
     .eq('stripe_subscription_id', subscription.id);
 }
 
 /**
- * Handle subscription deletion
+ * Handle subscription deleted
  */
 async function handleSubscriptionDeleted(subscription) {
-  const customerId = subscription.customer;
-
-  // Get user
-  const { data: subData } = await supabaseAdmin
+  const subscriptionRecord = await supabaseAdmin
     .from('subscriptions')
     .select('user_id')
-    .eq('stripe_customer_id', customerId)
+    .eq('stripe_subscription_id', subscription.id)
     .single();
 
-  if (!subData) return;
+  if (subscriptionRecord?.data?.user_id) {
+    // Track subscription cancellation
+    await trackAnalytics(subscriptionRecord.data.user_id, 'subscription_canceled', {
+      subscription_id: subscription.id,
+    });
+  }
 
-  // Update subscription status
+  // Update subscription status to canceled
   await supabaseAdmin
     .from('subscriptions')
     .update({
@@ -232,79 +268,66 @@ async function handleSubscriptionDeleted(subscription) {
       canceled_at: new Date().toISOString(),
     })
     .eq('stripe_subscription_id', subscription.id);
-
-  // Downgrade user to free tier
-  await supabaseAdmin
-    .from('users')
-    .update({
-      tier: 'free',
-      scans_remaining: 0,
-    })
-    .eq('id', subData.user_id);
 }
 
 /**
- * Handle invoice paid (renewal)
+ * Handle invoice paid
  */
 async function handleInvoicePaid(invoice) {
-  const subscriptionId = invoice.subscription;
-
-  if (!subscriptionId) return;
-
-  // Get subscription
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  const customerId = subscription.customer;
-
-  // Get user
-  const { data: subData } = await supabaseAdmin
+  const subscriptionRecord = await supabaseAdmin
     .from('subscriptions')
     .select('user_id, tier')
-    .eq('stripe_customer_id', customerId)
+    .eq('stripe_subscription_id', invoice.subscription)
     .single();
 
-  if (!subData) return;
+  if (subscriptionRecord?.data?.user_id) {
+    // Track invoice payment
+    await trackAnalytics(subscriptionRecord.data.user_id, 'invoice_paid', {
+      invoice_id: invoice.id,
+      amount: (invoice.amount_paid || 0) / 100,
+      currency: invoice.currency || 'usd',
+      tier: subscriptionRecord.data.tier,
+    });
+  }
 
-  // Reset scans for the new billing period
-  const scansMap = {
-    basic: 5,
-    pro: 20,
-    unlimited: -1,
-  };
-
-  await supabaseAdmin
-    .from('users')
-    .update({
-      scans_remaining: scansMap[subData.tier],
-    })
-    .eq('id', subData.user_id);
+  console.log(`Invoice paid: ${invoice.id}`);
 }
 
 /**
- * Handle payment failure
+ * Handle payment failed
  */
 async function handlePaymentFailed(invoice) {
-  const customerId = invoice.customer;
-
-  // Get user and subscription
-  const { data: sub } = await supabaseAdmin
+  const subscriptionRecord = await supabaseAdmin
     .from('subscriptions')
-    .select(`
-      user_id,
-      tier,
-      users!inner(email)
-    `)
-    .eq('stripe_customer_id', customerId)
+    .select('user_id, tier')
+    .eq('stripe_subscription_id', invoice.subscription)
     .single();
 
-  if (!sub) return;
-
-  // Send email notification about payment failure
-  try {
-    await sendPaymentFailedEmail(sub.users.email, {
-      tier: sub.tier,
+  if (subscriptionRecord?.data?.user_id) {
+    // Track payment failure
+    await trackAnalytics(subscriptionRecord.data.user_id, 'payment_failed', {
+      invoice_id: invoice.id,
+      amount: (invoice.amount_due || 0) / 100,
+      currency: invoice.currency || 'usd',
+      tier: subscriptionRecord.data.tier,
+      reason: invoice.last_payment_error?.message || 'Unknown',
     });
-  } catch (error) {
-    console.error('Failed to send payment failure email:', error);
+
+    // Send payment failure email notification (already implemented)
+    const { data: user } = await supabaseAdmin
+      .from('users')
+      .select('email')
+      .eq('id', subscriptionRecord.data.user_id)
+      .single();
+
+    if (user?.email) {
+      const { sendPaymentFailedEmail } = require('../../utils/email-service');
+      await sendPaymentFailedEmail(user.email, {
+        tier: subscriptionRecord.data.tier,
+      }).catch(error => console.error('Error sending payment failed email:', error));
+    }
   }
+
+  console.log(`Payment failed: ${invoice.id}`);
 }
 

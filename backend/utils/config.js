@@ -43,6 +43,12 @@ module.exports = {
     apiKey: process.env.RESEND_API_KEY,
   },
 
+  // Analytics (PostHog)
+  posthog: {
+    apiKey: process.env.POSTHOG_API_KEY,
+    host: process.env.POSTHOG_HOST || 'https://app.posthog.com',
+  },
+
   // Environment
   nodeEnv: process.env.NODE_ENV || 'development',
   isDev: process.env.NODE_ENV !== 'production',

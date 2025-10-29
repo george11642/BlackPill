@@ -1,6 +1,6 @@
 -- Manual review queue for flagged content
 CREATE TABLE public.review_queue (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   analysis_id UUID REFERENCES public.analyses(id) ON DELETE CASCADE,
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
   reason TEXT NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE public.review_queue (
 
 -- User preferences table
 CREATE TABLE public.user_preferences (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL UNIQUE REFERENCES public.users(id) ON DELETE CASCADE,
   marketing_emails BOOLEAN DEFAULT FALSE,
   push_notifications BOOLEAN DEFAULT TRUE,
@@ -25,7 +25,7 @@ CREATE TABLE public.user_preferences (
 
 -- User bans/suspensions table
 CREATE TABLE public.user_bans (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   reason TEXT NOT NULL,
   ban_type TEXT NOT NULL CHECK (ban_type IN ('warning', 'temporary', 'permanent')),

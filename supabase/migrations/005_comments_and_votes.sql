@@ -1,6 +1,6 @@
 -- Comments table for community feature (Phase 2, F9)
 CREATE TABLE public.comments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   analysis_id UUID NOT NULL REFERENCES public.analyses(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE public.comments (
 
 -- Votes table (upvotes/downvotes)
 CREATE TABLE public.votes (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   voteable_type TEXT NOT NULL CHECK (voteable_type IN ('analysis', 'comment')),
   voteable_id UUID NOT NULL,
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,

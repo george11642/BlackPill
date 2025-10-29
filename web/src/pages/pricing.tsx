@@ -64,7 +64,7 @@ const tiers: SubscriptionTier[] = [
     tier: 'unlimited',
     name: 'Unlimited',
     monthlyPrice: '$19.99',
-    annualPrice: '$219.89',
+    annualPrice: '$209.89',
     monthlyScans: 'Unlimited scans',
     annualScans: 'Unlimited scans',
     features: [

@@ -38,6 +38,8 @@ const migrations = [
   '003_storage_buckets.sql',
   '004_review_queue_and_preferences.sql',
   '005_comments_and_votes.sql',
+  '006_push_notification_tokens.sql',
+  '007_fix_subscriptions_schema.sql',
 ];
 
 async function runMigrations() {

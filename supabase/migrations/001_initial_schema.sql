@@ -1,5 +1,7 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Ensure pgcrypto is available for UUID functions
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Users table (extends Supabase auth.users)
 CREATE TABLE public.users (
@@ -24,7 +26,7 @@ CREATE TABLE public.users (
 
 -- Analyses table
 CREATE TABLE public.analyses (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   image_url TEXT,
   image_thumbnail_url TEXT,
@@ -41,7 +43,7 @@ CREATE TABLE public.analyses (
 
 -- Subscriptions table
 CREATE TABLE public.subscriptions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL UNIQUE REFERENCES public.users(id) ON DELETE CASCADE,
   stripe_customer_id TEXT UNIQUE,
   stripe_subscription_id TEXT UNIQUE,
@@ -56,7 +58,7 @@ CREATE TABLE public.subscriptions (
 
 -- Referrals table
 CREATE TABLE public.referrals (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   from_user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   to_user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
   referral_code TEXT NOT NULL,
@@ -68,7 +70,7 @@ CREATE TABLE public.referrals (
 
 -- Leaderboard weekly table
 CREATE TABLE public.leaderboard_weekly (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   score DECIMAL(3,1) NOT NULL,
   rank INT NOT NULL,
@@ -79,7 +81,7 @@ CREATE TABLE public.leaderboard_weekly (
 
 -- Share logs table
 CREATE TABLE public.share_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   analysis_id UUID REFERENCES public.analyses(id) ON DELETE CASCADE,
   platform TEXT NOT NULL,
@@ -88,7 +90,7 @@ CREATE TABLE public.share_logs (
 
 -- Support tickets table
 CREATE TABLE public.support_tickets (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   subject TEXT NOT NULL,
   message TEXT NOT NULL,
@@ -101,7 +103,7 @@ CREATE TABLE public.support_tickets (
 
 -- Creators table (Phase 2)
 CREATE TABLE public.creators (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   instagram_handle TEXT,
@@ -121,7 +123,7 @@ CREATE TABLE public.creators (
 
 -- Affiliate clicks table
 CREATE TABLE public.affiliate_clicks (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   creator_id UUID NOT NULL REFERENCES public.creators(id) ON DELETE CASCADE,
   device_id TEXT,
   ip_address TEXT,
@@ -131,7 +133,7 @@ CREATE TABLE public.affiliate_clicks (
 
 -- Affiliate conversions table
 CREATE TABLE public.affiliate_conversions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   creator_id UUID NOT NULL REFERENCES public.creators(id) ON DELETE CASCADE,
   user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
   tier TEXT NOT NULL,
@@ -144,7 +146,7 @@ CREATE TABLE public.affiliate_conversions (
 
 -- Affiliate coupons table
 CREATE TABLE public.affiliate_coupons (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   creator_id UUID NOT NULL REFERENCES public.creators(id) ON DELETE CASCADE,
   code TEXT UNIQUE NOT NULL,
   discount_percent INT NOT NULL CHECK (discount_percent >= 0 AND discount_percent <= 100),

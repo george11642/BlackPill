@@ -1,5 +1,6 @@
 const { verifyAuth } = require('../../middleware/auth');
 const { supabaseAdmin } = require('../../utils/supabase');
+const { sendNotificationToUser } = require('../../utils/push-notification-service');
 
 /**
  * POST /api/referral/accept
@@ -90,9 +91,36 @@ module.exports = async (req, res) => {
         })
         .eq('id', referrer.id);
 
-      // TODO: Send push notifications to both users
-      // Analytics: referral_accepted and referral_bonus_received
-      // are tracked on the mobile side when this endpoint succeeds
+      // Send push notifications to both users
+      try {
+        // Get referee username/email for referrer notification
+        const { data: referee } = await supabaseAdmin
+          .from('users')
+          .select('username, email')
+          .eq('id', req.user.id)
+          .single();
+
+        const refereeName = referee?.username || referee?.email.split('@')[0] || 'a friend';
+
+        // Send notification to referrer
+        await sendNotificationToUser(
+          referrer.id,
+          'Friend Joined! 🎉',
+          `${refereeName} accepted your referral. You got 5 bonus scans!`,
+          { type: 'referral_accepted', bonus_scans: bonusScans }
+        );
+
+        // Send notification to referee
+        await sendNotificationToUser(
+          req.user.id,
+          'Welcome to Black Pill! 🚀',
+          `You got 5 free scans from ${referrer.username || 'a friend'}!`,
+          { type: 'referral_bonus_received', bonus_scans: bonusScans }
+        );
+      } catch (notificationError) {
+        console.error('Error sending push notifications:', notificationError);
+        // Don't fail the referral if notifications fail - they're non-critical
+      }
 
       res.status(200).json({
         bonus_scans: bonusScans,
