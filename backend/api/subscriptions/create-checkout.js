@@ -1,15 +1,4 @@
-// Workaround for Vercel Root Directory bug - try multiple require paths
-let Stripe;
-try {
-  Stripe = require('stripe');
-} catch (e) {
-  try {
-    Stripe = require('/var/task/backend/node_modules/stripe');
-  } catch (e2) {
-    Stripe = require('../../node_modules/stripe');
-  }
-}
-
+const Stripe = require('stripe');
 const { verifyAuth } = require('../../middleware/auth');
 const { supabaseAdmin } = require('../../utils/supabase');
 const config = require('../../utils/config');
