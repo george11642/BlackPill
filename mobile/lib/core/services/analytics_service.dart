@@ -180,6 +180,14 @@ class AnalyticsService {
     track('subscription_canceled');
   }
 
+  void trackSubscriptionSuccess() {
+    track('subscription_success');
+  }
+
+  void trackSubscriptionActivated(String tier) {
+    track('subscription_activated', properties: {'tier': tier});
+  }
+
   // Community events
   void trackLeaderboardViewed() {
     track('leaderboard_viewed');

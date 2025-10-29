@@ -35,25 +35,33 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
       ref.read(analyticsServiceProvider).trackTierSelected(_selectedTier.name);
       ref.read(analyticsServiceProvider).trackCheckoutStarted();
       
+      // Get current user info
       final apiService = ref.read(apiServiceProvider);
-      final checkoutData = await apiService.createCheckoutSession(
-        tier: _selectedTier.name,
-        interval: _isAnnual ? 'annual' : 'monthly',
+      final userProfile = await apiService.getUserProfile();
+      final userId = userProfile['id'] as String;
+      final email = userProfile['email'] as String;
+      
+      // Build web pricing page URL with pre-filled parameters
+      final pricingUrl = Uri.parse('https://black-pill.app/subscribe').replace(
+        queryParameters: {
+          'source': 'app',
+          'user_id': userId,
+          'email': email,
+          'tier': _selectedTier.name,
+          'interval': _isAnnual ? 'annual' : 'monthly',
+        },
       );
       
-      // Open Stripe checkout in browser
-      final checkoutUrl = Uri.parse(checkoutData['checkout_url']);
-      
-      if (await canLaunchUrl(checkoutUrl)) {
+      if (await canLaunchUrl(pricingUrl)) {
         await launchUrl(
-          checkoutUrl,
+          pricingUrl,
           mode: LaunchMode.externalApplication,
         );
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Opening Stripe checkout...'),
+              content: Text('Opening checkout...'),
               backgroundColor: AppColors.neonCyan,
               duration: Duration(seconds: 2),
             ),
