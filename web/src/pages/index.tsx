@@ -324,7 +324,7 @@ export default function Home() {
                     <Button
                       className={tier.highlight ? 'btn-primary w-full' : 'btn-secondary w-full'}
                       size="lg"
-                      href={`/subscribe?tier=${tier.tier.toLowerCase()}&interval=${billingInterval}&source=web`}
+                      href={`/pricing?tier=${tier.tier.toLowerCase()}&interval=${billingInterval}&source=web`}
                     >
                       Subscribe to {tier.tier}
                     </Button>

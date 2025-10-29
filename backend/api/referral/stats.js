@@ -2,6 +2,72 @@ const { verifyAuth } = require('../../middleware/auth');
 const { supabaseAdmin } = require('../../utils/supabase');
 
 /**
+ * Calculate invite streak - consecutive days with ≥1 invite
+ */
+async function calculateInviteStreak(userId) {
+  try {
+    // Get all accepted referrals ordered by date
+    const { data: referrals, error } = await supabaseAdmin
+      .from('referrals')
+      .select('accepted_at')
+      .eq('from_user_id', userId)
+      .eq('status', 'accepted')
+      .not('accepted_at', 'is', null)
+      .order('accepted_at', { ascending: false });
+
+    if (error || !referrals || referrals.length === 0) {
+      return 0;
+    }
+
+    // Group by date (ignore time)
+    const datesWithInvites = new Set();
+    referrals.forEach(ref => {
+      if (ref.accepted_at) {
+        const date = new Date(ref.accepted_at);
+        date.setHours(0, 0, 0, 0);
+        datesWithInvites.add(date.toISOString().split('T')[0]);
+      }
+    });
+
+    const sortedDates = Array.from(datesWithInvites)
+      .map(d => new Date(d))
+      .sort((a, b) => b.getTime() - a.getTime()); // Most recent first
+
+    if (sortedDates.length === 0) {
+      return 0;
+    }
+
+    // Check consecutive days starting from today
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    for (let i = 0; i < sortedDates.length; i++) {
+      const expectedDate = new Date(today);
+      expectedDate.setDate(today.getDate() - i);
+      
+      const dateStr = expectedDate.toISOString().split('T')[0];
+      const hasInvite = sortedDates.some(d => d.toISOString().split('T')[0] === dateStr);
+      
+      if (hasInvite) {
+        streak++;
+      } else {
+        // Streak broken - only count if today has an invite, otherwise streak is 0
+        if (i === 0) {
+          return 0; // No invite today, streak is 0
+        }
+        break; // Streak broken on a previous day
+      }
+    }
+
+    return streak;
+  } catch (error) {
+    console.error('Error calculating invite streak:', error);
+    return 0;
+  }
+}
+
+/**
  * GET /api/referral/stats
  * Get referral statistics for the current user
  */
@@ -36,8 +102,8 @@ module.exports = async (req, res) => {
         .filter(r => r.status === 'accepted')
         .reduce((sum, r) => sum + r.bonus_scans_given, 0);
 
-      // Calculate invite streak (simplified - consecutive days with at least 1 invite)
-      const inviteStreak = 0; // TODO: Implement streak calculation
+      // Calculate invite streak: consecutive days with ≥1 invite
+      const inviteStreak = await calculateInviteStreak(req.user.id);
 
       res.status(200).json({
         referral_code: user.referral_code,

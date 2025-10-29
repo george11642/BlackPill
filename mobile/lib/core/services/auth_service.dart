@@ -44,10 +44,20 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    return await _supabase.auth.signInWithPassword(
+    final response = await _supabase.auth.signInWithPassword(
       email: email,
       password: password,
     );
+    
+    // Check email verification (enforce as per PRD)
+    if (response.user != null && !response.user!.emailConfirmedAt) {
+      // User is signed in but email not verified
+      // Sign them out and throw error
+      await signOut();
+      throw Exception('Please verify your email address before signing in. Check your inbox for the verification link.');
+    }
+    
+    return response;
   }
 
   /// Sign in with Google

@@ -70,6 +70,72 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
+  Future<void> _deleteAccount() async {
+    // Show warning dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.darkGray,
+        title: const Text('Delete Account'),
+        content: const Text(
+          'This action cannot be undone. All your data, analyses, and subscription will be permanently deleted.\n\nAre you absolutely sure?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.neonYellow,
+            ),
+            child: const Text('Delete Forever'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      try {
+        final authService = ref.read(authServiceProvider);
+        await authService.deleteAccount();
+        
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Account deleted successfully'),
+              backgroundColor: AppColors.neonGreen,
+            ),
+          );
+          
+          // Navigate to login
+          context.go('/auth/login');
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete account: ${e.toString()}'),
+              backgroundColor: AppColors.neonYellow,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -183,14 +249,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   
                   const SizedBox(height: 24),
                   
+                  // Account deletion button
+                  OutlinedButton.icon(
+                    onPressed: _deleteAccount,
+                    icon: const Icon(Icons.delete_forever),
+                    label: const Text('Delete Account'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.neonYellow,
+                      side: const BorderSide(color: AppColors.neonYellow),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
                   // Sign out button
                   OutlinedButton.icon(
                     onPressed: _signOut,
                     icon: const Icon(Icons.logout),
                     label: const Text('Sign Out'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.neonYellow,
-                      side: const BorderSide(color: AppColors.neonYellow),
+                      foregroundColor: AppColors.textSecondary,
+                      side: BorderSide(color: AppColors.glassBorder),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                   ),

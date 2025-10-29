@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/services/api_service.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../../../shared/widgets/primary_button.dart';
@@ -26,13 +27,23 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Implement API call to get public analyses
-      // For now, showing placeholder
+      final apiService = ref.read(apiServiceProvider);
+      final analyses = await apiService.getPublicAnalyses(limit: 20);
       
-      setState(() => _isLoading = false);
+      setState(() {
+        _publicAnalyses = List<Map<String, dynamic>>.from(analyses);
+        _isLoading = false;
+      });
     } catch (e) {
+      print('Error loading public analyses: $e');
       if (mounted) {
         setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load community feed: ${e.toString()}'),
+            backgroundColor: AppColors.neonYellow,
+          ),
+        );
       }
     }
   }
@@ -166,7 +177,10 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                   ),
                 ],
               ),
-            ),
+            )
+          else
+            // Display public analyses
+            ..._publicAnalyses.map((analysis) => _buildAnalysisCard(analysis)),
         ],
       ),
     );
@@ -242,6 +256,92 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
             child: const Text('Got it'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAnalysisCard(Map<String, dynamic> analysis) {
+    final user = analysis['users'] ?? {};
+    final username = user['username'] ?? 'Anonymous';
+    final avatarUrl = user['avatar_url'];
+    final score = analysis['score']?.toDouble() ?? 0.0;
+    final thumbnailUrl = analysis['image_thumbnail_url'];
+    final likeCount = analysis['like_count'] ?? 0;
+    final viewCount = analysis['view_count'] ?? 0;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: GlassCard(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // User info
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                  child: avatarUrl == null
+                      ? Text(
+                          username.isNotEmpty ? username[0].toUpperCase() : '?',
+                          style: const TextStyle(color: AppColors.neonPink),
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        username,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      Text(
+                        'Score: ${score.toStringAsFixed(1)}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.neonCyan,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Stats
+                Row(
+                  children: [
+                    Icon(Icons.favorite, size: 16, color: AppColors.neonPink),
+                    const SizedBox(width: 4),
+                    Text('$likeCount', style: Theme.of(context).textTheme.bodySmall),
+                    const SizedBox(width: 16),
+                    Icon(Icons.visibility, size: 16, color: AppColors.textSecondary),
+                    const SizedBox(width: 4),
+                    Text('$viewCount', style: Theme.of(context).textTheme.bodySmall),
+                  ],
+                ),
+              ],
+            ),
+            
+            // Thumbnail if available
+            if (thumbnailUrl != null) ...[
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  thumbnailUrl,
+                  height: 200,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 200,
+                    color: AppColors.darkGray,
+                    child: const Icon(Icons.image_not_supported, size: 48),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

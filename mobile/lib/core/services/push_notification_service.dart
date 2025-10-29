@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../api_service.dart';
 
 final pushNotificationServiceProvider = Provider<PushNotificationService>((ref) {
   return PushNotificationService();
@@ -47,7 +50,16 @@ class PushNotificationService {
     // Get FCM token for backend
     final token = await _fcm.getToken();
     print('FCM Token: $token');
-    // TODO: Send token to backend to store for this user
+    
+    // Send token to backend to store for this user
+    if (token != null) {
+      await _sendTokenToBackend(token);
+    }
+    
+    // Handle token refresh
+    _fcm.onTokenRefresh.listen((newToken) {
+      _sendTokenToBackend(newToken);
+    });
   }
 
   /// Handle foreground message
@@ -120,6 +132,44 @@ class PushNotificationService {
   /// Unsubscribe from topic
   Future<void> unsubscribeFromTopic(String topic) async {
     await _fcm.unsubscribeFromTopic(topic);
+  }
+
+  /// Send FCM token to backend
+  Future<void> _sendTokenToBackend(String token) async {
+    try {
+      final supabase = Supabase.instance.client;
+      final session = supabase.auth.currentSession;
+      
+      if (session == null) {
+        print('Cannot send push token: user not authenticated');
+        return;
+      }
+
+      // Get API service
+      final apiService = ApiService();
+      
+      // Determine platform
+      final platform = _getPlatform();
+
+      // Send token to backend via API service
+      await apiService.sendPushToken(token: token, platform: platform);
+      
+      print('Push token sent to backend successfully');
+    } catch (e) {
+      print('Error sending push token to backend: $e');
+      // Don't throw - this is not critical for app functionality
+    }
+  }
+
+  /// Get platform identifier
+  String _getPlatform() {
+    if (Platform.isIOS) {
+      return 'ios';
+    } else if (Platform.isAndroid) {
+      return 'android';
+    } else {
+      return 'unknown';
+    }
   }
 }
 

@@ -270,7 +270,7 @@ TEXT:
 
 **Mobile App Flow:**
 1. User taps "Subscribe to [Tier]" in mobile app
-2. App redirects to web pricing page: `https://black-pill.app/subscribe?source=app&user_id=[id]&email=[email]&tier=[tier]&interval=[monthly|annual]`
+2. App redirects to web pricing page: `https://black-pill.app/pricing?source=app&user_id=[id]&email=[email]&tier=[tier]&interval=[monthly|annual]`
 3. Web page auto-populates email and tier based on URL parameters
 4. User clicks subscribe → Stripe Checkout session created (email pre-filled, card input)
 5. After successful payment → Redirects to success page: `https://black-pill.app/subscribe/success?session_id=[id]&source=app`
@@ -281,7 +281,7 @@ TEXT:
 
 **Web Marketing Flow:**
 1. User discovers product via Google ads, social media, or other web channels
-2. User visits: `https://black-pill.app/subscribe`
+2. User visits: `https://black-pill.app/pricing`
 3. User enters email, selects tier and billing interval
 4. Stripe Checkout session created (email pre-filled, card input)
 5. After successful payment → Redirects to success page: `https://black-pill.app/subscribe/success?session_id=[id]&source=web`

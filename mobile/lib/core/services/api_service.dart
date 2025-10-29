@@ -238,5 +238,34 @@ class ApiService {
     );
     return response.data['leaderboard'];
   }
+
+  /// Send push notification token to backend
+  Future<void> sendPushToken({
+    required String token,
+    required String platform,
+  }) async {
+    await _dio.post(
+      '/api/user/push-token',
+      data: {
+        'token': token,
+        'platform': platform,
+      },
+    );
+  }
+
+  /// Get public analyses for community feed
+  Future<List<dynamic>> getPublicAnalyses({
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final response = await _dio.get(
+      '/api/community/public-analyses',
+      queryParameters: {
+        'limit': limit,
+        'offset': offset,
+      },
+    );
+    return response.data['analyses'] || [];
+  }
 }
 

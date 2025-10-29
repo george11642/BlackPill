@@ -2,6 +2,8 @@ const { verifyAuth } = require('../../middleware/auth');
 const { createRateLimiter } = require('../../middleware/rate-limit');
 const { supabaseAdmin } = require('../../utils/supabase');
 const config = require('../../utils/config');
+const { generateShareCardImage } = require('../../utils/share-card-generator');
+const { v4: uuidv4 } = require('uuid');
 
 /**
  * GET /api/share/generate-card
@@ -40,19 +42,39 @@ module.exports = async (req, res) => {
           .eq('id', req.user.id)
           .single();
 
-        // In a production environment, you would generate the image here
-        // using Puppeteer or similar server-side rendering
-        // For now, we'll return the data needed to generate the card client-side
-        // or you can implement server-side generation with Puppeteer
-
+        // Prepare share data
         const shareData = {
           analysis_id: analysis.id,
-          score: analysis.score,
-          breakdown: analysis.breakdown,
+          score: parseFloat(analysis.score),
+          breakdown: analysis.breakdown || {},
           referral_code: user?.referral_code || '',
           share_url: `${config.app.url}/ref/${user?.referral_code}`,
-          image_url: analysis.image_url, // For background/preview
+          image_url: analysis.image_url,
         };
+
+        // Generate share card PNG image (1080x1920px)
+        const imageBuffer = await generateShareCardImage(shareData);
+
+        // Upload to Supabase Storage
+        const fileName = `share-cards/${analysis.id}.png`;
+        const { data: uploadData, error: uploadError } = await supabaseAdmin
+          .storage
+          .from('analyses')
+          .upload(fileName, imageBuffer, {
+            contentType: 'image/png',
+            cacheControl: '604800', // Cache for 7 days as per PRD
+            upsert: true, // Overwrite if exists
+          });
+
+        if (uploadError) {
+          throw new Error(`Failed to upload share card: ${uploadError.message}`);
+        }
+
+        // Get public URL
+        const { data: urlData } = supabaseAdmin
+          .storage
+          .from('analyses')
+          .getPublicUrl(fileName);
 
         // Log the share event
         await supabaseAdmin
@@ -63,13 +85,12 @@ module.exports = async (req, res) => {
             platform: 'generated',
           });
 
-        res.status(200).json(shareData);
-
-        // TODO: Implement actual image generation with Puppeteer
-        // const imageBuffer = await generateShareCardImage(shareData);
-        // const fileName = `share-cards/${analysis_id}.png`;
-        // await supabaseAdmin.storage.from('analyses').upload(fileName, imageBuffer);
-        // return { image_url: publicUrl, share_url: ... }
+        // Return share card URL
+        res.status(200).json({
+          image_url: urlData.publicUrl,
+          share_url: shareData.share_url,
+          analysis_id: analysis.id,
+        });
 
       } catch (error) {
         console.error('Share card generation error:', error);
