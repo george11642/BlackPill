@@ -64,48 +64,48 @@ export default function Creators() {
   const creatorTiers = [
     {
       tier: 'Bronze',
-      commission: '10%',
+      commission: 10,
       requirement: 'Free to join',
       features: [
-        'Real-time Analytics',
-        'Custom Affiliate Link',
-        'Basic Support',
+        { text: 'Real-time Analytics', included: true },
+        { text: 'Custom Affiliate Link', included: true },
+        { text: 'Basic Support', included: true },
       ],
       cta: 'Apply Now',
       highlight: false,
     },
     {
       tier: 'Silver',
-      commission: '15%',
+      commission: 15,
       requirement: '100+ referrals',
       features: [
-        'All Bronze features',
-        'Premium Marketing Assets',
-        'Email Support',
+        { text: 'All Bronze features', included: true },
+        { text: 'Premium Marketing Assets', included: true },
+        { text: 'Email Support', included: true },
       ],
       cta: 'Apply Now',
       highlight: false,
     },
     {
       tier: 'Gold',
-      commission: '20%',
+      commission: 20,
       requirement: '500+ referrals',
       features: [
-        'All Silver features',
-        '24/7 Priority Support',
-        'Quarterly Strategy Session',
+        { text: 'All Silver features', included: true },
+        { text: '24/7 Priority Support', included: true },
+        { text: 'Quarterly Strategy Session', included: true },
       ],
       cta: 'Apply Now',
       highlight: true,
     },
     {
       tier: 'Platinum',
-      commission: '25%',
+      commission: 25,
       requirement: '1000+ referrals',
       features: [
-        'All Gold features',
-        'Dedicated Account Manager',
-        'VIP Support',
+        { text: 'All Gold features', included: true },
+        { text: 'Dedicated Account Manager', included: true },
+        { text: 'VIP Support', included: true },
       ],
       cta: 'Apply Now',
       highlight: false,
@@ -228,12 +228,11 @@ export default function Creators() {
             <PricingCard
               key={index}
               tier={tier.tier}
-              price={tier.commission}
-              interval="commission"
-              scans={tier.requirement}
+              commission={tier.commission}
+              requirement={tier.requirement}
               features={tier.features}
-              cta={tier.cta}
-              highlight={tier.highlight}
+              isPopular={tier.highlight}
+              ctaText={tier.cta}
             />
           ))}
         </div>
