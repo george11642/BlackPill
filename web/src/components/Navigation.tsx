@@ -27,9 +27,11 @@ export const Navigation: React.FC = () => {
             <a href="/#faq" className="text-secondary hover:text-white transition">
               FAQ
             </a>
-            <Button href="/dashboard" variant="primary" size="sm">
-              Dashboard
-            </Button>
+            <Link href="/dashboard">
+              <Button variant="primary" size="sm">
+                Dashboard
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -57,9 +59,11 @@ export const Navigation: React.FC = () => {
             <a href="/#faq" className="block text-secondary hover:text-white transition">
               FAQ
             </a>
-            <Button href="/dashboard" variant="primary" size="sm" className="w-full">
-              Dashboard
-            </Button>
+            <Link href="/dashboard" className="block">
+              <Button variant="primary" size="sm" className="w-full">
+                Dashboard
+              </Button>
+            </Link>
           </div>
         )}
       </div>

@@ -12,13 +12,31 @@ export const Footer: React.FC = () => {
             <h4 className="mb-md">Download App</h4>
             <ul className="space-y-sm">
               <li>
-                <a href="https://apps.apple.com" target="_blank" rel="noopener noreferrer" className="text-secondary hover:text-cyan transition">
-                  App Store
+                <a 
+                  href="https://apps.apple.com/app/blackpill" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-block hover:opacity-80 transition"
+                >
+                  <img 
+                    src="/badges/app-store-badge.svg" 
+                    alt="Download on the App Store" 
+                    className="h-[40px]"
+                  />
                 </a>
               </li>
               <li>
-                <a href="https://play.google.com" target="_blank" rel="noopener noreferrer" className="text-secondary hover:text-cyan transition">
-                  Google Play
+                <a 
+                  href="https://play.google.com/store/apps/details?id=com.blackpill.app" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-block hover:opacity-80 transition"
+                >
+                  <img 
+                    src="/badges/google-play-badge.png" 
+                    alt="Get it on Google Play" 
+                    className="h-[40px]"
+                  />
                 </a>
               </li>
               <li>

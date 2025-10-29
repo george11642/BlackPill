@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { SEO } from '@/components/SEO';
 import { Navigation } from '@/components/Navigation';
@@ -11,6 +11,8 @@ import { FAQ } from '@/components/FAQ';
 import { Footer } from '@/components/Footer';
 
 export default function Home() {
+  const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
+
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'MobileApplication',
@@ -130,6 +132,15 @@ export default function Home() {
     },
   ];
 
+  const getPrice = (tier: typeof pricingTiers[number]) => {
+    if (tier.tier === 'Free') return { price: '$0', interval: 'lifetime' };
+    if (billingInterval === 'monthly') {
+      return { price: tier.price, interval: tier.interval };
+    }
+    const yearlyPrice = tier.yearlyPrice?.split('/')[0] || tier.price;
+    return { price: yearlyPrice, interval: '/year' };
+  };
+
   const faqItems = [
     {
       question: 'How accurate is the AI analysis?',
@@ -151,17 +162,13 @@ export default function Home() {
       question: 'How does the referral system work?',
       answer: 'Get your unique referral code and share it with friends. When they accept, you both get 5 free scans. Build your streak and climb the referral leaderboard.',
     },
-    {
-      question: 'Is this app for men or women?',
-      answer: 'Currently optimized for men aged 18-35. We\'re expanding to other audiences in future updates.',
-    },
   ];
 
   return (
     <>
       <SEO
-        title="BlackPill - AI Attractiveness Analysis"
-        description="Get your real attractiveness score with honest AI feedback and actionable self-improvement tips. Download now on iOS and Android."
+        title="BlackPill - Get Honest Feedback. Build Real Confidence."
+        description="Get honest AI-powered attractiveness analysis with actionable self-improvement tips. Download now on iOS and Android."
         keywords="attractiveness analysis, AI face rating, self improvement, facial assessment, confidence builder"
         structuredData={structuredData}
       />
@@ -172,17 +179,35 @@ export default function Home() {
       <Section className="hero-gradient">
         <div className="grid grid-2 gap-xl items-center">
           <div>
-            <h1 className="text-6xl font-bold mb-md">Be Honest About Yourself</h1>
+            <h1 className="text-6xl font-bold mb-md">Get Honest Feedback. Build Real Confidence.</h1>
             <p className="text-xl text-secondary mb-lg">
-              Get your real attractiveness score, detailed breakdown, and actionable tips to improve. Share with friends and earn free scans.
+              AI-powered attractiveness analysis with actionable self-improvement tips. Get your score, detailed breakdown, and personalized guidance.
             </p>
             <div className="flex gap-md mb-lg flex-wrap">
-              <Button href="https://apps.apple.com" className="btn-primary" size="lg">
-                Download on App Store
-              </Button>
-              <Button href="https://play.google.com" className="btn-secondary" size="lg">
-                Get it on Google Play
-              </Button>
+              <a 
+                href="https://apps.apple.com/app/blackpill" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:opacity-80 transition"
+              >
+                <img 
+                  src="/badges/app-store-badge.svg" 
+                  alt="Download on the App Store" 
+                  className="h-[60px]"
+                />
+              </a>
+              <a 
+                href="https://play.google.com/store/apps/details?id=com.blackpill.app" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:opacity-80 transition"
+              >
+                <img 
+                  src="/badges/google-play-badge.png" 
+                  alt="Get it on Google Play" 
+                  className="h-[60px]"
+                />
+              </a>
             </div>
             <p className="text-sm text-tertiary">Available now on iOS and Android • 200K+ downloads</p>
           </div>
@@ -239,52 +264,77 @@ export default function Home() {
         id="pricing"
         background="secondary"
       >
+        {/* Pricing Toggle */}
+        <div className="flex justify-center items-center gap-md mb-lg">
+          <button 
+            onClick={() => setBillingInterval('monthly')}
+            className={`px-lg py-md rounded-lg font-semibold transition ${
+              billingInterval === 'monthly' 
+                ? 'bg-gradient text-white' 
+                : 'bg-[#1A1A2E] text-secondary hover:text-white'
+            }`}
+          >
+            Monthly
+          </button>
+          <button 
+            onClick={() => setBillingInterval('annual')}
+            className={`px-lg py-md rounded-lg font-semibold transition flex items-center gap-sm ${
+              billingInterval === 'annual' 
+                ? 'bg-gradient text-white' 
+                : 'bg-[#1A1A2E] text-secondary hover:text-white'
+            }`}
+          >
+            Annual 
+            <span className="badge badge-success text-xs">Save 10%</span>
+          </button>
+        </div>
+
         <div className="grid grid-4 gap-lg">
-          {pricingTiers.map((tier, index) => (
-            <div
-              key={index}
-              className={`card relative ${tier.highlight ? 'ring-2 ring-[#FF0080] scale-105' : ''}`}
-            >
-              {tier.highlight && (
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <span className="badge badge-success">Most Popular</span>
-                </div>
-              )}
-              <div className="mb-md">
-                <h3 className="text-2xl font-bold mb-sm">{tier.tier}</h3>
-                <div className="mb-md">
-                  <span className="text-4xl font-bold text-gradient">{tier.price}</span>
-                  <span className="text-secondary ml-sm">{tier.interval}</span>
-                </div>
-                {tier.yearlyPrice && (
-                  <p className="text-xs text-tertiary">{tier.yearlyPrice}</p>
+          {pricingTiers.map((tier, index) => {
+            const displayPrice = getPrice(tier);
+            return (
+              <div
+                key={index}
+                className={`card relative ${tier.highlight ? 'ring-2 ring-[#FF0080] scale-105' : ''}`}
+              >
+                {tier.highlight && (
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <span className="badge badge-success">Most Popular</span>
+                  </div>
                 )}
-                <p className="text-sm text-secondary mt-md">{tier.scans}</p>
-              </div>
+                <div className="mb-md">
+                  <h3 className="text-2xl font-bold mb-sm">{tier.tier}</h3>
+                  <div className="mb-md">
+                    <span className="text-4xl font-bold text-gradient">{displayPrice.price}</span>
+                    <span className="text-secondary ml-sm">{displayPrice.interval}</span>
+                  </div>
+                  <p className="text-sm text-secondary mt-md">{tier.scans}</p>
+                </div>
 
-              <div className="mb-lg">
-                <Button
-                  className={tier.highlight ? 'btn-primary w-full' : 'btn-secondary w-full'}
-                  size="lg"
-                  href="https://apps.apple.com"
-                >
-                  {tier.cta}
-                </Button>
-              </div>
+                <div className="mb-lg">
+                  <Button
+                    className={tier.highlight ? 'btn-primary w-full' : 'btn-secondary w-full'}
+                    size="lg"
+                    href="https://apps.apple.com"
+                  >
+                    {tier.cta}
+                  </Button>
+                </div>
 
-              <div className="border-t border-[rgba(255,255,255,0.1)] pt-md">
-                <p className="text-sm font-semibold mb-md">Includes:</p>
-                <ul className="space-y-sm">
-                  {tier.features.map((feature, fidx) => (
-                    <li key={fidx} className="text-sm flex items-center gap-sm text-[#00FF41]">
-                      <span>✓</span>
-                      {feature.text}
-                    </li>
-                  ))}
-                </ul>
+                <div className="border-t border-[rgba(255,255,255,0.1)] pt-md">
+                  <p className="text-sm font-semibold mb-md">Includes:</p>
+                  <ul className="space-y-sm">
+                    {tier.features.map((feature, fidx) => (
+                      <li key={fidx} className="text-sm flex items-center gap-sm text-[#00FF41]">
+                        <span>✓</span>
+                        {feature.text}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Section>
 
@@ -349,12 +399,30 @@ export default function Home() {
         background="secondary"
       >
         <div className="flex gap-md justify-center flex-wrap">
-          <Button href="https://apps.apple.com" className="btn-primary" size="lg">
-            Download on App Store
-          </Button>
-          <Button href="https://play.google.com" className="btn-secondary" size="lg">
-            Get it on Google Play
-          </Button>
+          <a 
+            href="https://apps.apple.com/app/blackpill" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hover:opacity-80 transition"
+          >
+            <img 
+              src="/badges/app-store-badge.svg" 
+              alt="Download on the App Store" 
+              className="h-[60px]"
+            />
+          </a>
+          <a 
+            href="https://play.google.com/store/apps/details?id=com.blackpill.app" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hover:opacity-80 transition"
+          >
+            <img 
+              src="/badges/google-play-badge.png" 
+              alt="Get it on Google Play" 
+              className="h-[60px]"
+            />
+          </a>
         </div>
       </Section>
 
