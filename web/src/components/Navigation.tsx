@@ -15,7 +15,7 @@ export const Navigation: React.FC = () => {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex gap-md items-center">
-            <Link href="/#pricing" className="text-secondary hover:text-white transition">
+            <Link href="/pricing" className="text-secondary hover:text-white transition">
               Pricing
             </Link>
             <Link href="/#how-it-works" className="text-secondary hover:text-white transition">
@@ -47,7 +47,7 @@ export const Navigation: React.FC = () => {
         {/* Mobile Menu */}
         {isOpen && (
           <div className="md:hidden mt-md pt-md border-t border-[rgba(255,255,255,0.1)] space-y-md">
-            <Link href="/#pricing" className="block text-secondary hover:text-white transition">
+            <Link href="/pricing" className="block text-secondary hover:text-white transition">
               Pricing
             </Link>
             <Link href="/#how-it-works" className="block text-secondary hover:text-white transition">

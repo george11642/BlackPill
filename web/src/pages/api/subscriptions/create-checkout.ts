@@ -14,8 +14,8 @@ export default async function handler(
   }
 
   try {
-    // Get backend API URL from environment variable
-    const backendApiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL || 'https://black-pill.app';
+    // Hardcoded backend API URL
+    const backendApiUrl = 'https://api.black-pill.app';
     
     // Forward request to backend API
     const backendResponse = await fetch(`${backendApiUrl}/api/subscriptions/create-checkout`, {
