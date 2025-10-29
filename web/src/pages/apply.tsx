@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SEO } from '@/components/SEO';
 import { Navigation } from '@/components/Navigation';
 import { Section } from '@/components/Section';
 import { Button } from '@/components/Button';
@@ -51,6 +52,13 @@ export default function Apply() {
 
   return (
     <div className="min-h-screen bg-[#0F0F1E] text-white">
+      <SEO
+        title="Apply to Creator Program"
+        description="Apply to become a BlackPill creator and earn commissions. Get approved in 24-48 hours and start earning immediately."
+        keywords="apply, creator program, affiliate application, join"
+        canonical="https://black-pill.app/apply"
+      />
+
       <Navigation />
 
       <Section title="Become a Creator" subtitle="Join BlackPill's affiliate program">

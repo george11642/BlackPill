@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SEO } from '@/components/SEO';
 import { Navigation } from '@/components/Navigation';
 import { Section } from '@/components/Section';
 import { PricingCard } from '@/components/PricingCard';
@@ -74,6 +75,13 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-[#0F0F1E] text-white">
+      <SEO
+        title="Pricing & Commission Tiers"
+        description="BlackPill creator pricing: Bronze 10%, Silver 15%, Gold 20%, Platinum 25% commission. Calculate your potential earnings with our calculator."
+        keywords="pricing, commissions, affiliate rates, creator tiers, earnings calculator"
+        canonical="https://black-pill.app/pricing"
+      />
+
       <Navigation />
 
       {/* HERO */}

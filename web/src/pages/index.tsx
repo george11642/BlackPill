@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { SEO } from '@/components/SEO';
 import { Navigation } from '@/components/Navigation';
 import { Section } from '@/components/Section';
 import { Card } from '@/components/Card';
@@ -10,6 +11,25 @@ import { FAQ } from '@/components/FAQ';
 import { Footer } from '@/components/Footer';
 
 export default function Home() {
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'BlackPill',
+    url: 'https://black-pill.app',
+    logo: 'https://black-pill.app/logo.png',
+    description: 'Join BlackPill creator affiliate program and earn commissions by promoting products.',
+    sameAs: [
+      'https://twitter.com/blackpillapp',
+      'https://instagram.com/blackpillapp',
+    ],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'Customer Service',
+      email: 'support@black-pill.app',
+      url: 'https://black-pill.app/apply',
+    },
+  };
+
   const faqItems = [
     {
       question: 'How do I get approved to become a creator?',
@@ -98,6 +118,13 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#0F0F1E] text-white">
+      <SEO
+        title="Creator Affiliate Program"
+        description="Join BlackPill's creator program and earn 10-25% commissions by promoting products. 10,000+ creators already earning with us."
+        keywords="affiliate program, creator program, passive income, commissions, affiliate marketing"
+        structuredData={structuredData}
+      />
+
       <Navigation />
 
       {/* HERO SECTION */}
