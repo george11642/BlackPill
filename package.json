@@ -1,15 +1,13 @@
 {
-  "name": "black-pill-workspace",
+  "name": "blackpill-monorepo",
   "version": "1.0.0",
-  "description": "Black Pill workspace scripts",
   "private": true,
+  "workspaces": [
+    "backend",
+    "web",
+    "mobile"
+  ],
   "scripts": {
-    "migrate": "node link-and-migrate.js",
-    "migrate:combined": "node create-combined-migration.js"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.38.4",
-    "dotenv": "^16.3.1"
+    "install:all": "npm install && cd backend && npm install && cd ../web && npm install"
   }
 }
-
