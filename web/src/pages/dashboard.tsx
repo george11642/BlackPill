@@ -25,10 +25,8 @@ export default function Dashboard() {
         return;
       }
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-      if (!apiUrl) {
-        throw new Error('API URL not configured');
-      }
+      // Use production API URL directly
+      const apiUrl = 'https://api.black-pill.app';
 
       // Fetch dashboard stats
       const statsRes = await fetch(`${apiUrl}/api/creators/dashboard`, {
