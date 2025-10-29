@@ -9,6 +9,7 @@ const stripe = new Stripe(config.stripe.secretKey);
  * POST /api/subscriptions/create-checkout
  * Create a Stripe checkout session
  * Supports both authenticated (app) and unauthenticated (web) flows
+ * Updated: 2025-01-29
  */
 module.exports = async (req, res) => {
   // Set CORS headers to allow web frontend requests
