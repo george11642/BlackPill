@@ -1,6 +1,11 @@
 const { supabaseAdmin } = require('../../../utils/supabase');
 const handler = require('../../../api/referral/accept');
 
+// Mock middleware - verifyAuth calls the callback immediately
+jest.mock('../../../middleware/auth', () => ({
+  verifyAuth: jest.fn((req, res, callback) => callback()),
+}));
+
 describe('POST /api/referral/accept', () => {
   let req, res;
 
@@ -23,6 +28,7 @@ describe('POST /api/referral/accept', () => {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
+
   });
 
   afterEach(() => {

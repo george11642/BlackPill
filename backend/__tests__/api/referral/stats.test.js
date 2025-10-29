@@ -1,13 +1,13 @@
 const { supabaseAdmin } = require('../../../utils/supabase');
 const handler = require('../../../api/referral/stats');
 
-// Mock middleware
+// Mock middleware - verifyAuth calls the callback immediately
 jest.mock('../../../middleware/auth', () => ({
-  verifyAuth: jest.fn((req, res, next) => next()),
+  verifyAuth: jest.fn((req, res, callback) => callback()),
 }));
 
 describe('GET /api/referral/stats', () => {
-  let req, res, next;
+  let req, res;
 
   beforeEach(() => {
     req = {
@@ -22,7 +22,6 @@ describe('GET /api/referral/stats', () => {
       json: jest.fn(),
     };
 
-    next = jest.fn();
   });
 
   afterEach(() => {
@@ -85,7 +84,7 @@ describe('GET /api/referral/stats', () => {
       }),
     });
 
-    await handler(req, res, next);
+    await handler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
@@ -107,7 +106,7 @@ describe('GET /api/referral/stats', () => {
       }),
     });
 
-    await handler(req, res, next);
+    await handler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith({

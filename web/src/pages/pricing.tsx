@@ -108,15 +108,21 @@ export default function Pricing() {
   }, [isAppSource, email, tier, interval]);
 
   const handleSubscribe = async (tierToSubscribe: 'basic' | 'pro' | 'unlimited') => {
-    if (!emailValue && !isAppSource) {
-      setError('Please enter your email address');
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
 
     try {
+      // Use provided email or a placeholder for quick checkout
+      // Stripe will ask for email during checkout if not provided
+      const checkoutEmail = emailValue || (email as string) || `checkout-${Date.now()}@temp.black-pill.app`;
+      
+      console.log('Creating checkout session:', {
+        tier: tierToSubscribe,
+        interval: billingInterval,
+        email: checkoutEmail,
+        source: isAppSource ? 'app' : 'web',
+      });
+      
       // Call Next.js API proxy route which forwards to backend
       const response = await fetch('/api/subscriptions/create-checkout', {
         method: 'POST',
@@ -126,15 +132,25 @@ export default function Pricing() {
         body: JSON.stringify({
           tier: tierToSubscribe,
           interval: billingInterval,
-          email: emailValue || (email as string), // Use pre-filled email if from app
+          email: checkoutEmail,
           source: isAppSource ? 'app' : 'web',
           user_id: isAppSource ? (user_id as string) : undefined,
         }),
       });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create checkout session');
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to create checkout session');
+        } else {
+          const errorText = await response.text();
+          console.error('Non-JSON error response:', errorText);
+          throw new Error('Server error - please check backend configuration');
+        }
       }
 
       const data = await response.json();
@@ -223,24 +239,6 @@ export default function Pricing() {
           {error && (
             <div className="card bg-red-900/20 border-red-500 mb-lg">
               <p className="text-red-400">{error}</p>
-            </div>
-          )}
-
-          {/* Email Input (only for web users) */}
-          {!isAppSource && (
-            <div className="card mb-lg">
-              <label htmlFor="email" className="block text-sm font-semibold mb-sm">
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={emailValue}
-                onChange={(e) => setEmailValue(e.target.value)}
-                placeholder="your@email.com"
-                className="w-full px-md py-sm bg-[#1A1A2E] border border-[rgba(255,255,255,0.1)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#FF0080]"
-                required
-              />
             </div>
           )}
 

@@ -2,6 +2,16 @@ const Stripe = require('stripe');
 const { supabaseAdmin } = require('../../../utils/supabase');
 const handler = require('../../../api/subscriptions/create-checkout');
 
+// Mock config
+jest.mock('../../../utils/config', () => ({
+  app: {
+    url: 'https://test.black-pill.app',
+  },
+  stripe: {
+    secretKey: 'sk_test_fake',
+  },
+}));
+
 describe('POST /api/subscriptions/create-checkout', () => {
   let req, res;
   let mockStripe;

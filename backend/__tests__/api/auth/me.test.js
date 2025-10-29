@@ -1,17 +1,16 @@
 const { supabaseAdmin } = require('../../../utils/supabase');
 const handler = require('../../../api/auth/me');
-const { verifyAuth } = require('../../../middleware/auth');
 
-// Mock middleware
+// Mock middleware - verifyAuth calls the callback immediately
 jest.mock('../../../middleware/auth', () => ({
-  verifyAuth: jest.fn((req, res, next) => {
-    // For tests, call next directly (skip auth)
-    next();
+  verifyAuth: jest.fn((req, res, callback) => {
+    // Skip auth and call the handler callback directly
+    callback();
   }),
 }));
 
 describe('GET /api/auth/me', () => {
-  let req, res, next;
+  let req, res;
 
   beforeEach(() => {
     req = {
@@ -26,8 +25,6 @@ describe('GET /api/auth/me', () => {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
-
-    next = jest.fn();
   });
 
   afterEach(() => {
@@ -41,6 +38,10 @@ describe('GET /api/auth/me', () => {
       tier: 'pro',
       scans_remaining: 10,
       referral_code: 'INVITE-1234-5678',
+      username: 'testuser',
+      avatar_url: null,
+      bio: null,
+      location: null,
     };
 
     supabaseAdmin.from.mockReturnValue({
@@ -51,16 +52,10 @@ describe('GET /api/auth/me', () => {
       }),
     });
 
-    await handler(req, res, next);
+    await handler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({
-      id: mockUser.id,
-      email: mockUser.email,
-      tier: mockUser.tier,
-      scans_remaining: mockUser.scans_remaining,
-      referral_code: mockUser.referral_code,
-    });
+    expect(res.json).toHaveBeenCalledWith(mockUser);
   });
 
   it('should return 404 if user not found', async () => {
@@ -72,7 +67,7 @@ describe('GET /api/auth/me', () => {
       }),
     });
 
-    await handler(req, res, next);
+    await handler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith({

@@ -1,6 +1,11 @@
 const { supabaseAdmin } = require('../../../utils/supabase');
 const handler = require('../../../api/analyses/index');
 
+// Mock middleware - verifyAuth calls the callback immediately
+jest.mock('../../../middleware/auth', () => ({
+  verifyAuth: jest.fn((req, res, callback) => callback()),
+}));
+
 describe('GET /api/analyses', () => {
   let req, res;
 
@@ -20,6 +25,7 @@ describe('GET /api/analyses', () => {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
+
   });
 
   afterEach(() => {
