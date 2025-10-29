@@ -53,8 +53,8 @@ backend/package-lock.json
 backend/*.log
 
 # Google Cloud credentials
-backend/*.json
 backend/service-account*.json
+backend/credentials*.json
 
 # Logs
 *.log
