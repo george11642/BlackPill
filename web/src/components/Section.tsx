@@ -6,6 +6,7 @@ interface SectionProps {
   children: React.ReactNode;
   className?: string;
   background?: 'primary' | 'secondary';
+  id?: string;
 }
 
 export const Section: React.FC<SectionProps> = ({
@@ -14,11 +15,12 @@ export const Section: React.FC<SectionProps> = ({
   children,
   className = '',
   background = 'primary',
+  id,
 }) => {
   const bgClass = background === 'secondary' ? 'bg-[#1A1A2E]' : '';
 
   return (
-    <section className={`section ${bgClass} ${className}`}>
+    <section id={id} className={`section ${bgClass} ${className}`}>
       <div className="section-inner">
         {(title || subtitle) && (
           <div className="text-center mb-lg">
