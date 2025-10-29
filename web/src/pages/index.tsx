@@ -75,9 +75,9 @@ export default function Home() {
       interval: 'lifetime',
       scans: '1 scan',
       features: [
-        'Basic attractiveness score',
-        'Limited improvement tips',
-        'Photo auto-deletes after 90 days',
+        { text: 'Basic attractiveness score', included: true },
+        { text: 'Limited improvement tips', included: true },
+        { text: 'Photo auto-deletes after 90 days', included: true },
       ],
       cta: 'Download App',
       highlight: false,
@@ -89,10 +89,10 @@ export default function Home() {
       yearlyPrice: '$54.99/year',
       scans: '5 scans/month',
       features: [
-        'Full 6-dimension breakdown',
-        'Advanced AI tips',
-        'Ad-free experience',
-        'Referral bonuses',
+        { text: 'Full 6-dimension breakdown', included: true },
+        { text: 'Advanced AI tips', included: true },
+        { text: 'Ad-free experience', included: true },
+        { text: 'Referral bonuses', included: true },
       ],
       cta: 'Download App',
       highlight: false,
@@ -104,10 +104,10 @@ export default function Home() {
       yearlyPrice: '$109.89/year',
       scans: '20 scans/month',
       features: [
-        'All Basic features',
-        'Priority analysis (<10 seconds)',
-        'Comparison mode',
-        'Weekly progress reports',
+        { text: 'All Basic features', included: true },
+        { text: 'Priority analysis (<10 seconds)', included: true },
+        { text: 'Comparison mode', included: true },
+        { text: 'Weekly progress reports', included: true },
       ],
       cta: 'Download App',
       highlight: true,
@@ -119,11 +119,11 @@ export default function Home() {
       yearlyPrice: '$209.89/year',
       scans: 'Unlimited scans',
       features: [
-        'All Pro features',
-        'Unlimited analysis',
-        'Advanced analytics',
-        'Leaderboard badge',
-        'Priority support',
+        { text: 'All Pro features', included: true },
+        { text: 'Unlimited analysis', included: true },
+        { text: 'Advanced analytics', included: true },
+        { text: 'Leaderboard badge', included: true },
+        { text: 'Priority support', included: true },
       ],
       cta: 'Download App',
       highlight: false,
@@ -241,17 +241,49 @@ export default function Home() {
       >
         <div className="grid grid-4 gap-lg">
           {pricingTiers.map((tier, index) => (
-            <PricingCard
+            <div
               key={index}
-              tier={tier.tier}
-              price={tier.price}
-              interval={tier.interval}
-              yearlyPrice={tier.yearlyPrice}
-              scans={tier.scans}
-              features={tier.features}
-              cta={tier.cta}
-              highlight={tier.highlight}
-            />
+              className={`card relative ${tier.highlight ? 'ring-2 ring-[#FF0080] scale-105' : ''}`}
+            >
+              {tier.highlight && (
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <span className="badge badge-success">Most Popular</span>
+                </div>
+              )}
+              <div className="mb-md">
+                <h3 className="text-2xl font-bold mb-sm">{tier.tier}</h3>
+                <div className="mb-md">
+                  <span className="text-4xl font-bold text-gradient">{tier.price}</span>
+                  <span className="text-secondary ml-sm">{tier.interval}</span>
+                </div>
+                {tier.yearlyPrice && (
+                  <p className="text-xs text-tertiary">{tier.yearlyPrice}</p>
+                )}
+                <p className="text-sm text-secondary mt-md">{tier.scans}</p>
+              </div>
+
+              <div className="mb-lg">
+                <Button
+                  className={tier.highlight ? 'btn-primary w-full' : 'btn-secondary w-full'}
+                  size="lg"
+                  href="https://apps.apple.com"
+                >
+                  {tier.cta}
+                </Button>
+              </div>
+
+              <div className="border-t border-[rgba(255,255,255,0.1)] pt-md">
+                <p className="text-sm font-semibold mb-md">Includes:</p>
+                <ul className="space-y-sm">
+                  {tier.features.map((feature, fidx) => (
+                    <li key={fidx} className="text-sm flex items-center gap-sm text-[#00FF41]">
+                      <span>✓</span>
+                      {feature.text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           ))}
         </div>
       </Section>
@@ -264,12 +296,10 @@ export default function Home() {
       >
         <div className="grid grid-4 gap-lg text-center">
           <div>
-            <StatCounter end={200000} duration={2000} className="text-5xl font-bold text-pink" />
-            <p className="text-secondary mt-md">Downloads</p>
+            <StatCounter value={200000} label="Downloads" />
           </div>
           <div>
-            <StatCounter end={50000} duration={2000} className="text-5xl font-bold text-cyan" />
-            <p className="text-secondary mt-md">Monthly Analyses</p>
+            <StatCounter value={50000} label="Monthly Analyses" />
           </div>
           <div>
             <div className="text-5xl font-bold text-green">4.8★</div>

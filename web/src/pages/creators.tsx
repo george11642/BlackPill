@@ -242,8 +242,7 @@ export default function Creators() {
       <Section title="Trusted by Creators Worldwide" subtitle="Real results from real creators">
         <div className="grid grid-4 gap-lg text-center">
           <div>
-            <StatCounter end={10000} duration={2000} className="text-5xl font-bold text-pink" />
-            <p className="text-secondary mt-md">Active Creators</p>
+            <StatCounter value={10000} label="Active Creators" />
           </div>
           <div>
             <div className="text-5xl font-bold text-green">$5M+</div>
@@ -254,8 +253,7 @@ export default function Creators() {
             <p className="text-secondary mt-md">Creator Satisfaction</p>
           </div>
           <div>
-            <StatCounter end={150000} duration={2000} className="text-5xl font-bold text-yellow" />
-            <p className="text-secondary mt-md">Avg Monthly Referrals</p>
+            <StatCounter value={150000} label="Avg Monthly Referrals" />
           </div>
         </div>
       </Section>
