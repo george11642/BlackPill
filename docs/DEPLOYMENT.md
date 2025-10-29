@@ -109,142 +109,223 @@ Copy the Price IDs for each.
    - `invoice.payment_failed`
 4. Copy webhook signing secret
 
-## 4. Backend Deployment (Vercel)
+## Backend Deployment (Express.js on Vercel)
 
-### Setup Environment Variables
+### Prerequisites
+- Vercel account (https://vercel.com)
+- GitHub repository connected to Vercel
+- Environment variables configured
 
-In Vercel dashboard:
-
+### Production URL
 ```
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-SUPABASE_ANON_KEY=your-anon-key
+https://api.black-pill.app
+```
 
-OPENAI_API_KEY=sk-your-key
+### Environment Variables for Production
+Copy all variables from `backend/env.example` and set them in Vercel:
+
+```env
+# Supabase Configuration
+SUPABASE_URL=https://wzsxpxwwgaqiaoxdyhnf.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-production-service-role-key
+SUPABASE_ANON_KEY=your-production-anon-key
+
+# OpenAI Configuration
+OPENAI_API_KEY=your-production-openai-key
 OPENAI_MODEL=gpt-5-mini
 
-GOOGLE_CLOUD_PROJECT_ID=your-project-id
-GOOGLE_APPLICATION_CREDENTIALS=./service-account.json
+# Google Cloud Vision
+GOOGLE_CLOUD_PROJECT_ID=your-production-project-id
+GOOGLE_CLOUD_API_KEY=your-production-google-api-key
 
-STRIPE_SECRET_KEY=sk_live_your_key
-STRIPE_WEBHOOK_SECRET=whsec_your_secret
-STRIPE_PRICE_BASIC_MONTHLY=price_xxx
-STRIPE_PRICE_BASIC_ANNUAL=price_xxx
-STRIPE_PRICE_PRO_MONTHLY=price_xxx
-STRIPE_PRICE_PRO_ANNUAL=price_xxx
-STRIPE_PRICE_UNLIMITED_MONTHLY=price_xxx
-STRIPE_PRICE_UNLIMITED_ANNUAL=price_xxx
+# Stripe Configuration (use production keys)
+STRIPE_SECRET_KEY=sk_live_your_production_stripe_key
+STRIPE_WEBHOOK_SECRET=whsec_your_production_webhook_secret
 
-REDIS_URL=redis://default:xxx@xxx.upstash.io:xxx
-
+# Production URLs
 APP_URL=https://black-pill.app
 API_BASE_URL=https://api.black-pill.app
 
+# Redis (Upstash for production)
+REDIS_URL=redis://default:production-password@host:port
+
+# Resend Email
+RESEND_API_KEY=your-production-resend-key
+
+# Security
+JWT_SECRET=your-production-jwt-secret
+CRON_SECRET=your-production-cron-secret
+
+# Environment
 NODE_ENV=production
 ```
 
-### Deploy
+### Deployment Steps
 
-```bash
-cd backend
-npm install
-vercel --prod
+1. **Push to GitHub**
+   ```bash
+   git add .
+   git commit -m "Deploy to production"
+   git push origin main
+   ```
+
+2. **Vercel Auto-Deployment**
+   - Vercel will automatically build and deploy on push to main
+   - Check deployment status at https://vercel.com
+
+3. **Verify Deployment**
+   ```bash
+   curl https://api.black-pill.app/api/auth/me
+   ```
+
+### Production Features
+- Auto-scaling serverless functions
+- Global CDN distribution
+- Built-in SSL/TLS certificates
+- GitHub integration for CI/CD
+- Environment variable management
+- Real-time deployment logs
+
+---
+
+## Mobile Deployment (Flutter to App Store & Google Play)
+
+### Production API Configuration
+The mobile app automatically connects to the production backend:
+
+```dart
+// mobile/lib/config/env_config.dart
+apiBaseUrl = 'https://api.black-pill.app'
 ```
 
-Or connect GitHub repo for automatic deployments.
-
-### Add Google Service Account
-
-Since Vercel doesn't support file uploads easily:
-
-1. Convert service account JSON to base64
-2. Add as environment variable
-3. Decode in code, or use secrets management
-
-Alternative: Use Google Cloud Secret Manager
-
-## 5. Mobile App Deployment
-
-### iOS Setup
-
-1. Create App ID in Apple Developer
-2. Configure capabilities:
-   - Push Notifications
-   - Sign in with Apple (if using)
-3. Create provisioning profiles
-4. Configure Firebase (download GoogleService-Info.plist)
-
-### Android Setup
-
-1. Create app in Google Play Console
-2. Configure Firebase (download google-services.json)
-3. Set up signing keys
-
-### Build & Deploy
+### Build for iOS
 
 ```bash
 cd mobile
 
-# iOS
-flutter build ipa --release
-# Upload to App Store Connect via Xcode or Transporter
+# Build iOS app
+flutter build ios --release
 
-# Android
-flutter build appbundle --release
-# Upload to Google Play Console
+# Upload to App Store using Xcode
+open ios/Runner.xcworkspace
 ```
 
-### App Store Submission
+### Build for Android
 
-**App Store (iOS)**
-1. Create app in App Store Connect
-2. Fill in metadata, screenshots, privacy policy
-3. Submit for review (~1-3 days)
+```bash
+cd mobile
 
-**Google Play (Android)**
-1. Create app in Play Console
-2. Fill in store listing
-3. Submit for review (~1-2 days)
+# Build APK
+flutter build apk --release
 
-## 6. Firebase Setup (Push Notifications)
+# Or build App Bundle (recommended for Google Play)
+flutter build appbundle --release
 
-### Create Project
+# Upload to Google Play Console
+# - Open Google Play Console
+# - Create new release
+# - Upload generated AAB file
+```
 
-1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Create project
-3. Add iOS app
-4. Add Android app
-5. Download config files
+### App Configuration for Production
+All apps automatically use:
+- **API Base**: https://api.black-pill.app
+- **Supabase**: https://wzsxpxwwgaqiaoxdyhnf.supabase.co
+- **Analytics**: PostHog production
+- **Error Tracking**: Sentry production
+- **Push Notifications**: Firebase Cloud Messaging production
 
-### Configure Cloud Messaging
+---
 
-1. Upload APNs certificates (iOS)
-2. Configure FCM (Android automatically configured)
-3. Get server key for backend
+## Database (Supabase)
 
-## 7. Analytics & Monitoring
+### Production Database Status
+✅ **All 16 tables migrated**
+✅ **Row-Level Security (RLS) policies active**
+✅ **Storage buckets configured**
+✅ **Auto-update triggers enabled**
 
-### PostHog
+### Connection String
+```
+postgresql://[user]:[password]@db.wzsxpxwwgaqiaoxdyhnf.supabase.co:5432/postgres
+```
 
-1. Create account at [PostHog](https://posthog.com)
-2. Create project
-3. Copy API key
+### Backups
+Supabase automatically handles:
+- Daily backups
+- Point-in-time recovery (7 days)
+- Automated failover
 
-### Sentry
+---
 
-1. Create account at [Sentry](https://sentry.io)
-2. Create projects (one for backend, one for mobile)
-3. Copy DSN for each
+## Production Monitoring
 
-## 8. Custom Domain (Optional)
+### Error Tracking (Sentry)
+- All errors automatically reported
+- Set `SENTRY_DSN` in environment
 
-### Backend
+### Analytics (PostHog)
+- User behavior tracking
+- Funnel analysis
+- Feature usage metrics
 
-1. Add domain in Vercel
-2. Configure DNS records
-3. Wait for SSL certificate
+### Health Checks
+```bash
+# Backend health
+curl https://api.black-pill.app/api/auth/me
 
-### Deep Links
+# Database connection
+# Check Supabase dashboard at https://supabase.com
 
-1. Configure `.well-known/apple-app-site-association`
-2. Configure `.well-known/assetlinks.json`
+# Analytics
+# Check PostHog at https://posthog.com
+```
+
+---
+
+## Rollback Procedure
+
+### Backend Rollback
+1. Go to Vercel dashboard
+2. Select deployment to rollback to
+3. Click "Promote to Production"
+
+### Database Rollback
+1. Go to Supabase dashboard
+2. Navigate to "Backups"
+3. Select snapshot to restore
+4. Confirm restoration
+
+---
+
+## Cost Optimization
+
+### Vercel (Backend)
+- Free tier includes 100GB bandwidth/month
+- Pro: $20/month for additional features
+
+### Supabase (Database)
+- Free tier: 500MB storage, 1GB egress
+- Pro: $25/month for 8GB storage, 250GB egress
+
+### Third-Party Services
+- OpenAI: ~$0.50-2 per 1M tokens
+- Google Cloud Vision: $1-4 per 1000 requests
+- Stripe: 2.9% + $0.30 per transaction
+- Resend: $0.20 per email
+- Redis (Upstash): Pay-per-request
+
+---
+
+## Security Checklist
+
+- [ ] All API keys rotated and stored securely
+- [ ] HTTPS enabled on all endpoints
+- [ ] Database backups verified
+- [ ] CORS configured correctly
+- [ ] Rate limiting enabled
+- [ ] Error messages don't leak sensitive info
+- [ ] JWT tokens use secure signing
+- [ ] Stripe webhooks verified
+- [ ] OAuth credentials secure
+- [ ] Environment variables not exposed
