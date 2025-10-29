@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "api/**/*.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/index.js"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/check-renewals",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/recalculate-leaderboard",
+      "schedule": "0 0 * * 0"
+    }
+  ]
+}
+
