@@ -102,12 +102,8 @@ export default function Subscribe() {
     setError(null);
 
     try {
-      // For app users, we need to authenticate them first or use their session
-      // For web users, we'll create checkout session after email validation
-      
-      // For app users, we need to call the backend API with the correct base URL
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://black-pill.app';
-      const response = await fetch(`${apiBaseUrl}/api/subscriptions/create-checkout`, {
+      // Call Next.js API proxy route which forwards to backend
+      const response = await fetch('/api/subscriptions/create-checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -130,13 +126,32 @@ export default function Subscribe() {
       
       // Redirect to Stripe checkout
       if (data.checkout_url) {
+        // Track analytics before redirect
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+          (window as any).gtag('event', 'checkout_started', {
+            tier: selectedTier,
+            interval: billingInterval,
+            source: isAppSource ? 'app' : 'web',
+          });
+        }
+        
         window.location.href = data.checkout_url;
       } else {
-        throw new Error('No checkout URL received');
+        throw new Error('No checkout URL received from server');
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred. Please try again.');
+      console.error('Checkout error:', err);
+      const errorMessage = err.message || 'An error occurred. Please try again.';
+      setError(errorMessage);
       setIsLoading(false);
+      
+      // Track error analytics
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'checkout_error', {
+          error: errorMessage,
+          tier: selectedTier,
+        });
+      }
     }
   };
 

@@ -11,6 +11,16 @@ const stripe = new Stripe(config.stripe.secretKey);
  * Supports both authenticated (app) and unauthenticated (web) flows
  */
 module.exports = async (req, res) => {
+  // Set CORS headers to allow web frontend requests
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // Handle preflight OPTIONS request
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   try {
     const { tier, interval, coupon_code, email, source, user_id } = req.body;
 
@@ -110,7 +120,7 @@ module.exports = async (req, res) => {
       ],
       mode: 'subscription',
       success_url: successUrl,
-      cancel_url: `${config.app.url}/subscribe/cancel`,
+      cancel_url: `${config.app.url}/cancel`,
       metadata: {
         tier,
         source: checkoutSource,
@@ -140,6 +150,10 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('Checkout creation error:', error);
+    
+    // Ensure CORS headers are set even on error
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
     res.status(500).json({
       error: 'Failed to create checkout session',
       message: error.message,
