@@ -8,7 +8,7 @@ export default function Home() {
       <nav className="border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="text-2xl font-bold bg-gradient-to-r from-[#FF0080] to-[#00D9FF] bg-clip-text text-transparent">
-            Black Pill
+            BlackPill
           </div>
           <div className="flex gap-4">
             <Link href="/dashboard">
