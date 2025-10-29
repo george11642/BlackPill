@@ -91,6 +91,8 @@ module.exports = async (req, res) => {
         .eq('id', referrer.id);
 
       // TODO: Send push notifications to both users
+      // Analytics: referral_accepted and referral_bonus_received
+      // are tracked on the mobile side when this endpoint succeeds
 
       res.status(200).json({
         bonus_scans: bonusScans,

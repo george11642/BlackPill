@@ -1,12 +1,16 @@
 const { verifyAuth } = require('../../middleware/auth');
 const { supabaseAdmin } = require('../../utils/supabase');
+const { cacheMiddleware } = require('../../utils/cache');
 
 /**
  * GET /api/creators/dashboard
  * Get creator dashboard data
+ * Cached for 1 hour as per PRD Section 4.4
  */
 module.exports = async (req, res) => {
-  await verifyAuth(req, res, async () => {
+  // Apply caching (1 hour = 3600 seconds)
+  await cacheMiddleware(3600)(req, res, async () => {
+    await verifyAuth(req, res, async () => {
     try {
       // Get creator record
       const { data: creator, error } = await supabaseAdmin
@@ -102,6 +106,7 @@ module.exports = async (req, res) => {
         message: error.message,
       });
     }
+    });
   });
 };
 

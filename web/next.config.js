@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['supabase.co', 'blackpill.app'],
+    domains: ['supabase.co', 'black-pill.app'],
   },
 }
 

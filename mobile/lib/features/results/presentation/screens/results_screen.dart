@@ -225,9 +225,22 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Improvement Tips',
-                          style: Theme.of(context).textTheme.headlineMedium,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Improvement Tips',
+                              style: Theme.of(context).textTheme.headlineMedium,
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.lightbulb_outline, size: 20),
+                              onPressed: () {
+                                // Track tips viewed
+                                ref.read(analyticsServiceProvider).trackTipsViewed();
+                              },
+                              color: AppColors.neonCyan,
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 16),
                         ...tips.map((tip) => _buildTip(

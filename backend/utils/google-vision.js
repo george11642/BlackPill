@@ -1,5 +1,6 @@
 const vision = require('@google-cloud/vision');
 const config = require('./config');
+const { flagContentForReview } = require('./flag-content');
 
 // Create a Vision API client
 const client = new vision.ImageAnnotatorClient({
@@ -107,18 +108,51 @@ function validateImageQuality(metrics) {
 
 /**
  * Check for explicit content using SafeSearch
+ * @param {string} imageUri - Image URI
+ * @param {string} userId - User ID (for flagging)
+ * @param {string} analysisId - Analysis ID (for flagging)
  */
-async function checkSafeSearch(imageUri) {
+async function checkSafeSearch(imageUri, userId = null, analysisId = null) {
   try {
     const [result] = await client.safeSearchDetection(imageUri);
     const detections = result.safeSearchAnnotation;
 
+    // Check for explicit content
     if (detections.adult === 'VERY_LIKELY' || detections.adult === 'LIKELY') {
+      // Flag for review if we have IDs
+      if (userId && analysisId) {
+        await flagContentForReview(
+          analysisId,
+          userId,
+          `Explicit content detected (${detections.adult})`,
+          'system_safesearch'
+        );
+      }
       throw new Error('Image contains inappropriate content');
     }
 
     if (detections.violence === 'VERY_LIKELY') {
+      if (userId && analysisId) {
+        await flagContentForReview(
+          analysisId,
+          userId,
+          `Violent content detected`,
+          'system_safesearch'
+        );
+      }
       throw new Error('Image contains violent content');
+    }
+
+    // Flag for manual review if possibly problematic
+    if (userId && analysisId) {
+      if (detections.adult === 'POSSIBLE' || detections.violence === 'POSSIBLE') {
+        await flagContentForReview(
+          analysisId,
+          userId,
+          `Possibly inappropriate content (adult: ${detections.adult}, violence: ${detections.violence})`,
+          'system_safesearch'
+        );
+      }
     }
 
     return detections;

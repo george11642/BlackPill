@@ -14,10 +14,6 @@ class EnvConfig {
   // Stripe
   static late String stripePublishableKey;
 
-  // Google OAuth
-  static late String googleClientIdAndroid;
-  static late String googleClientIdIos;
-
   // PostHog
   static late String posthogApiKey;
   static late String posthogHost;
@@ -51,22 +47,12 @@ class EnvConfig {
       
       apiBaseUrl = const String.fromEnvironment(
         'API_BASE_URL',
-        defaultValue: 'https://api.black-pill.app',
+        defaultValue: 'https://black-pill.app',
       );
       
       stripePublishableKey = const String.fromEnvironment(
         'STRIPE_PUBLISHABLE_KEY',
         defaultValue: 'pk_test_your_key',
-      );
-      
-      googleClientIdAndroid = const String.fromEnvironment(
-        'GOOGLE_CLIENT_ID_ANDROID',
-        defaultValue: '',
-      );
-      
-      googleClientIdIos = const String.fromEnvironment(
-        'GOOGLE_CLIENT_ID_IOS',
-        defaultValue: '',
       );
       
       posthogApiKey = const String.fromEnvironment(
@@ -91,7 +77,7 @@ class EnvConfig {
       
       deepLinkHost = const String.fromEnvironment(
         'DEEP_LINK_HOST',
-        defaultValue: 'blackpill.app',
+        defaultValue: 'black-pill.app',
       );
     } catch (e) {
       debugPrint('Error loading environment config: $e');

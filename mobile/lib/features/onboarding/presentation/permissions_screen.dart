@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../../core/services/analytics_service.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/glass_card.dart';
@@ -43,6 +44,9 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
       });
 
       if (status.isGranted) {
+        // Track permissions granted
+        ref.read(analyticsServiceProvider).trackOnboardingStepCompleted('permissions');
+        
         // Navigate to home/camera screen
         if (mounted) {
           context.go('/home');

@@ -346,7 +346,7 @@ Generate share card for analysis.
   "score": 7.8,
   "breakdown": {...},
   "referral_code": "INVITE-1234-5678",
-  "share_url": "https://blackpill.app/ref/INVITE-1234-5678",
+  "share_url": "https://black-pill.app/ref/INVITE-1234-5678",
   "image_url": "https://..."
 }
 ```
@@ -479,7 +479,7 @@ Create discount coupon.
   "code": "CREATOR50",
   "discount_percent": 50,
   "max_uses": 100,
-  "tracking_url": "https://blackpill.app/subscribe?coupon=CREATOR50"
+  "tracking_url": "https://black-pill.app/subscribe?coupon=CREATOR50"
 }
 ```
 
@@ -645,7 +645,7 @@ All error responses follow this format:
 
 ### Test Credentials
 ```
-Email: test@blackpill.app
+Email: test@black-pill.app
 Password: testpass123
 ```
 
@@ -693,10 +693,10 @@ All endpoints are currently at `/api/*`. Future versions will use `/api/v2/*`.
 
 **Issues:**
 - GitHub: https://github.com/yourorg/black-pill/issues
-- Email: api-support@blackpill.app
+- Email: api-support@black-pill.app
 
 **Status:**
-- https://status.blackpill.app
+- https://status.black-pill.app
 
 ---
 

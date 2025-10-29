@@ -51,7 +51,7 @@ Or connect GitHub repo for automatic deployments.
 Creators must be approved in the main app first. They can then access the dashboard at:
 
 ```
-https://creators.blackpill.app
+https://creators.black-pill.app
 ```
 
 Login uses the same credentials as the mobile app.

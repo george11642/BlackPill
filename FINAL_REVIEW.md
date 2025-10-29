@@ -89,7 +89,7 @@ After thorough review of the 1,379-line PRD, here's the complete status:
 
 #### F4: Referral System (100% Complete)
 - ✅ Auto-generate unique referral code on signup (format: INVITE-XXXX-YYYY)
-- ✅ Deep link handling (NEW - just added): `blackpill://ref/[code]` and `https://blackpill.app/ref/[code]`
+- ✅ Deep link handling (NEW - just added): `blackpill://ref/[code]` and `https://black-pill.app/ref/[code]`
 - ✅ Referral acceptance flow (all 5 steps implemented)
 - ✅ Both users receive 5 bonus scans
 - ✅ Push notifications (NEW - service added)

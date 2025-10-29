@@ -196,5 +196,18 @@ class AnalyticsService {
   void trackAchievementUnlocked(String badge) {
     track('achievement_unlocked', properties: {'badge': badge});
   }
+
+  // Creator events
+  void trackCreatorApplied() {
+    track('creator_applied');
+  }
+
+  void trackAffiliateLinkClicked(String creatorId) {
+    track('affiliate_link_clicked', properties: {'creator_id': creatorId});
+  }
+
+  void trackCouponApplied(String code) {
+    track('coupon_applied', properties: {'code': code});
+  }
 }
 

@@ -27,7 +27,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## Contact
 
-For licensing inquiries: legal@blackpill.app
+For licensing inquiries: legal@black-pill.app
 
 ---
 

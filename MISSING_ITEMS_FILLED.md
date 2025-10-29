@@ -48,7 +48,7 @@ After comprehensive review of the PRD against the codebase, I found and implemen
 - **Location**: `mobile/lib/core/services/deep_link_service.dart`
 - **Features**:
   - Handles `blackpill://ref/[code]` links
-  - Handles `https://blackpill.app/ref/[code]` web links
+  - Handles `https://black-pill.app/ref/[code]` web links
   - Automatic referral code acceptance
   - Listens for links while app is running
   - Handles initial link when app launches

@@ -203,7 +203,7 @@ TEXT:
 - Breakdown: 6 categories with scores
 - Referral code: Mono font, centered
 - QR code: 120x120px, pink color
-- Watermark: "blackpill.app" footer
+- Watermark: "black-pill.app" footer
 - Generated server-side (Vercel function + Puppeteer)
 
 **Analytics Tracking:**
@@ -217,7 +217,7 @@ TEXT:
 **Requirements:**
 
 - Auto-generate unique referral code on signup (format: `INVITE-XXXX-YYYY`)
-- Deep link handling: `blackpill://ref/[code]` and `https://blackpill.app/ref/[code]`
+- Deep link handling: `blackpill://ref/[code]` and `https://black-pill.app/ref/[code]`
 - Referral acceptance flow:
 
   1. New user clicks link
@@ -267,7 +267,7 @@ TEXT:
 **Checkout Flow:**
 
 1. User taps "Subscribe to [Tier]"
-2. Redirect to web: `https://blackpill.app/subscribe?tier=[tier]&user_id=[id]`
+2. Redirect to web: `https://black-pill.app/subscribe?tier=[tier]&user_id=[id]`
 3. Stripe Checkout (email pre-filled, card input)
 4. Success → Redirect to app: `blackpill://subscribe/success`
 5. Webhook updates `subscriptions` table
@@ -1373,7 +1373,7 @@ coupon_applied (code: string)
 | 1.0 | Oct 27, 2025 | Initial PRD (comprehensive spec) | Product Team |
 
 ---
-Also i want just 2 env files, one in backend and one in mobile
+Also i want just 2 env files, one in backend and one in mobile.
 **END OF DOCUMENT**
 
 This PRD is the authoritative specification for Black Pill. All development must adhere to these requirements. Changes require Product Team approval and version increment.

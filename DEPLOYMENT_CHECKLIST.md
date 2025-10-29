@@ -121,8 +121,8 @@ STRIPE_PRICE_UNLIMITED_ANNUAL=price_...
 REDIS_URL=redis://default:xxx@xxx.upstash.io:xxx
 
 # App
-APP_URL=https://blackpill.app
-API_BASE_URL=https://api.blackpill.app
+APP_URL=https://black-pill.app
+API_BASE_URL=https://api.black-pill.app
 
 # Environment
 NODE_ENV=production
@@ -172,7 +172,7 @@ POSTHOG_API_KEY=phc_...
 POSTHOG_HOST=https://app.posthog.com
 SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx
 DEEP_LINK_SCHEME=blackpill
-DEEP_LINK_HOST=blackpill.app
+DEEP_LINK_HOST=black-pill.app
 ```
 
 ### 2. iOS Preparation
@@ -184,7 +184,7 @@ DEEP_LINK_HOST=blackpill.app
 - [ ] Create App ID in Apple Developer
 - [ ] Create provisioning profiles
 - [ ] Configure deep linking:
-  - Add `blackpill.app` to Associated Domains
+  - Add `black-pill.app` to Associated Domains
 
 ### 3. Android Preparation
 - [ ] Update package name in build.gradle
@@ -225,7 +225,7 @@ flutter build appbundle --release
 - [ ] Fill metadata (name, description, keywords)
 - [ ] Upload screenshots (6.5", 5.5", iPad)
 - [ ] Set category: Health & Fitness
-- [ ] Privacy policy URL: https://blackpill.app/privacy
+- [ ] Privacy policy URL: https://black-pill.app/privacy
 - [ ] Age rating: 17+ (mature content)
 - [ ] Submit for review
 
@@ -243,7 +243,7 @@ flutter build appbundle --release
 ## 🌐 Domain & Deep Linking
 
 ### 1. Domain Setup
-- [ ] Purchase domain: blackpill.app
+- [ ] Purchase domain: black-pill.app
 - [ ] Point to Vercel (backend)
 - [ ] Configure SSL (Vercel automatic)
 
@@ -329,8 +329,8 @@ flutter build appbundle --release
 - Flutter: https://flutter.dev/docs
 
 **Business:**
-- Email: support@blackpill.app
-- Status: https://status.blackpill.app (set up with Statuspage.io)
+- Email: support@black-pill.app
+- Status: https://status.black-pill.app (set up with Statuspage.io)
 
 ---
 

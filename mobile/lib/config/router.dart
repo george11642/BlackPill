@@ -17,6 +17,7 @@ import '../features/community/presentation/screens/community_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/onboarding/presentation/permissions_screen.dart';
+import '../features/creators/presentation/screens/creator_application_screen.dart';
 import '../core/services/auth_service.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -92,6 +93,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/creators/apply',
+        builder: (context, state) => const CreatorApplicationScreen(),
       ),
       GoRoute(
         path: '/analysis/loading',

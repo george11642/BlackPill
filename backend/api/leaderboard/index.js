@@ -1,12 +1,16 @@
 const { createRateLimiter } = require('../../middleware/rate-limit');
 const { supabaseAdmin } = require('../../utils/supabase');
+const { cacheMiddleware } = require('../../utils/cache');
 
 /**
  * GET /api/leaderboard
  * Get score leaderboard (weekly or all-time)
+ * Cached for 15 minutes as per PRD Section 4.4
  */
 module.exports = async (req, res) => {
-  await createRateLimiter('leaderboard')(req, res, async () => {
+  // Apply caching first (15 minutes = 900 seconds)
+  await cacheMiddleware(900)(req, res, async () => {
+    await createRateLimiter('leaderboard')(req, res, async () => {
     try {
       const limit = parseInt(req.query.limit) || 10;
       const offset = parseInt(req.query.offset) || 0;
@@ -87,6 +91,7 @@ module.exports = async (req, res) => {
         message: error.message,
       });
     }
+    });
   });
 };
 

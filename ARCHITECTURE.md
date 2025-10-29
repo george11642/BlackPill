@@ -380,7 +380,7 @@ Total Time: 2-5 seconds
 1. USER SHARES LINK
    ├─ User taps "Share" in Referral Stats
    ├─ Share: "Get 5 free scans! Use code: INVITE-1234-5678"
-   └─ Share URL: https://blackpill.app/ref/INVITE-1234-5678
+   └─ Share URL: https://black-pill.app/ref/INVITE-1234-5678
       ↓
 2. FRIEND CLICKS LINK
    ├─ Deep link opens app (or app store)
@@ -645,7 +645,7 @@ Notification appears
 
 ### Deep Linking
 ```
-User clicks: https://blackpill.app/ref/INVITE-1234-5678
+User clicks: https://black-pill.app/ref/INVITE-1234-5678
    ↓
 ┌───────────┴────────────┐
 │                        │

@@ -691,7 +691,7 @@ Score: Center, 96px, neonPink
 Breakdown: 6 bars, labels left
 Referral Code: Bottom, mono font
 QR Code: 120x120px, pink tint
-Watermark: "blackpill.app" footer
+Watermark: "black-pill.app" footer
 ```
 
 ---

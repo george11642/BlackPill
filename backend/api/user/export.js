@@ -69,7 +69,7 @@ module.exports = async (req, res) => {
         export_date: new Date().toISOString(),
         data_rights_info: {
           gdpr: 'You have the right to access, rectify, delete, and port your data.',
-          contact: 'support@blackpill.app',
+          contact: 'support@black-pill.app',
         },
       };
 

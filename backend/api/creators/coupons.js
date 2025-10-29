@@ -59,7 +59,7 @@ module.exports = async (req, res) => {
       }
 
       // Generate tracking URL
-      const trackingUrl = `https://blackpill.app/subscribe?coupon=${coupon.code}`;
+      const trackingUrl = `https://black-pill.app/subscribe?coupon=${coupon.code}`;
 
       res.status(200).json({
         coupon_id: coupon.id,

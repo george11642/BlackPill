@@ -78,7 +78,7 @@ After a meticulous line-by-line review of the PRD, I found **5 missing implement
 ## 🔍 Gap #4: URL Launcher for Stripe Checkout ✅ FIXED
 
 **PRD Requirement (Section 3.1, F5):**
-> "Redirect to web: https://blackpill.app/subscribe?tier=[tier]&user_id=[id]"
+> "Redirect to web: https://black-pill.app/subscribe?tier=[tier]&user_id=[id]"
 
 **What Was Missing:**
 - Stripe checkout URL was just shown in a toast

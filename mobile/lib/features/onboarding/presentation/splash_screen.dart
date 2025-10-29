@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/services/analytics_service.dart';
 import '../../../shared/theme/app_colors.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -20,6 +21,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void initState() {
     super.initState();
     
+    // Track onboarding started
+    Future.microtask(() {
+      ref.read(analyticsServiceProvider).trackOnboardingStarted();
+    });
+    
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -34,6 +40,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     // Navigate after splash
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
+        ref.read(analyticsServiceProvider).trackOnboardingStepCompleted('welcome');
         context.go('/auth/login');
       }
     });

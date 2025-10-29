@@ -19,6 +19,7 @@ class AuthService {
     required String email,
     required String password,
     required bool ageVerified,
+    bool marketingOptIn = false,
   }) async {
     final response = await _supabase.auth.signUp(
       email: email,
@@ -26,6 +27,7 @@ class AuthService {
       emailRedirectTo: 'blackpill://auth/callback',
       data: {
         'age_verified': ageVerified,
+        'marketing_opt_in': marketingOptIn,
       },
     );
     

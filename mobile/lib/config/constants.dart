@@ -64,9 +64,9 @@ class AppConstants {
   static const Duration retryDelay = Duration(seconds: 1);
   
   // Support
-  static const String supportEmail = 'support@blackpill.app';
-  static const String privacyPolicyUrl = 'https://blackpill.app/privacy';
-  static const String termsOfServiceUrl = 'https://blackpill.app/terms';
+  static const String supportEmail = 'support@black-pill.app';
+  static const String privacyPolicyUrl = 'https://black-pill.app/privacy';
+  static const String termsOfServiceUrl = 'https://black-pill.app/terms';
 }
 
 /// Subscription tier enum

@@ -286,7 +286,7 @@ This will watch for changes and regenerate code automatically.
 
 - Check existing issues on GitHub
 - Review the PRD for specifications
-- Contact dev team: dev@blackpill.app
+- Contact dev team: dev@black-pill.app
 
 ## Development Tips
 

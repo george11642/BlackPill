@@ -22,6 +22,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _ageVerified = false;
   bool _termsAccepted = false;
+  bool _marketingOptIn = false;
   bool _isLoading = false;
 
   @override
@@ -66,12 +67,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
         ageVerified: _ageVerified,
+        marketingOptIn: _marketingOptIn,
       );
 
       ref.read(analyticsServiceProvider).trackSignupEmailCompleted();
+      ref.read(analyticsServiceProvider).trackOnboardingStepCompleted('signup');
+      ref.read(analyticsServiceProvider).trackOnboardingCompleted();
 
       if (mounted) {
-        context.go('/camera');
+        context.go('/onboarding/permissions');
       }
     } catch (e) {
       if (mounted) {
@@ -255,6 +259,23 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   controlAffinity: ListTileControlAffinity.leading,
                   contentPadding: EdgeInsets.zero,
                   activeColor: AppColors.neonPink,
+                ),
+                
+                // Marketing opt-in (default unchecked as per PRD)
+                CheckboxListTile(
+                  value: _marketingOptIn,
+                  onChanged: (value) {
+                    setState(() => _marketingOptIn = value ?? false);
+                  },
+                  title: Text(
+                    'Send me tips, updates, and special offers (optional)',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: AppColors.neonCyan,
                 ),
                 
                 const SizedBox(height: 24),

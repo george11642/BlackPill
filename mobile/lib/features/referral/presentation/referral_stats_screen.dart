@@ -64,7 +64,7 @@ class _ReferralStatsScreenState extends ConsumerState<ReferralStatsScreen> {
   void _shareReferralLink() {
     if (_stats?['referral_code'] != null) {
       final code = _stats!['referral_code'];
-      final link = 'https://blackpill.app/ref/$code';
+      final link = 'https://black-pill.app/ref/$code';
       
       Share.share(
         'Get 5 free scans on Black Pill! Use my referral code: $code\n\n$link',

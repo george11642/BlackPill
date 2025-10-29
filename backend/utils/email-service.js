@@ -14,7 +14,7 @@ async function sendEmail({ to, subject, html }) {
 
   try {
     const data = await resend.emails.send({
-      from: 'Black Pill <noreply@blackpill.app>',
+      from: 'Black Pill <noreply@black-pill.app>',
       to,
       subject,
       html,
@@ -60,11 +60,11 @@ async function sendRenewalReminder(userEmail, subscriptionData) {
             <li>Priority support</li>
           </ul>
           <p>No action needed - you're all set!</p>
-          <p>Want to make changes? <a href="https://blackpill.app/settings" class="cta">Manage Subscription</a></p>
+          <p>Want to make changes? <a href="https://black-pill.app/settings" class="cta">Manage Subscription</a></p>
         </div>
         <div class="footer">
           <p>Black Pill - Be Honest About Yourself</p>
-          <p><a href="https://blackpill.app/unsubscribe">Unsubscribe from emails</a></p>
+          <p><a href="https://black-pill.app/unsubscribe">Unsubscribe from emails</a></p>
         </div>
       </div>
     </body>
@@ -103,8 +103,8 @@ async function sendPaymentFailedEmail(userEmail, subscriptionData) {
           <p>Hi there,</p>
           <p>We couldn't process your payment for the <strong>${tier}</strong> subscription.</p>
           <p>Please update your payment method to continue enjoying Black Pill.</p>
-          <p><a href="https://blackpill.app/settings" class="cta">Update Payment Method</a></p>
-          <p>If you have questions, contact us at support@blackpill.app</p>
+          <p><a href="https://black-pill.app/settings" class="cta">Update Payment Method</a></p>
+          <p>If you have questions, contact us at support@black-pill.app</p>
         </div>
       </div>
     </body>
