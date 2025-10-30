@@ -4,9 +4,8 @@ import 'package:app_links/app_links.dart';
 import 'dart:async';
 
 import '../../config/env_config.dart';
-import 'api_service.dart';
 import 'analytics_service.dart';
-import '../../features/referral/data/referral_repository.dart';
+import 'api_service.dart';
 
 final deepLinkServiceProvider = Provider<DeepLinkService>((ref) {
   return DeepLinkService(ref);
@@ -15,21 +14,23 @@ final deepLinkServiceProvider = Provider<DeepLinkService>((ref) {
 class DeepLinkService {
   final ProviderRef ref;
   final AppLinks _appLinks = AppLinks();
-  Stream<String>? _linkSubscription;
+  StreamSubscription<Uri>? _linkSubscription;
+  BuildContext? _appContext;
 
   DeepLinkService(this.ref);
 
-  /// Initialize deep link handling
-  Future<void> initialize(BuildContext context) async {
-    // Handle link when app is opened from terminated state
-    final initialLink = await _appLinks.getInitialLink();
-    if (initialLink != null) {
-      _handleDeepLink(initialLink.toString(), context);
-    }
+  /// Set app context for dialogs
+  void setAppContext(BuildContext context) {
+    _appContext = context;
+  }
 
+  /// Initialize deep link handling
+  Future<void> initialize() async {
     // Handle link when app is opened from background
     _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
-      _handleDeepLink(uri.toString(), context);
+      if (_appContext != null) {
+        _handleDeepLink(uri.toString(), _appContext!);
+      }
     });
   }
 
@@ -80,17 +81,19 @@ class DeepLinkService {
             subscriptionConfirmed = true;
             
             // Close loading dialog and show success
-            Navigator.of(context).pop();
-            _showSuccessDialog(
-              context,
-              'Subscription Active! 🎉',
-              'Your subscription is now active. You have unlimited access to all features!',
-              () {
-                Navigator.of(context).pop();
-                // Navigate to home screen
-                Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-              },
-            );
+            if (context.mounted) {
+              Navigator.of(context).pop();
+              _showSuccessDialog(
+                context,
+                'Subscription Active! 🎉',
+                'Your subscription is now active. You have unlimited access to all features!',
+                () {
+                  Navigator.of(context).pop();
+                  // Navigate to home screen
+                  Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+                },
+              );
+            }
           }
         } catch (e) {
           print('Error checking subscription status: $e');
@@ -105,11 +108,27 @@ class DeepLinkService {
       }
 
       if (!subscriptionConfirmed) {
-        Navigator.of(context).pop(); // Close loading dialog
+        if (context.mounted) {
+          Navigator.of(context).pop(); // Close loading dialog
+          _showErrorDialog(
+            context,
+            'Subscription Confirmation Timeout',
+            'Your subscription is being processed. Please check your subscription status in Settings.',
+            showRetry: true,
+            onRetry: () {
+              Navigator.of(context).pop();
+              _handleSubscriptionSuccess(link, context);
+            },
+          );
+        }
+      }
+    } catch (error) {
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close loading dialog if open
         _showErrorDialog(
           context,
-          'Subscription Confirmation Timeout',
-          'Your subscription is being processed. Please check your subscription status in Settings.',
+          'Subscription Error',
+          'An error occurred while confirming your subscription: $error',
           showRetry: true,
           onRetry: () {
             Navigator.of(context).pop();
@@ -117,18 +136,6 @@ class DeepLinkService {
           },
         );
       }
-    } catch (error) {
-      Navigator.of(context).pop(); // Close loading dialog if open
-      _showErrorDialog(
-        context,
-        'Subscription Error',
-        'An error occurred while confirming your subscription: $error',
-        showRetry: true,
-        onRetry: () {
-          Navigator.of(context).pop();
-          _handleSubscriptionSuccess(link, context);
-        },
-      );
     }
   }
 
@@ -136,15 +143,12 @@ class DeepLinkService {
   Future<void> _handleReferralCode(String link, BuildContext context) async {
     try {
       // Extract referral code from URL
-      final uri = Uri.parse(link);
-      
-      // Handle both https://black-pill.app/ref/CODE and blackpill://ref/CODE
       String? referralCode;
       
       if (link.contains('black-pill.app/ref/')) {
         final parts = link.split('/ref/');
         if (parts.length == 2) {
-          referralCode = parts[1].split('?').first; // Remove query params if any
+          referralCode = parts[1].split('?').first;
         }
       } else if (link.contains('blackpill://ref/')) {
         final parts = link.split('blackpill://ref/');
@@ -172,47 +176,51 @@ class DeepLinkService {
       final result = await apiService.acceptReferral(referralCode);
       
       // Close loading dialog
-      Navigator.of(context).pop();
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        
+        // Track successful acceptance and bonus received
+        ref.read(analyticsServiceProvider).trackReferralAccepted();
+        ref.read(analyticsServiceProvider).trackReferralBonusReceived();
 
-      // Track successful acceptance and bonus received
-      ref.read(analyticsServiceProvider).trackReferralAccepted();
-      ref.read(analyticsServiceProvider).trackReferralBonusReceived();
-
-      // Show success notification/dialog
-      _showSuccessDialog(
-        context,
-        '${result['referrer_name']} Invited You! 🎁',
-        result['message'] ?? 'You received ${result['bonus_scans'] ?? 5} bonus scans!',
-        () {
-          Navigator.of(context).pop();
-          // Navigate to referral stats screen
-          Navigator.of(context).pushNamed('/referral-stats');
-        },
-      );
-    } catch (e) {
-      Navigator.of(context).pop(); // Close loading dialog if open
-      
-      String errorMessage = 'Failed to process referral. ';
-      if (e.toString().contains('already used')) {
-        errorMessage += 'You have already used a referral code.';
-      } else if (e.toString().contains('own referral')) {
-        errorMessage += 'You cannot use your own referral code.';
-      } else if (e.toString().contains('not found')) {
-        errorMessage += 'This referral code is not valid.';
-      } else {
-        errorMessage += 'Please try again.';
+        // Show success notification/dialog
+        _showSuccessDialog(
+          context,
+          '${result['referrer_name']} Invited You! 🎁',
+          result['message'] ?? 'You received ${result['bonus_scans'] ?? 5} bonus scans!',
+          () {
+            Navigator.of(context).pop();
+            // Navigate to referral stats screen
+            Navigator.of(context).pushNamed('/referral-stats');
+          },
+        );
       }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close loading dialog if open
+        
+        String errorMessage = 'Failed to process referral. ';
+        if (e.toString().contains('already used')) {
+          errorMessage += 'You have already used a referral code.';
+        } else if (e.toString().contains('own referral')) {
+          errorMessage += 'You cannot use your own referral code.';
+        } else if (e.toString().contains('not found')) {
+          errorMessage += 'This referral code is not valid.';
+        } else {
+          errorMessage += 'Please try again.';
+        }
 
-      _showErrorDialog(
-        context,
-        'Referral Error',
-        errorMessage,
-        showRetry: true,
-        onRetry: () {
-          Navigator.of(context).pop();
-          _handleReferralCode(link, context);
-        },
-      );
+        _showErrorDialog(
+          context,
+          'Referral Error',
+          errorMessage,
+          showRetry: true,
+          onRetry: () {
+            Navigator.of(context).pop();
+            _handleReferralCode(link, context);
+          },
+        );
+      }
     }
   }
 
@@ -320,7 +328,7 @@ class DeepLinkService {
 
   /// Dispose
   void dispose() {
-    _linkSubscription?.asPauseFuture().then((_) {});
+    _linkSubscription?.cancel();
   }
 }
 

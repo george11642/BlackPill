@@ -14,12 +14,13 @@ class CommunityScreen extends ConsumerStatefulWidget {
 }
 
 class _CommunityScreenState extends ConsumerState<CommunityScreen> {
-  final List<Map<String, dynamic>> _publicAnalyses = [];
+  late List<Map<String, dynamic>> _publicAnalyses;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _publicAnalyses = [];
     _loadPublicAnalyses();
   }
 

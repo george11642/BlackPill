@@ -1,9 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { Button } from './Button';
 
 export const Navigation: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check if user is authenticated
+    const checkAuth = () => {
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('token');
+        setIsAuthenticated(!!token);
+      }
+    };
+    
+    checkAuth();
+    // Also check on route changes
+    router.events?.on('routeChangeComplete', checkAuth);
+    
+    return () => {
+      router.events?.off('routeChangeComplete', checkAuth);
+    };
+  }, [router]);
 
   return (
     <nav className="border-b border-[rgba(255,255,255,0.1)] sticky top-0 z-50 bg-[#0F0F1E]/95 backdrop-blur">
@@ -24,14 +45,28 @@ export const Navigation: React.FC = () => {
             <Link href="/creators" className="text-secondary hover:text-white transition">
               For Creators
             </Link>
-            <a href="/#faq" className="text-secondary hover:text-white transition">
+            <Link href="/#faq" className="text-secondary hover:text-white transition">
               FAQ
-            </a>
-            <Link href="/dashboard">
-              <Button variant="primary" size="sm">
-                Dashboard
-              </Button>
             </Link>
+            {isAuthenticated ? (
+              <Link href="/dashboard">
+                <Button variant="primary" size="sm">
+                  Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <Button 
+                variant="primary" 
+                size="sm"
+                onClick={() => {
+                  // Show sign-in prompt - for now redirect to creators page with message
+                  // In production, this would link to actual auth/login page
+                  router.push('/creators?action=signin');
+                }}
+              >
+                Sign In
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -56,14 +91,27 @@ export const Navigation: React.FC = () => {
             <Link href="/creators" className="block text-secondary hover:text-white transition">
               For Creators
             </Link>
-            <a href="/#faq" className="block text-secondary hover:text-white transition">
+            <Link href="/#faq" className="block text-secondary hover:text-white transition">
               FAQ
-            </a>
-            <Link href="/dashboard" className="block">
-              <Button variant="primary" size="sm" className="w-full">
-                Dashboard
-              </Button>
             </Link>
+            {isAuthenticated ? (
+              <Link href="/dashboard" className="block">
+                <Button variant="primary" size="sm" className="w-full">
+                  Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <Button 
+                variant="primary" 
+                size="sm" 
+                className="w-full"
+                onClick={() => {
+                  router.push('/creators?action=signin');
+                }}
+              >
+                Sign In
+              </Button>
+            )}
           </div>
         )}
       </div>

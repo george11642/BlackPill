@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { Button } from './Button';
 
 interface PricingFeature {
@@ -13,6 +14,10 @@ interface PricingCardProps {
   features: PricingFeature[];
   isPopular?: boolean;
   ctaText?: string;
+  ctaAction?: 'apply' | 'upgrade';
+  tierIndex?: number;
+  isEntryTier?: boolean;
+  upgradeNote?: string;
 }
 
 export const PricingCard: React.FC<PricingCardProps> = ({
@@ -22,6 +27,10 @@ export const PricingCard: React.FC<PricingCardProps> = ({
   features,
   isPopular = false,
   ctaText = 'Get Started',
+  ctaAction = 'apply',
+  tierIndex = 0,
+  isEntryTier = true,
+  upgradeNote,
 }) => {
   return (
     <div
@@ -43,14 +52,36 @@ export const PricingCard: React.FC<PricingCardProps> = ({
       </div>
 
       <div className="mb-lg">
-        <Button
-          variant={isPopular ? 'primary' : 'secondary'}
-          size="lg"
-          className="w-full"
-          href="/apply"
-        >
-          {ctaText}
-        </Button>
+        {isEntryTier ? (
+          <Link href="/apply">
+            <Button
+              variant={isPopular ? 'primary' : 'secondary'}
+              size="lg"
+              className="w-full"
+            >
+              {ctaText}
+            </Button>
+          </Link>
+        ) : (
+          <div className="space-y-2">
+            <Button
+              variant="secondary"
+              size="lg"
+              className="w-full opacity-60 cursor-not-allowed"
+              disabled
+            >
+              {ctaText}
+            </Button>
+            {upgradeNote && (
+              <p className="text-xs text-secondary text-center px-2">
+                {upgradeNote}
+              </p>
+            )}
+            <p className="text-xs text-secondary text-center">
+              Start with Bronze tier to begin earning
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="border-t border-[rgba(255,255,255,0.1)] pt-md">

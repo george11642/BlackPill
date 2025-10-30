@@ -1,4 +1,5 @@
-import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' hide MultipartFile;
+import 'package:dio/dio.dart' as dio_pkg;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -54,50 +55,6 @@ class ApiService {
             }
           }
           
-          // Handle network errors with retry (exponential backoff: 1s, 2s, 4s)
-          if (error.type == DioExceptionType.connectionTimeout ||
-              error.type == DioExceptionType.receiveTimeout ||
-              error.type == DioExceptionType.connectionError) {
-            final retryCount = error.requestOptions.extra['retry_count'] as int? ?? 0;
-            
-            if (retryCount < 3) {
-              // Exponential backoff: 1s, 2s, 4s
-              final delaySeconds = (1 << retryCount); // 2^retryCount
-              await Future.delayed(Duration(seconds: delaySeconds));
-              
-              // Retry request
-              error.requestOptions.extra['retry_count'] = retryCount + 1;
-              
-              try {
-                final response = await _dio.fetch(error.requestOptions);
-                return handler.resolve(response);
-              } catch (e) {
-                return handler.next(error);
-              }
-            }
-          }
-          
-          // Handle 5xx errors with retry
-          if (error.response != null && 
-              error.response!.statusCode != null &&
-              error.response!.statusCode! >= 500) {
-            final retryCount = error.requestOptions.extra['retry_count'] as int? ?? 0;
-            
-            if (retryCount < 3) {
-              final delaySeconds = (1 << retryCount);
-              await Future.delayed(Duration(seconds: delaySeconds));
-              
-              error.requestOptions.extra['retry_count'] = retryCount + 1;
-              
-              try {
-                final response = await _dio.fetch(error.requestOptions);
-                return handler.resolve(response);
-              } catch (e) {
-                return handler.next(error);
-              }
-            }
-          }
-          
           return handler.next(error);
         },
       ),
@@ -109,7 +66,7 @@ class ApiService {
   /// Analyze image
   Future<Map<String, dynamic>> analyzeImage(String imagePath) async {
     final formData = FormData.fromMap({
-      'image': await MultipartFile.fromFile(imagePath),
+      'image': await dio_pkg.MultipartFile.fromFile(imagePath),
     });
 
     final response = await _dio.post(
@@ -136,7 +93,7 @@ class ApiService {
       },
     );
 
-    return response.data['analyses'];
+    return (response.data['analyses'] as List<dynamic>?) ?? [];
   }
 
   /// Get analysis by ID
@@ -150,11 +107,17 @@ class ApiService {
     await _dio.delete('/api/analyses/$id');
   }
 
-  /// Accept referral code
-  Future<Map<String, dynamic>> acceptReferral(String code) async {
+  /// Get subscription status
+  Future<Map<String, dynamic>> getSubscriptionStatus() async {
+    final response = await _dio.get('/api/subscription/status');
+    return response.data;
+  }
+
+  /// Accept referral
+  Future<Map<String, dynamic>> acceptReferral(String referralCode) async {
     final response = await _dio.post(
       '/api/referral/accept',
-      data: {'referral_code': code},
+      data: {'referral_code': referralCode},
     );
     return response.data;
   }
@@ -162,6 +125,58 @@ class ApiService {
   /// Get referral stats
   Future<Map<String, dynamic>> getReferralStats() async {
     final response = await _dio.get('/api/referral/stats');
+    return response.data;
+  }
+
+  /// Send push token
+  Future<void> sendPushToken({
+    required String token,
+    required String platform,
+  }) async {
+    await _dio.post(
+      '/api/push-tokens',
+      data: {'token': token, 'platform': platform},
+    );
+  }
+
+  /// Get leaderboard
+  Future<List<dynamic>> getLeaderboard({int limit = 50}) async {
+    final response = await _dio.get(
+      '/api/leaderboard',
+      queryParameters: {'limit': limit},
+    );
+    return (response.data['leaderboard'] as List<dynamic>?) ?? [];
+  }
+
+  /// Get user progress
+  Future<Map<String, dynamic>> getUserProgress() async {
+    final response = await _dio.get('/api/progress');
+    return response.data;
+  }
+
+  /// Get public analyses (for community feed)
+  Future<List<dynamic>> getPublicAnalyses({int limit = 20}) async {
+    final response = await _dio.get(
+      '/api/community/public-analyses',
+      queryParameters: {
+        'limit': limit,
+      },
+    );
+    return (response.data['analyses'] as List<dynamic>?) ?? [];
+  }
+
+  /// Get user profile
+  Future<Map<String, dynamic>> getUserProfile() async {
+    final response = await _dio.get('/api/auth/me');
+    return response.data;
+  }
+
+  /// Generate share card
+  Future<Map<String, dynamic>> generateShareCard(String analysisId) async {
+    final response = await _dio.get(
+      '/api/share/generate-card',
+      queryParameters: {'analysis_id': analysisId},
+    );
     return response.data;
   }
 
@@ -182,90 +197,10 @@ class ApiService {
     return response.data;
   }
 
-  /// Get subscription status
-  Future<Map<String, dynamic>> getSubscriptionStatus() async {
-    final response = await _dio.get('/api/subscriptions/status');
-    return response.data;
-  }
-
   /// Cancel subscription
   Future<Map<String, dynamic>> cancelSubscription() async {
     final response = await _dio.post('/api/subscriptions/cancel');
     return response.data;
-  }
-
-  /// Generate share card
-  Future<Map<String, dynamic>> generateShareCard(String analysisId) async {
-    final response = await _dio.get(
-      '/api/share/generate-card',
-      queryParameters: {'analysis_id': analysisId},
-    );
-    return response.data;
-  }
-
-  /// Get user profile
-  Future<Map<String, dynamic>> getUserProfile() async {
-    final response = await _dio.get('/api/auth/me');
-    return response.data;
-  }
-
-  /// Get leaderboard
-  Future<List<dynamic>> getLeaderboard({
-    int limit = 10,
-    int offset = 0,
-  }) async {
-    final response = await _dio.get(
-      '/api/leaderboard',
-      queryParameters: {
-        'limit': limit,
-        'offset': offset,
-      },
-    );
-    return response.data['leaderboard'];
-  }
-
-  /// Get referral leaderboard
-  Future<List<dynamic>> getReferralLeaderboard({
-    int limit = 10,
-    int offset = 0,
-  }) async {
-    final response = await _dio.get(
-      '/api/leaderboard/referrals',
-      queryParameters: {
-        'limit': limit,
-        'offset': offset,
-      },
-    );
-    return response.data['leaderboard'];
-  }
-
-  /// Send push notification token to backend
-  Future<void> sendPushToken({
-    required String token,
-    required String platform,
-  }) async {
-    await _dio.post(
-      '/api/user/push-token',
-      data: {
-        'token': token,
-        'platform': platform,
-      },
-    );
-  }
-
-  /// Get public analyses for community feed
-  Future<List<dynamic>> getPublicAnalyses({
-    int limit = 20,
-    int offset = 0,
-  }) async {
-    final response = await _dio.get(
-      '/api/community/public-analyses',
-      queryParameters: {
-        'limit': limit,
-        'offset': offset,
-      },
-    );
-    return response.data['analyses'] || [];
   }
 }
 

@@ -62,8 +62,22 @@ export default function Apply() {
       <Navigation />
 
       <Section title="Become a Creator" subtitle="Join BlackPill's affiliate program">
-        <div className="max-w-2xl mx-auto card">
-          <form onSubmit={handleSubmit} className="space-y-lg">
+        <div className="max-w-2xl mx-auto">
+          {/* Tier Info Banner */}
+          <div className="card mb-lg bg-gradient-to-r from-[#1A1A2E] to-[#2A2A3E] border border-[rgba(255,255,255,0.1)]">
+            <div className="flex items-start gap-md">
+              <div className="text-3xl">🎯</div>
+              <div>
+                <h3 className="font-semibold mb-sm">Start with Bronze Tier</h3>
+                <p className="text-sm text-secondary">
+                  All new creators start at Bronze tier (10% commission). Higher tiers (Silver 15%, Gold 20%, Platinum 25%) unlock automatically as you reach referral milestones (100+, 500+, 1000+ referrals).
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <form onSubmit={handleSubmit} className="space-y-lg">
             {/* Full Name */}
             <div>
               <label className="block text-sm font-semibold mb-sm">Full Name *</label>
@@ -200,6 +214,7 @@ export default function Apply() {
               Submit Application
             </Button>
           </form>
+          </div>
         </div>
       </Section>
 

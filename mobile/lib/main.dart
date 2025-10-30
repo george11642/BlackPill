@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'app.dart';
@@ -30,20 +29,18 @@ void main() async {
   );
 
   // Initialize Firebase
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    print('Firebase initialization warning (non-critical): $e');
+    // Continue anyway - app works without Firebase
+  }
 
-  // Initialize Sentry for error tracking
-  await SentryFlutter.init(
-    (options) {
-      options.dsn = EnvConfig.sentryDsn;
-      options.tracesSampleRate = 0.1;
-      options.environment = EnvConfig.environment;
-    },
-    appRunner: () => runApp(
-      ProviderScope(
-        child: const BlackPillApp(),
-        observers: [_AppLifecycleObserver()],
-      ),
+  // Run the app
+  runApp(
+    ProviderScope(
+      child: const BlackPillApp(),
+      observers: [_AppLifecycleObserver()],
     ),
   );
 }

@@ -50,7 +50,7 @@ class AuthService {
     );
     
     // Check email verification (enforce as per PRD)
-    if (response.user != null && !response.user!.emailConfirmedAt) {
+    if (response.user != null && response.user!.emailConfirmedAt == null) {
       // User is signed in but email not verified
       // Sign them out and throw error
       await signOut();

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { SEO } from '@/components/SEO';
 import { Navigation } from '@/components/Navigation';
 import { Section } from '@/components/Section';
@@ -11,6 +12,18 @@ import { FAQ } from '@/components/FAQ';
 import { Footer } from '@/components/Footer';
 
 export default function Creators() {
+  const router = useRouter();
+  const [showSignInPrompt, setShowSignInPrompt] = useState(false);
+
+  useEffect(() => {
+    if (router.query.action === 'signin') {
+      setShowSignInPrompt(true);
+      // Scroll to top after a brief delay
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+    }
+  }, [router.query]);
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -61,7 +74,18 @@ export default function Creators() {
     },
   ];
 
-  const creatorTiers = [
+  const creatorTiers: Array<{
+    tier: string;
+    commission: number;
+    requirement: string;
+    features: Array<{ text: string; included: boolean }>;
+    cta: string;
+    ctaAction: 'apply' | 'upgrade';
+    tierIndex: number;
+    highlight: boolean;
+    isEntryTier: boolean;
+    upgradeNote?: string;
+  }> = [
     {
       tier: 'Bronze',
       commission: 10,
@@ -71,8 +95,11 @@ export default function Creators() {
         { text: 'Custom Affiliate Link', included: true },
         { text: 'Basic Support', included: true },
       ],
-      cta: 'Apply Now',
+      cta: 'Join Now',
+      ctaAction: 'apply',
+      tierIndex: 0,
       highlight: false,
+      isEntryTier: true,
     },
     {
       tier: 'Silver',
@@ -83,8 +110,12 @@ export default function Creators() {
         { text: 'Premium Marketing Assets', included: true },
         { text: 'Email Support', included: true },
       ],
-      cta: 'Apply Now',
+      cta: 'Unlock Tier',
+      ctaAction: 'upgrade',
+      tierIndex: 1,
       highlight: false,
+      isEntryTier: false,
+      upgradeNote: 'Auto-unlocks when you reach 100+ referrals',
     },
     {
       tier: 'Gold',
@@ -95,8 +126,12 @@ export default function Creators() {
         { text: '24/7 Priority Support', included: true },
         { text: 'Quarterly Strategy Session', included: true },
       ],
-      cta: 'Apply Now',
+      cta: 'Unlock Tier',
+      ctaAction: 'upgrade',
+      tierIndex: 2,
       highlight: true,
+      isEntryTier: false,
+      upgradeNote: 'Auto-unlocks when you reach 500+ referrals',
     },
     {
       tier: 'Platinum',
@@ -107,8 +142,12 @@ export default function Creators() {
         { text: 'Dedicated Account Manager', included: true },
         { text: 'VIP Support', included: true },
       ],
-      cta: 'Apply Now',
+      cta: 'Unlock Tier',
+      ctaAction: 'upgrade',
+      tierIndex: 3,
       highlight: false,
+      isEntryTier: false,
+      upgradeNote: 'Auto-unlocks when you reach 1000+ referrals',
     },
   ];
 
@@ -123,7 +162,7 @@ export default function Creators() {
     },
     {
       question: 'What commissions can I earn?',
-      answer: 'Your commission percentage depends on your tier (Bronze 10%, Silver 15%, Gold 20%, Platinum 25%). You earn commission on every successful app download and subscription from your unique link, with no caps or limits.',
+      answer: 'All creators start at Bronze tier (10% commission). As you reach referral milestones, you automatically unlock higher tiers: Silver (15%) at 100+ referrals, Gold (20%) at 500+ referrals, and Platinum (25%) at 1000+ referrals. You earn commission on every successful app download and subscription from your unique link, with no caps or limits.',
     },
     {
       question: 'How do I track my performance?',
@@ -150,6 +189,25 @@ export default function Creators() {
       />
 
       <Navigation />
+
+      {/* Sign In Prompt */}
+      {showSignInPrompt && (
+        <div className="bg-gradient-to-r from-[#FF0080] to-[#00D9FF] text-white py-4 px-6 text-center">
+          <div className="max-w-4xl mx-auto flex items-center justify-between flex-wrap gap-4">
+            <div className="flex-1">
+              <p className="font-semibold">Sign in required to access your creator dashboard</p>
+              <p className="text-sm opacity-90">Please use your BlackPill mobile app credentials to sign in</p>
+            </div>
+            <button
+              onClick={() => setShowSignInPrompt(false)}
+              className="text-white hover:opacity-80 transition text-xl font-bold"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Hero Section */}
       <Section className="hero-gradient">
@@ -192,9 +250,9 @@ export default function Creators() {
         background="secondary"
       >
         <div className="grid grid-3 gap-lg">
-          <Card icon="📝" title="Apply & Get Approved" description="Apply with your social media info. Get approved within 24-48 hours. Start with Bronze tier (10% commission)." />
-          <Card icon="🔗" title="Share Your Link" description="Get your unique affiliate link and marketing assets. Share on social, email, or your website." />
-          <Card icon="💰" title="Earn & Get Paid" description="Earn commissions on every conversion. Track everything in your dashboard. Get paid monthly." />
+          <Card icon="📝" title="Apply & Get Approved" description="Apply with your social media info. Get approved within 24-48 hours. All creators start at Bronze tier (10% commission)." />
+          <Card icon="🔗" title="Share Your Link" description="Get your unique affiliate link and marketing assets. Share on social, email, or your website. Track performance in real-time." />
+          <Card icon="⬆️" title="Unlock Higher Tiers" description="Earn more as you grow! Reach 100+ referrals for Silver (15%), 500+ for Gold (20%), and 1000+ for Platinum (25%). Tiers unlock automatically." />
         </div>
       </Section>
 
@@ -233,6 +291,10 @@ export default function Creators() {
               features={tier.features}
               isPopular={tier.highlight}
               ctaText={tier.cta}
+              ctaAction={tier.ctaAction}
+              tierIndex={tier.tierIndex}
+              isEntryTier={tier.isEntryTier}
+              upgradeNote={tier.upgradeNote}
             />
           ))}
         </div>
