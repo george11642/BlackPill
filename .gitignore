@@ -4,6 +4,10 @@
 .env.*.local
 .env.production.local
 
+# Dependencies
+node_modules/
+web/node_modules/
+
 # Vercel
 .vercel
 .vercel/
