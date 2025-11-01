@@ -100,17 +100,24 @@ module.exports = async (req, res) => {
               .toBuffer();
 
             const thumbnailFileName = `${req.user.id}/${uuidv4()}-thumb.jpg`;
-            await supabaseAdmin
+            const { data: thumbUploadData, error: thumbUploadError } = await supabaseAdmin
               .storage
               .from('analyses')
               .upload(thumbnailFileName, thumbnail, {
                 contentType: 'image/jpeg',
               });
 
-            const { data: thumbUrlData } = supabaseAdmin
-              .storage
-              .from('analyses')
-              .getPublicUrl(thumbnailFileName);
+            let thumbnailUrl = null;
+            if (thumbUploadError) {
+              console.error('Thumbnail upload error:', thumbUploadError);
+              // Continue without thumbnail rather than failing the entire request
+            } else {
+              const { data: thumbUrlData } = supabaseAdmin
+                .storage
+                .from('analyses')
+                .getPublicUrl(thumbnailFileName);
+              thumbnailUrl = thumbUrlData.publicUrl;
+            }
 
             // Save analysis to database
             const { data: analysis, error: dbError } = await supabaseAdmin
@@ -118,7 +125,7 @@ module.exports = async (req, res) => {
               .insert({
                 user_id: req.user.id,
                 image_url: imageUrl,
-                image_thumbnail_url: thumbUrlData.publicUrl,
+                image_thumbnail_url: thumbnailUrl,
                 score: analysisResult.score,
                 breakdown: analysisResult.breakdown,
                 tips: analysisResult.tips,
@@ -132,11 +139,20 @@ module.exports = async (req, res) => {
 
             // Decrement scans remaining (unless unlimited)
             if (req.userTier !== 'unlimited') {
+              // Get current total_scans_used to increment it
+              const { data: currentUser } = await supabaseAdmin
+                .from('users')
+                .select('total_scans_used')
+                .eq('id', req.user.id)
+                .single();
+
+              const currentTotalScans = (currentUser?.total_scans_used || 0);
+
               await supabaseAdmin
                 .from('users')
                 .update({
                   scans_remaining: req.scansRemaining - 1,
-                  total_scans_used: supabaseAdmin.rpc('increment', { row_id: req.user.id }),
+                  total_scans_used: currentTotalScans + 1,
                 })
                 .eq('id', req.user.id);
             }
@@ -158,10 +174,32 @@ module.exports = async (req, res) => {
             });
 
           } catch (error) {
-            console.error('Analysis error:', error);
-            res.status(500).json({
-              error: 'Analysis failed',
-              message: error.message,
+            console.error('Analysis error:', {
+              error: error.message,
+              stack: error.stack,
+              user_id: req.user?.id,
+              endpoint: req.path,
+            });
+
+            // Determine if this is a client error (4xx) or server error (5xx)
+            const isClientError = error.message.includes('No face detected') ||
+                                 error.message.includes('Multiple faces') ||
+                                 error.message.includes('blurred') ||
+                                 error.message.includes('under-exposed') ||
+                                 error.message.includes('Face angle') ||
+                                 error.message.includes('confidence is too low') ||
+                                 error.message.includes('inappropriate content') ||
+                                 error.message.includes('Invalid');
+
+            const statusCode = isClientError ? 400 : 500;
+            const errorMessage = isClientError 
+              ? error.message 
+              : 'Our servers encountered an error processing your photo. Please try again in a moment.';
+
+            res.status(statusCode).json({
+              error: isClientError ? 'Invalid photo' : 'Analysis failed',
+              message: errorMessage,
+              ...(process.env.NODE_ENV === 'development' && { details: error.message }),
             });
           }
         });
