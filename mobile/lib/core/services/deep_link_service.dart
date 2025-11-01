@@ -76,7 +76,7 @@ class DeepLinkService {
       // Poll subscription status (wait for webhook to process)
       bool subscriptionConfirmed = false;
       int attempts = 0;
-      const maxAttempts = 10;
+      const maxAttempts = 20; // Increased from 10 to 20 for 40 seconds total
       const delaySeconds = 2;
 
       while (!subscriptionConfirmed && attempts < maxAttempts) {

@@ -190,7 +190,7 @@ class _ChallengeCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 if (focusAreas.isNotEmpty)
                   _buildInfoChip(
-                    Icons.target,
+                    Icons.flag,
                     focusAreas.first.toString(),
                     AppColors.neonPink,
                   ),
@@ -201,6 +201,7 @@ class _ChallengeCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: _buildStatItem(
+                    context,
                     'Participants',
                     participants.toString(),
                     Icons.people,
@@ -208,6 +209,7 @@ class _ChallengeCard extends StatelessWidget {
                 ),
                 Expanded(
                   child: _buildStatItem(
+                    context,
                     'Success Rate',
                     '${(successRate * 100).toStringAsFixed(0)}%',
                     Icons.check_circle,
@@ -215,6 +217,7 @@ class _ChallengeCard extends StatelessWidget {
                 ),
                 Expanded(
                   child: _buildStatItem(
+                    context,
                     'Avg Improvement',
                     '+${avgImprovement.toStringAsFixed(1)}',
                     Icons.trending_up,
@@ -260,7 +263,7 @@ class _ChallengeCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon) {
+  Widget _buildStatItem(BuildContext context, String label, String value, IconData icon) {
     return Column(
       children: [
         Icon(icon, size: 16, color: AppColors.textTertiary),

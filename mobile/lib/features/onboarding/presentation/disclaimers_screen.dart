@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/services/api_service.dart';
-import '../../../../shared/theme/app_colors.dart';
-import '../../../../shared/widgets/glass_card.dart';
-import '../../../../shared/widgets/primary_button.dart';
-import '../../../ethical/presentation/widgets/mental_health_resources_dialog.dart';
+import '../../../core/services/api_service.dart';
+import '../../../shared/theme/app_colors.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/primary_button.dart';
+import '../../ethical/presentation/widgets/mental_health_resources_dialog.dart';
 
 class DisclaimersScreen extends ConsumerStatefulWidget {
   const DisclaimersScreen({super.key});

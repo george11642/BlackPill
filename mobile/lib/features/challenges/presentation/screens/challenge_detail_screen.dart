@@ -163,7 +163,7 @@ class _ChallengeDetailScreenState extends ConsumerState<ChallengeDetailScreen> {
                           _buildInfoChip(Icons.calendar_today, '$duration days', AppColors.neonCyan),
                           const SizedBox(width: 8),
                           if (focusAreas.isNotEmpty)
-                            _buildInfoChip(Icons.target, focusAreas.first.toString(), AppColors.neonPink),
+                            _buildInfoChip(Icons.flag, focusAreas.first.toString(), AppColors.neonPink),
                         ],
                       ),
                     ],

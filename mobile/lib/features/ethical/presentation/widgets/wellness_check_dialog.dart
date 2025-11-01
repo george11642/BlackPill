@@ -62,9 +62,9 @@ class WellnessCheckDialog extends ConsumerWidget {
                   ),
             ),
             const SizedBox(height: 8),
-            _buildBulletPoint('You\'re more than a number'),
-            _buildBulletPoint('Scores can vary based on many factors'),
-            _buildBulletPoint('Focus on feeling confident and healthy'),
+            _buildBulletPoint(context, 'You\'re more than a number'),
+            _buildBulletPoint(context, 'Scores can vary based on many factors'),
+            _buildBulletPoint(context, 'Focus on feeling confident and healthy'),
             const SizedBox(height: 24),
             Row(
               children: [
@@ -104,7 +104,7 @@ class WellnessCheckDialog extends ConsumerWidget {
     );
   }
 
-  Widget _buildBulletPoint(String text) {
+  Widget _buildBulletPoint(BuildContext context, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(

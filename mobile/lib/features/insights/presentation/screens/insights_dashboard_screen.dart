@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -18,6 +19,8 @@ class _InsightsDashboardScreenState extends ConsumerState<InsightsDashboardScree
   List<dynamic> _insights = [];
   bool _isLoading = true;
   bool _isGenerating = false;
+  String? _errorMessage;
+  bool _hasLoadError = false;
 
   @override
   void initState() {
@@ -26,7 +29,11 @@ class _InsightsDashboardScreenState extends ConsumerState<InsightsDashboardScree
   }
 
   Future<void> _loadInsights() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _hasLoadError = false;
+      _errorMessage = null;
+    });
     
     try {
       final apiService = ref.read(apiServiceProvider);
@@ -35,18 +42,32 @@ class _InsightsDashboardScreenState extends ConsumerState<InsightsDashboardScree
       setState(() {
         _insights = response.data['insights'] ?? [];
         _isLoading = false;
+        _hasLoadError = false;
       });
     } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load insights: ${e.toString()}'),
-            backgroundColor: AppColors.neonYellow,
-          ),
-        );
+      setState(() {
+        _isLoading = false;
+        _hasLoadError = true;
+        _errorMessage = _parseError(e);
+      });
+    }
+  }
+
+  String _parseError(dynamic error) {
+    if (error is DioException) {
+      switch (error.response?.statusCode) {
+        case 404:
+          return 'Insights feature is not yet available. This feature is coming soon!';
+        case 500:
+          return 'Server error while loading insights. Please try again later.';
+        case 401:
+        case 403:
+          return 'Authentication error. Please sign in again.';
+        default:
+          return 'Unable to connect to server. Check your internet connection.';
       }
     }
+    return 'An unexpected error occurred. Please try again.';
   }
 
   Future<void> _generateInsights() async {
@@ -68,16 +89,34 @@ class _InsightsDashboardScreenState extends ConsumerState<InsightsDashboardScree
         );
       }
     } catch (e) {
+      setState(() => _isGenerating = false);
+      
       if (mounted) {
+        String errorMsg = 'Failed to generate insights. ';
+        if (e is DioException) {
+          if (e.response?.statusCode == 404) {
+            errorMsg += 'This feature is not yet available.';
+          } else if (e.response?.statusCode == 429) {
+            errorMsg += 'Too many requests. Please wait a moment.';
+          } else {
+            errorMsg += 'Please try again later.';
+          }
+        } else {
+          errorMsg += 'Please check your connection.';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to generate insights: ${e.toString()}'),
+            content: Text(errorMsg),
             backgroundColor: AppColors.neonYellow,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
     } finally {
-      setState(() => _isGenerating = false);
+      if (mounted) {
+        setState(() => _isGenerating = false);
+      }
     }
   }
 
@@ -112,11 +151,13 @@ class _InsightsDashboardScreenState extends ConsumerState<InsightsDashboardScree
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+          : _hasLoadError
+              ? _buildErrorState()
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                   // Header with Refresh Button
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -142,7 +183,7 @@ class _InsightsDashboardScreenState extends ConsumerState<InsightsDashboardScree
 
                   // Insights List
                   if (_insights.isEmpty)
-                    Center(
+                    GlassCard(
                       child: Padding(
                         padding: const EdgeInsets.all(32),
                         child: Column(
@@ -174,15 +215,72 @@ class _InsightsDashboardScreenState extends ConsumerState<InsightsDashboardScree
                               onPressed: _generateInsights,
                               isLoading: _isGenerating,
                             ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Tip: Complete at least 3-5 analyses to get meaningful insights',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: AppColors.textTertiary,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
                           ],
                         ),
                       ),
                     )
                   else
                     ..._insights.map((insight) => _buildInsightCard(insight)),
-                ],
-              ),
+                    ],
+                  ),
+                ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 80,
+              color: AppColors.neonYellow,
             ),
+            const SizedBox(height: 24),
+            Text(
+              'Unable to Load Insights',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage ?? 'An error occurred while loading insights.',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            PrimaryButton(
+              text: 'Try Again',
+              icon: Icons.refresh,
+              onPressed: _loadInsights,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Note: The Insights feature analyzes your progress data to provide personalized recommendations. Make sure you have completed at least a few analyses first.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -207,7 +305,7 @@ class _InsightsDashboardScreenState extends ConsumerState<InsightsDashboardScree
         color = AppColors.neonPurple;
         break;
       case 'prediction':
-        icon = Icons.crystal_ball;
+        icon = Icons.auto_awesome;
         color = AppColors.neonPink;
         break;
       case 'comparison':

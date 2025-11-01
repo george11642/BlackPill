@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/api_service.dart';
@@ -17,6 +18,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Map<String, dynamic>? _userProfile;
   bool _isLoading = true;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
@@ -36,6 +38,86 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _refreshProfile() async {
+    setState(() => _isRefreshing = true);
+    
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      
+      // Force refresh subscription status first
+      final subscriptionStatus = await apiService.getSubscriptionStatus();
+      
+      // Then refresh full profile
+      final profile = await apiService.getUserProfile();
+      
+      setState(() {
+        _userProfile = profile;
+        _isRefreshing = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Profile updated - Tier: ${subscriptionStatus['tier']?.toString().toUpperCase() ?? 'FREE'}'),
+            backgroundColor: AppColors.neonGreen,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isRefreshing = false);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to refresh: ${e.toString()}'),
+            backgroundColor: AppColors.neonYellow,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _openPrivacyPolicy() async {
+    try {
+      final url = Uri.parse('https://black-pill.app/privacy');
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        throw Exception('Could not launch privacy policy URL');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to open privacy policy: ${e.toString()}'),
+            backgroundColor: AppColors.neonYellow,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _openTermsOfService() async {
+    try {
+      final url = Uri.parse('https://black-pill.app/terms');
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        throw Exception('Could not launch terms of service URL');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to open terms of service: ${e.toString()}'),
+            backgroundColor: AppColors.neonYellow,
+          ),
+        );
       }
     }
   }
@@ -143,6 +225,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         title: const Text('Profile'),
         actions: [
           IconButton(
+            icon: _isRefreshing 
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
+            onPressed: _isRefreshing ? null : _refreshProfile,
+            tooltip: 'Refresh subscription status',
+          ),
+          IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
               // Navigate to settings
@@ -152,10 +245,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
+          : RefreshIndicator(
+              onRefresh: _refreshProfile,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
                   // Profile header
                   CircleAvatar(
                     radius: 60,
@@ -232,9 +328,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   _buildMenuItem(
                     'Privacy Policy',
                     Icons.privacy_tip,
-                    () {
-                      // Open privacy policy
-                    },
+                    _openPrivacyPolicy,
                   ),
                   
                   const SizedBox(height: 12),
@@ -242,9 +336,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   _buildMenuItem(
                     'Terms of Service',
                     Icons.description,
-                    () {
-                      // Open terms
-                    },
+                    _openTermsOfService,
                   ),
                   
                   const SizedBox(height: 12),
@@ -316,7 +408,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   
                   const SizedBox(height: 32),
-                ],
+                  ],
+                ),
               ),
             ),
     );

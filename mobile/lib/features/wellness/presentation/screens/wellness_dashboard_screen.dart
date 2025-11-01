@@ -575,6 +575,7 @@ class _WellnessChecklistCard extends StatelessWidget {
       child: Column(
         children: [
           _buildChecklistItem(
+            context,
             'Sleep',
             sleepHours != null ? '${sleepHours.toStringAsFixed(1)} hrs' : 'Not tracked',
             sleepHours != null && sleepHours >= 7.5,
@@ -584,6 +585,7 @@ class _WellnessChecklistCard extends StatelessWidget {
           ),
           const Divider(height: 24),
           _buildChecklistItem(
+            context,
             'Hydration',
             hydrationOz != null ? '$hydrationOz oz' : 'Not tracked',
             hydrationOz != null && hydrationOz >= 64,
@@ -593,6 +595,7 @@ class _WellnessChecklistCard extends StatelessWidget {
           ),
           const Divider(height: 24),
           _buildChecklistItem(
+            context,
             'Exercise',
             exerciseMinutes != null ? '$exerciseMinutes min' : 'Not tracked',
             exerciseMinutes != null && exerciseMinutes >= 30,
@@ -602,6 +605,7 @@ class _WellnessChecklistCard extends StatelessWidget {
           ),
           const Divider(height: 24),
           _buildChecklistItem(
+            context,
             'Stress',
             stressLevel ?? 'Not tracked',
             stressLevel == 'low',
@@ -615,6 +619,7 @@ class _WellnessChecklistCard extends StatelessWidget {
   }
 
   Widget _buildChecklistItem(
+    BuildContext context,
     String label,
     String value,
     bool isComplete,

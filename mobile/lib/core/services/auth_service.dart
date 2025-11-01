@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../config/env_config.dart';
+import '../../config/env_config.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService();
@@ -74,7 +74,13 @@ class AuthService {
       // when the OAuth callback completes. We'll handle profile creation
       // in the auth state listener in the app initialization.
       
-      return response;
+      // OAuth sign-in returns a bool (was redirected), not AuthResponse
+      // Return a dummy AuthResponse - the actual auth happens via callback
+      final user = _supabase.auth.currentUser;
+      return AuthResponse(
+        user: user,
+        session: _supabase.auth.currentSession,
+      );
     } catch (e) {
       throw Exception('Failed to initiate Google sign-in: $e');
     }
