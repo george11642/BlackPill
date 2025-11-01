@@ -45,5 +45,13 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>We need access to your health data to show correlations with your appearance scores and help you optimize your wellness.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>We need access to update your health data to track your wellness progress.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We need camera access to take photos for analysis and challenge check-ins.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need photo library access to select images for analysis and challenge check-ins.</string>
 </dict>
 </plist>

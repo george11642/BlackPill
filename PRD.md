@@ -2,11 +2,11 @@
 
 ## Document Control
 
-**Version:** 1.1
+**Version:** 1.3
 
-**Last Updated:** December 20, 2025
+**Last Updated:** October 30, 2025
 
-**Status:** APPROVED - This document is LAW for all development
+**Status:** APPROVED - This document is LAW for all development (Phase 2.6 Advanced Differentiation Added)
 
 **Owner:** Product Team
 
@@ -42,12 +42,15 @@ Empower men aged 18-35 to understand and improve their appearance through honest
 
 ### 1.2 Success Metrics (6-Month Targets)
 
+**v1.3 Updated with Phase 2.6 Advanced Differentiation Features:**
+
 - **200K MAU** (Monthly Active Users)
-- **$600K MRR** (Monthly Recurring Revenue)
-- **40%+ DAU/MAU** ratio
+- **$1.2M MRR** (Monthly Recurring Revenue - increased with advanced features & wellness positioning)
+- **75%+ DAU/MAU** ratio (dramatically increased with challenges, wellness tracking, daily engagement)
 - **0.5-1.0 Viral Coefficient**
-- **15-20% Subscription Rate**
-- **<5% Monthly Churn**
+- **28-30% Subscription Rate** (increased with transparent scoring, ethical positioning, premium wellness features)
+- **<2% Monthly Churn** (improved with challenges, wearable integration, holistic value proposition)
+- **NPS Score: 75+** (up from 60 with ethical guardrails and trust-building features)
 
 ### 1.3 Target Audience
 
@@ -125,10 +128,18 @@ TEXT:
 **Requirements:**
 
 - Email/password signup with validation
-- Google OAuth (Supabase Auth)
+- Google OAuth via Supabase Auth (`signInWithOAuth`)
 - Password reset via email
 - Session persistence (30 days)
 - Account deletion (GDPR compliance)
+
+**Google OAuth Implementation:**
+
+- Uses Supabase's built-in OAuth flow (`signInWithOAuth`)
+- **No Android/iOS client IDs needed** - only requires Web OAuth client ID configured in Supabase Dashboard
+- OAuth credentials configured in Supabase Dashboard → Authentication → Providers → Google
+- Deep link callback: `blackpill://auth/callback`
+- See `docs/SUPABASE_OAUTH_SETUP.md` for complete setup instructions
 
 **Security:**
 
@@ -332,14 +343,1616 @@ TEXT:
 
 ---
 
-### 3.2 Phase 2 Features (Weeks 5-12)
+### 3.2 Phase 2 Features (Weeks 5-8) - Quick Wins & Daily Engagement
 
-#### F7: Leaderboard
+#### F7: Custom Routines System
 
 **Requirements:**
 
-- Weekly top-rated users (score DESC)
-- User profiles (username, avatar, bio, location, stats)
+- **Routine Builder:** AI-generated personalized improvement routines based on analysis results
+- **Task Management:** Daily checklist system with morning/evening schedules
+- **Categories:** Skincare, grooming, fitness, nutrition, mewing
+- **Completion Tracking:** Mark tasks complete, track consistency
+- **Streak System:** Daily completion streaks with rewards
+- **Progress Analytics:** Correlation between routine adherence and score improvements
+
+**Routine Generation:**
+
+```
+User completes analysis → AI identifies weak areas
+→ Prompt: "Want to build a custom routine?"
+→ User selects goals (skin, jawline, overall)
+→ User selects time commitment (10-15, 20-30, 45+ minutes)
+→ AI generates personalized routine with specific tasks
+→ User can customize, add/remove tasks
+→ Set reminders for morning/evening routines
+```
+
+**Task Structure:**
+
+```json
+{
+  "title": "Apply Sunscreen",
+  "description": "Use broad-spectrum SPF 50+ every morning",
+  "category": "skincare",
+  "time_of_day": ["morning"],
+  "frequency": "daily",
+  "duration_minutes": 2,
+  "why_it_helps": "Protects from UV damage, prevents premature aging",
+  "product_suggestions": [
+    {
+      "name": "CeraVe Hydrating Sunscreen",
+      "price": "$15",
+      "affiliate_link": "..."
+    }
+  ]
+}
+```
+
+**Subscription Tiers:**
+
+- Free: 1 basic routine template, no AI generation
+- Basic: 3 custom routines, AI-generated
+- Pro: 10 routines, AI optimization after 30 days
+- Unlimited: Unlimited routines, daily AI check-ins
+
+**Analytics Integration:**
+
+- Track which tasks users complete most consistently
+- Correlate routine completion with score improvements
+- Surface insights: "Your skin score improves 15% when you complete skincare 5+ days/week"
+- Suggest routine adjustments based on compliance data
+
+**Gamification:**
+
+- Streak rewards: 7 days (+5 scans), 30 days (+10 scans), 90 days (free month Pro)
+- Achievement badges for consistency
+- Routine leaderboard (longest streaks)
+- Before/after photos with routine details
+
+**Database Schema:**
+
+```sql
+CREATE TABLE routines (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  name TEXT NOT NULL,
+  goal TEXT,
+  focus_categories TEXT[],
+  is_active BOOLEAN DEFAULT true,
+  created_from_analysis_id UUID REFERENCES analyses(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE routine_tasks (
+  id UUID PRIMARY KEY,
+  routine_id UUID REFERENCES routines(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  category TEXT,
+  time_of_day TEXT[],
+  frequency TEXT,
+  order_index INT,
+  duration_minutes INT,
+  product_name TEXT,
+  product_link TEXT
+);
+
+CREATE TABLE routine_completions (
+  id UUID PRIMARY KEY,
+  routine_id UUID REFERENCES routines(id) ON DELETE CASCADE,
+  task_id UUID REFERENCES routine_tasks(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id),
+  completed_at TIMESTAMPTZ DEFAULT NOW(),
+  skipped BOOLEAN DEFAULT false,
+  notes TEXT
+);
+
+CREATE TABLE routine_streaks (
+  id UUID PRIMARY KEY,
+  routine_id UUID REFERENCES routines(id),
+  user_id UUID REFERENCES users(id),
+  current_streak INT DEFAULT 0,
+  longest_streak INT DEFAULT 0,
+  last_completed_date DATE,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Performance Target:**
+
+- Routine generation: <5 seconds
+- Daily checklist load: <1 second
+- Completion tracking: Real-time update
+
+---
+
+#### F8: Before/After Comparison View
+
+**Requirements:**
+
+- Side-by-side photo comparison of any two analyses
+- Score delta display with visual indicators (+0.9, colored green/red)
+- Category-by-category breakdown comparison
+- Time span display (e.g., "90 days between photos")
+- Percentage improvement calculation
+- Shareable comparison cards for social media
+
+**UI Specifications:**
+
+```
+┌─────────────────────────────────────┐
+│  Before (Jan 1)    After (Apr 1)    │
+│  ┌──────────┐      ┌──────────┐     │
+│  │ [Image]  │  →   │ [Image]  │     │
+│  │ 6.2/10   │      │ 7.1/10   │     │
+│  └──────────┘      └──────────┘     │
+│                                      │
+│  Overall: +0.9 (+14.5%) 📈           │
+│                                      │
+│  Improvements:                       │
+│  ✅ Skin:      6.0 → 7.2 (+1.2)      │
+│  ✅ Symmetry:  6.5 → 7.3 (+0.8)      │
+│  ➡️  Jawline:  6.0 → 6.1 (+0.1)      │
+│  ⚠️  Eyes:     6.8 → 6.6 (-0.2)      │
+│                                      │
+│  Time: 90 days                       │
+│  Routine completed: 87%              │
+│                                      │
+│  [Share My Progress]                 │
+└─────────────────────────────────────┘
+```
+
+**Features:**
+
+- Auto-select oldest and newest for quick comparison
+- Custom date picker for any two analyses
+- Timeline view showing all analysis points
+- Highlight which categories improved/declined
+- Show active routines during timeframe
+- Export as high-res image for social sharing
+
+**Analytics Tracking:**
+
+- Track comparison views
+- Track comparison shares
+- Measure conversion: users who compare → take another scan
+
+---
+
+#### F9: Daily Check-In Streaks
+
+**Requirements:**
+
+- Simple daily check-in button on home screen
+- Streak counter with fire emoji (🔥)
+- Automatic check-in when user completes routine or scan
+- Streak endangerment notifications (9 PM if not checked in)
+- Streak freeze items (save endangered streak)
+
+**Streak Mechanics:**
+
+```
+Day 1-6:   🔥 Basic streak
+Day 7:     🎉 Week achieved! +5 bonus scans
+Day 14:    🏆 Two weeks! Unlock "Dedicated" badge
+Day 30:    💎 Month streak! +10 bonus scans
+Day 90:    👑 Legendary! Free month of Pro tier
+Day 365:   ✨ Elite! Lifetime "Year Warrior" badge
+```
+
+**Streak Protection:**
+
+- 3 free streak freezes per month (Pro/Unlimited)
+- Purchase additional freezes: $0.99 each or 5 scans
+- Weekend grace period for Free/Basic users
+
+**Database Schema:**
+
+```sql
+CREATE TABLE daily_checkins (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  checkin_date DATE NOT NULL,
+  checkin_time TIMESTAMPTZ DEFAULT NOW(),
+  streak_count INT NOT NULL,
+  activities_completed TEXT[],
+  UNIQUE(user_id, checkin_date)
+);
+```
+
+**Notifications:**
+
+- 9 PM: "Your 12-day streak is at risk! Check in now 🔥"
+- Milestone reached: "🎉 7-day streak! You earned +5 scans"
+- Streak lost: "Your streak ended at 23 days. Start fresh today!"
+
+---
+
+#### F10: Achievement Badges System
+
+**Requirements:**
+
+- Unlockable badges for milestones
+- Badge display on user profile
+- Badge collection screen with locked/unlocked states
+- Animated unlock screen with confetti
+- Rewards tied to achievements
+
+**Badge Categories:**
+
+```javascript
+// Analysis Milestones
+first_scan: "First Steps" 🎯
+score_7_plus: "Rising Star" ⭐
+score_8_plus: "Top Tier" 💎
+score_9_plus: "Elite Status" 👑
+perfect_10: "Legendary" ✨
+
+// Improvement
+improved_05: "Progress Made" 📈 (+0.5 points)
+improved_10: "Major Transformation" 🦋 (+1.0 points)
+improved_20: "Complete Makeover" 🔥 (+2.0 points)
+
+// Engagement
+week_streak: "Committed" 🔥 (+5 scans)
+month_streak: "Dedicated" 💪 (Free month Basic)
+quarter_streak: "Unstoppable" ⚡ (+20 scans)
+year_streak: "Year Warrior" 👑 (Free month Pro)
+
+// Routine Mastery
+completed_routine_7: "Habit Starter" ✅
+completed_routine_30: "Habit Master" 🎖️ (+15 scans)
+completed_routine_90: "Lifestyle Legend" 🏆 (Free month Pro)
+perfect_week: "Perfectionist" 💯 (100% completion 7 days)
+
+// Social
+first_share: "Spreading the Word" 📱 (+2 scans)
+viral_share: "Influencer" 🌟 (share gets 10+ clicks)
+referral_5: "Networker" 👥 (+10 scans)
+referral_25: "Ambassador" 🎯 (Free month Pro)
+referral_100: "Legend" 👑 (Free lifetime Basic)
+
+// Community
+leaderboard_top10: "Top Performer" 🥇
+leaderboard_1st: "Champion" 👑
+helpful_commenter: "Community Leader" 💬
+```
+
+**Database Schema:**
+
+```sql
+CREATE TABLE user_achievements (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  achievement_key TEXT NOT NULL,
+  unlocked_at TIMESTAMPTZ DEFAULT NOW(),
+  reward_claimed BOOLEAN DEFAULT false,
+  UNIQUE(user_id, achievement_key)
+);
+```
+
+---
+
+#### F11: Photo History Gallery
+
+**Requirements:**
+
+- Grid view of all analysis thumbnails
+- Timeline view with dates
+- Filter by date range
+- Sort by score (highest/lowest)
+- Bulk actions (delete multiple, compare)
+- Time-lapse video generator (bonus feature)
+
+**UI Layout:**
+
+```
+┌─────────────────────────────────────┐
+│ My Journey          [Grid] [Timeline│
+│                                      │
+│ ┌────┐ ┌────┐ ┌────┐ ┌────┐         │
+│ │7.1 │ │6.8 │ │6.9 │ │6.5 │         │
+│ │Apr │ │Mar │ │Feb │ │Jan │         │
+│ └────┘ └────┘ └────┘ └────┘         │
+│                                      │
+│ ┌────┐ ┌────┐ ┌────┐ ┌────┐         │
+│ │6.2 │ │6.0 │ │5.8 │ │5.7 │         │
+│ │Dec │ │Nov │ │Oct │ │Sep │         │
+│ └────┘ └────┘ └────┘ └────┘         │
+│                                      │
+│ [Create Time-lapse] [Compare]       │
+└─────────────────────────────────────┘
+```
+
+**Time-lapse Feature:**
+
+- Select photos from gallery
+- Auto-generate 3-10 second video
+- Add background music
+- Show score progression overlay
+- Export for TikTok/Instagram (vertical format)
+
+---
+
+### 3.3 Phase 2.5 Features (Weeks 9-16) - Engagement & Monetization
+
+#### F12: AI Chat Coach
+
+**Requirements:**
+
+- Real-time conversational AI for ongoing advice and support
+- Context-aware responses based on user's analysis history, routines, and goals
+- Quick question chips for common queries
+- Conversation history saved
+- Rate limiting by subscription tier
+
+**AI Coach Capabilities:**
+
+- Answer questions about skincare, grooming, fitness, style
+- Provide personalized tips based on user's weak areas
+- Suggest routine adjustments based on compliance data
+- Offer motivation and encouragement
+- Reference user's progress and data in responses
+
+**Rate Limits:**
+
+- Free: 5 messages/month
+- Basic: 30 messages/month
+- Pro: 100 messages/month
+- Unlimited: Unlimited messages + priority response time
+
+**System Prompt Template:**
+
+```
+You are a supportive looksmaxxing coach for BlackPill.
+
+User context:
+- Latest score: {latestScore}
+- Weak areas: {weakestCategories}
+- Current routine: {activeRoutineName}
+- Routine compliance: {complianceRate}
+- Subscription: {tier}
+- Recent progress: {recentProgress}
+
+Be constructive, encouraging, and specific. Reference their data.
+Avoid toxic terminology. Focus on actionable advice.
+If asked about advanced treatments, recommend consulting professionals.
+```
+
+**Quick Question Chips:**
+
+- "How to improve jawline?"
+- "Best skincare routine?"
+- "Mewing tips?"
+- "How to fix asymmetry?"
+- "Diet for better skin?"
+
+**Database Schema:**
+
+```sql
+CREATE TABLE ai_conversations (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  title TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE ai_messages (
+  id UUID PRIMARY KEY,
+  conversation_id UUID REFERENCES ai_conversations(id) ON DELETE CASCADE,
+  role TEXT NOT NULL, -- 'user' or 'assistant'
+  content TEXT NOT NULL,
+  tokens_used INT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE ai_usage_tracking (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  month DATE NOT NULL,
+  messages_sent INT DEFAULT 0,
+  tokens_used INT DEFAULT 0,
+  UNIQUE(user_id, month)
+);
+```
+
+**API Endpoint:**
+
+```
+POST /api/ai-coach/chat
+Body: {
+  conversationId?: string,
+  message: string
+}
+Response: {
+  reply: string,
+  conversationId: string,
+  remainingMessages: int
+}
+```
+
+**Cost Management:**
+
+- Use GPT-4o-mini (~$0.01-0.05 per conversation)
+- Cache system prompts
+- Set max_tokens: 300
+- Temperature: 0.7 for natural responses
+
+---
+
+#### F13: Goal Setting & Tracking
+
+**Requirements:**
+
+- Users can set specific improvement goals
+- Goal types: score improvement, category improvement, routine consistency, weight loss
+- Smart milestone generation
+- Progress tracking with visual indicators
+- Deadline reminders
+- Goal achievement celebrations
+
+**Goal Types:**
+
+1. **Score Improvement:** "Reach 8.0 overall score"
+2. **Category Improvement:** "Improve skin score to 7.5"
+3. **Routine Consistency:** "Complete routine 90% for 60 days"
+4. **Custom Goal:** User-defined milestone
+
+**Goal Creation Flow:**
+
+```
+1. Select goal type
+2. Set current and target values
+3. Choose deadline
+4. AI generates milestones (Week 1, Month 1, Halfway, Final)
+5. Select reminder frequency
+6. Create goal
+```
+
+**Smart Milestones:**
+
+```javascript
+// Example for "6.2 → 8.0 in 90 days"
+Milestones:
+- Week 2: Reach 6.5 (+0.3)
+- Month 1: Reach 7.0 (+0.8)
+- Month 2: Reach 7.5 (+1.3)
+- Month 3: Reach 8.0 (+1.8) ✓ GOAL
+```
+
+**Database Schema:**
+
+```sql
+CREATE TABLE user_goals (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  goal_type TEXT NOT NULL,
+  target_value NUMERIC,
+  current_value NUMERIC,
+  deadline DATE,
+  status TEXT DEFAULT 'active',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  completed_at TIMESTAMPTZ
+);
+
+CREATE TABLE goal_milestones (
+  id UUID PRIMARY KEY,
+  goal_id UUID REFERENCES user_goals(id) ON DELETE CASCADE,
+  milestone_name TEXT,
+  target_value NUMERIC,
+  target_date DATE,
+  completed BOOLEAN DEFAULT false,
+  completed_at TIMESTAMPTZ
+);
+```
+
+**Notifications:**
+
+- Milestone approaching: "You're 80% to your milestone!"
+- Milestone achieved: "🎉 You hit your Month 1 goal!"
+- Behind schedule: "Let's get back on track. Try a 7-day focus?"
+- Goal completed: "🏆 GOAL ACHIEVED! You reached 8.0!"
+
+---
+
+#### F14: Enhanced Push Notification System
+
+**Requirements:**
+
+- Smart, personalized notification scheduling based on user behavior
+- Multiple notification types for engagement, retention, and re-engagement
+- User preference controls (notification types, quiet hours)
+- A/B testing for notification effectiveness
+
+**Notification Types:**
+
+```javascript
+// Daily Engagement
+morning_routine: "Good morning! ☀️ Time for your routine"
+evening_routine: "Don't forget your evening skincare! 🌙"
+streak_endangered: "Your 12-day streak is at risk! 🔥"
+
+// Progress & Milestones
+goal_milestone: "You're 80% to your goal! 💪"
+routine_complete: "Perfect week! You completed 100% 🎉"
+achievement_unlock: "New badge unlocked: Habit Master! 🏆"
+
+// Social
+referral_accepted: "Alex joined using your code! +5 scans 🎉"
+comment_reply: "Someone replied to your comment"
+leaderboard_rank: "You moved up to #15! 📈"
+
+// Retention
+scan_reminder: "It's been 30 days! Ready to see progress? 📸"
+win_back: "We miss you! Here's 3 bonus scans ❤️"
+subscription_renewal: "Your Pro subscription renews in 7 days"
+
+// Tips & Education
+daily_tip: "💡 Tip: Apply retinol only at night"
+content_unlock: "New article: 'The Science of Skincare' 📚"
+```
+
+**Smart Scheduling:**
+
+- Analyze user's active hours (when they typically use app)
+- Send routine reminders 30 min before usual routine time
+- Avoid quiet hours (default: 10 PM - 8 AM)
+- Batch notifications to avoid spam
+- Adaptive timing based on engagement
+
+**User Preferences:**
+
+```sql
+CREATE TABLE notification_preferences (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id) UNIQUE,
+  routine_reminders BOOLEAN DEFAULT true,
+  streak_reminders BOOLEAN DEFAULT true,
+  goal_updates BOOLEAN DEFAULT true,
+  social_notifications BOOLEAN DEFAULT true,
+  marketing_notifications BOOLEAN DEFAULT false,
+  quiet_hours_start TIME DEFAULT '22:00',
+  quiet_hours_end TIME DEFAULT '08:00',
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+#### F15: In-App Product Marketplace
+
+**Requirements:**
+
+- Curated store of recommended skincare, grooming, and fitness products
+- AI-powered personalized recommendations based on analysis
+- Affiliate links for commission revenue
+- Product reviews and ratings
+- "Shop My Routine" feature (one-click buy all routine products)
+
+**Product Categories:**
+
+- Skincare (cleansers, moisturizers, serums, sunscreen)
+- Grooming (razors, trimmers, beard care)
+- Fitness (supplements, equipment)
+- Style (clothing, accessories)
+
+**Recommendation Engine:**
+
+```javascript
+// Generate recommendations based on analysis
+if (skinScore < 7.0) {
+  recommend: ["CeraVe Hydrating Cleanser", "The Ordinary Niacinamide", "La Roche-Posay Sunscreen"]
+}
+if (jawlineScore < 7.0) {
+  recommend: ["Jawzrsize", "Facial Exercise Guide", "Mewing Tutorial"]
+}
+```
+
+**Database Schema:**
+
+```sql
+CREATE TABLE products (
+  id UUID PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  category TEXT,
+  subcategory TEXT,
+  price NUMERIC,
+  currency TEXT DEFAULT 'USD',
+  affiliate_link TEXT,
+  image_url TEXT,
+  rating NUMERIC,
+  review_count INT,
+  recommended_for TEXT[],
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE product_recommendations (
+  id UUID PRIMARY KEY,
+  analysis_id UUID REFERENCES analyses(id),
+  product_id UUID REFERENCES products(id),
+  relevance_score NUMERIC,
+  reason TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE product_clicks (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  product_id UUID REFERENCES products(id),
+  clicked_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Monetization:**
+
+- 5-15% affiliate commission per sale
+- Average order value: $30-50
+- Target conversion: 3-5%
+- **Potential revenue:** $75K-200K/year at 200K MAU
+
+**UI Features:**
+
+- "Recommended For You" section on home screen
+- "Shop by Category" browse
+- "Complete Your Routine" (products for active routine)
+- Product detail pages with reviews
+- Wishlist functionality
+
+---
+
+#### F16: Personalized Insights Dashboard
+
+**Requirements:**
+
+- AI-generated insights based on user data patterns
+- Correlation analysis (routine completion vs score improvements)
+- Trend predictions
+- Actionable recommendations
+- Visual data representations
+
+**Insight Types:**
+
+```javascript
+// Correlation Insights
+"Your skin score improves 15% after completing morning routine 5+ days/week"
+"You score 0.3 points higher in photos taken outdoors"
+"Your best progress happens when you sleep 7+ hours"
+
+// Timing Insights
+"You're most consistent with routines on weekdays"
+"Your scores peak on Mondays, dip on Fridays"
+"Best photo time for you: 10 AM - 2 PM"
+
+// Progress Predictions
+"Based on your trend, you'll likely reach 8.0 in 45 days"
+"If you maintain 90% routine compliance, expect +0.5 improvement"
+
+// Comparative Insights
+"You're progressing 23% faster than average users"
+"Users with similar starting scores typically reach your goal in 60 days"
+```
+
+**Data Sources:**
+
+- Analysis history and scores
+- Routine completion rates
+- Goal progress
+- Photo metadata (time, location, lighting)
+- Engagement patterns
+
+**Database Schema:**
+
+```sql
+CREATE TABLE user_insights (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  insight_type TEXT,
+  title TEXT,
+  description TEXT,
+  actionable BOOLEAN DEFAULT false,
+  action_text TEXT,
+  action_link TEXT,
+  confidence_score NUMERIC,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  dismissed_at TIMESTAMPTZ
+);
+```
+
+**Insight Refresh:**
+
+- Generate new insights weekly
+- Update predictions daily
+- Show max 5 insights at a time
+- Allow users to dismiss insights
+
+---
+
+### 3.4 Phase 2.6 Features (Weeks 13-16) - Advanced Differentiation
+
+#### F17: Transparent Scoring Methodology
+
+**Requirements:**
+
+- Explain how each metric is calculated with full transparency
+- User-adjustable category weights (within limits)
+- Visual representation of scoring methodology
+- Comparison to beauty standards and scientific research
+- Build trust through openness
+
+**Scoring Breakdown Display:**
+
+```typescript
+interface ScoringMethodology {
+  category: string; // 'symmetry', 'skin', etc.
+  weight: number; // Default: 20%
+  adjustableRange: [number, number]; // [15%, 25%]
+  factors: string[]; // What's measured
+  measurement: string; // How it's measured
+  scientificBasis: string; // Research/standard
+}
+
+// Example for Symmetry
+{
+  category: 'Symmetry',
+  weight: 20,
+  adjustableRange: [15, 25],
+  factors: [
+    'Face horizontal symmetry (left/right)',
+    'Eye alignment and spacing',
+    'Nose centering',
+    'Mouth symmetry'
+  ],
+  measurement: 'Facial landmark analysis (68 points)',
+  scientificBasis: 'Studies show <5% deviation is ideal (Rhodes et al., 2007)'
+}
+```
+
+**User Controls:**
+
+- Sliders for each category weight (15-25% range)
+- Real-time score recalculation
+- "Reset to Default" button
+- "Why This Matters" info buttons
+
+**Methodology Page:**
+
+- Full documentation of AI model used (GPT-4o Vision)
+- Data sources and training information
+- Limitations and disclaimers
+- Scientific references
+- Link to whitepaper (optional premium content)
+
+**UI Implementation:**
+
+```
+┌─────────────────────────────────────┐
+│ How Your Score Was Calculated       │
+│                                     │
+│ SYMMETRY (20%) ────── 7.2/10       │
+│ [Adjust: 15% ▬▬●▬▬▬▬ 25%]          │
+│                                     │
+│ ℹ️ Measured using:                  │
+│ • 68-point facial landmark map      │
+│ • Left/right deviation: 2.3%        │
+│ • Industry standard: <5% ideal      │
+│                                     │
+│ [View Full Methodology]             │
+│                                     │
+│ SKIN QUALITY (20%) ───── 6.8/10    │
+│ [Adjust: 15% ▬▬▬●▬▬▬ 25%]          │
+│ ...                                 │
+└─────────────────────────────────────┘
+```
+
+**Database Schema:**
+
+```sql
+CREATE TABLE user_scoring_preferences (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) UNIQUE,
+  symmetry_weight INT DEFAULT 20 CHECK (symmetry_weight BETWEEN 15 AND 25),
+  skin_weight INT DEFAULT 20 CHECK (skin_weight BETWEEN 15 AND 25),
+  jawline_weight INT DEFAULT 15 CHECK (jawline_weight BETWEEN 10 AND 20),
+  eyes_weight INT DEFAULT 15 CHECK (eyes_weight BETWEEN 10 AND 20),
+  lips_weight INT DEFAULT 15 CHECK (lips_weight BETWEEN 10 AND 20),
+  bone_structure_weight INT DEFAULT 15 CHECK (bone_structure_weight BETWEEN 10 AND 20),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT total_weight_100 CHECK (
+    symmetry_weight + skin_weight + jawline_weight + 
+    eyes_weight + lips_weight + bone_structure_weight = 100
+  )
+);
+```
+
+---
+
+#### F18: 3-Tier Action Plans (DIY/OTC/Professional)
+
+**Requirements:**
+
+- For each weak area, provide three levels of guidance
+- Include cost estimates, time to results, and effectiveness ratings
+- Link to product marketplace for OTC options
+- Provide referrals to professionals for advanced treatments
+- Show realistic expectations for each tier
+
+**Action Plan Structure:**
+
+```typescript
+interface ActionPlan {
+  issue: string; // "Moderate acne scarring detected"
+  category: string; // "skin"
+  currentScore: number;
+  targetScore: number;
+  severity: 'mild' | 'moderate' | 'severe';
+  
+  diy: {
+    title: string;
+    routine: string[];
+    estimatedCost: string; // "$0-30"
+    timeToResults: string; // "8-12 weeks"
+    effectiveness: 'low' | 'medium' | 'high';
+    difficultyLevel: 'easy' | 'moderate' | 'challenging';
+    scienceBacking: string;
+  };
+  
+  otc: {
+    title: string;
+    products: Array<{
+      name: string;
+      purpose: string;
+      price: number;
+      productId?: string; // Link to marketplace
+    }>;
+    routine: string[];
+    estimatedCost: string; // "$50-150"
+    timeToResults: string; // "4-8 weeks"
+    effectiveness: 'medium' | 'high';
+    difficultyLevel: 'moderate' | 'challenging';
+    scienceBacking: string;
+  };
+  
+  professional: {
+    title: string;
+    treatments: Array<{
+      name: string;
+      description: string;
+      averageCost: string;
+      sessionsNeeded: number;
+    }>;
+    estimatedCost: string; // "$200-1500"
+    timeToResults: string; // "2-6 months"
+    effectiveness: 'high' | 'very high';
+    warning: string; // "Consult board-certified dermatologist"
+    whenToConsider: string;
+    findProfessional: string; // Link or search
+  };
+}
+```
+
+**Example Output:**
+
+```
+🔴 Moderate Acne Scarring (Skin: 5.8/10 → Target: 7.5/10)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIY APPROACH
+Cost: $0-30 | Time: 8-12 weeks | ⭐⭐⭐
+
+✓ Daily vitamin C serum (brightening)
+✓ Gentle exfoliation 2x/week (cell turnover)
+✓ Sunscreen SPF 50+ DAILY (prevent darkening)
+✓ Stay hydrated (skin health)
+
+Science: Vitamin C promotes collagen synthesis
+Difficulty: Easy | Best for: Mild scarring
+
+[Start DIY Routine]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OTC PRODUCTS
+Cost: $50-150 | Time: 4-8 weeks | ⭐⭐⭐⭐
+
+✓ The Ordinary AHA 30% + BHA 2% ($7.20)
+  → Exfoliates dead skin, reduces scars
+✓ CeraVe Resurfacing Retinol ($18)
+  → Accelerates cell turnover
+✓ Niacinamide 10% + Zinc 1% ($6)
+  → Reduces inflammation, evens tone
+
+Science: Retinoids proven to reduce atrophic scars
+Difficulty: Moderate | Best for: Moderate scarring
+
+[Shop These Products]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROFESSIONAL TREATMENTS
+Cost: $200-1500 | Time: 2-6 months | ⭐⭐⭐⭐⭐
+
+✓ Microneedling (4-6 sessions @ $200-300 each)
+  → Stimulates collagen, fills scars
+✓ Chemical Peel Series (3-6 sessions)
+  → Removes damaged layers
+✓ Laser Resurfacing (1-3 sessions)
+  → Precision scar treatment
+
+⚠️ CONSULT: Board-certified dermatologist required
+When to consider: Severe scarring, other methods failed
+Effectiveness: Very High for deep/rolling scars
+
+[Find Dermatologist Near You]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💡 RECOMMENDATION: Start with OTC approach for 
+   8 weeks. If <30% improvement, consult professional.
+```
+
+**Integration with Routine Generator:**
+
+- Auto-suggest DIY approach in custom routines
+- Add OTC products to routine with marketplace links
+- Flag for professional consultation in severe cases
+
+---
+
+#### F19: Structured Challenges & Photo Verification
+
+**Requirements:**
+
+- Pre-built challenge programs (7, 30, 60, 90 day)
+- Photo consistency verification to ensure valid progress tracking
+- Challenge completion rewards and leaderboards
+- Guided lighting, angle, and distance instructions
+- Calibration photo for baseline comparison
+
+**Challenge Structure:**
+
+```typescript
+interface Challenge {
+  id: string;
+  name: string; // "30-Day Skin Glow-Up Challenge"
+  description: string;
+  duration: number; // days
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  focusArea: string[]; // ['skin', 'overall']
+  
+  requirements: {
+    dailyTasks: number; // Must complete X tasks/day
+    weeklyCheckins: number; // Required photo check-ins
+    minimumCompliance: number; // 80% required
+    photoVerification: boolean;
+  };
+  
+  schedule: Array<{
+    day: number;
+    tasks: string[];
+    milestone: boolean;
+    checkInRequired: boolean;
+  }>;
+  
+  rewards: {
+    badge: string;
+    bonusScans: number;
+    unlocks: string[]; // "Advanced routine templates"
+    tierDiscount?: string; // "20% off Pro for 1 month"
+  };
+  
+  photoGuidance: {
+    lighting: 'natural' | 'consistent-indoor';
+    timeOfDay: string; // "Morning, near window"
+    distance: string; // "Arm's length"
+    angle: string; // "Straight on, level with camera"
+    background: string; // "Plain, uncluttered"
+    expression: string; // "Neutral"
+  };
+  
+  participants: number;
+  successRate: number;
+  avgImprovement: number;
+}
+```
+
+**Available Challenges:**
+
+1. **7-Day Skincare Starter** (Beginner)
+   - Focus: Establish basic skincare routine
+   - Checkins: Days 1, 4, 7
+   - Reward: "Habit Starter" badge + 5 scans
+
+2. **30-Day Glow-Up** (Intermediate)
+   - Focus: Comprehensive skin improvement
+   - Checkins: Weekly (Days 7, 14, 21, 30)
+   - Reward: "Transformer" badge + 15 scans + 20% off Pro
+
+3. **60-Day Jawline Definition** (Advanced)
+   - Focus: Mewing + facial exercises
+   - Checkins: Bi-weekly
+   - Reward: "Chiseled" badge + 25 scans + Free month Pro
+
+4. **90-Day Full Transformation** (Expert)
+   - Focus: All categories holistic improvement
+   - Checkins: Weekly
+   - Reward: "Legend" badge + 50 scans + Permanent 10% discount
+
+**Photo Verification System:**
+
+```typescript
+interface PhotoVerification {
+  originalPhoto: string; // Calibration baseline
+  checkInPhoto: string; // New photo to verify
+  
+  checks: {
+    lighting: {
+      score: number; // 0-1
+      pass: boolean;
+      suggestion?: string;
+    };
+    distance: {
+      faceSize: number; // % of frame
+      pass: boolean; // 40-60% range
+      suggestion?: string;
+    };
+    angle: {
+      deviation: number; // degrees
+      pass: boolean; // <10 degrees
+      suggestion?: string;
+    };
+    background: {
+      clutter: number; // 0-1
+      pass: boolean; // <0.3
+      suggestion?: string;
+    };
+    expression: {
+      neutral: boolean;
+      pass: boolean;
+      suggestion?: string;
+    };
+  };
+  
+  overallValid: boolean;
+  confidenceScore: number;
+}
+
+// Verification function
+async function validateProgressPhoto(photo, calibrationPhoto) {
+  const metadata = await analyzePhotoConditions(photo);
+  const baseline = await analyzePhotoConditions(calibrationPhoto);
+  
+  // Compare lighting consistency
+  const lightingDiff = Math.abs(metadata.lighting.score - baseline.lighting.score);
+  const lightingPass = lightingDiff < 0.2;
+  
+  // Check face size consistency
+  const faceSizeDiff = Math.abs(metadata.faceSize - baseline.faceSize);
+  const distancePass = faceSizeDiff < 10; // Within 10%
+  
+  // Check angle consistency
+  const anglePass = metadata.faceAngle < 10; // Less than 10 degrees
+  
+  // Check background
+  const backgroundPass = metadata.backgroundClutter < 0.3;
+  
+  return {
+    checks: {
+      lighting: {
+        score: metadata.lighting.score,
+        pass: lightingPass,
+        suggestion: !lightingPass ? "Try to match the lighting from your first photo. Use the same location and time of day." : undefined
+      },
+      distance: {
+        faceSize: metadata.faceSize,
+        pass: distancePass,
+        suggestion: !distancePass ? "Hold camera at the same distance as your baseline photo (arm's length)." : undefined
+      },
+      // ... other checks
+    },
+    overallValid: lightingPass && distancePass && anglePass && backgroundPass,
+    confidenceScore: (checks passed / total checks)
+  };
+}
+```
+
+**UI for Photo Guidance:**
+
+```
+┌─────────────────────────────────────┐
+│ 📸 Challenge Check-In (Day 7)       │
+│                                     │
+│ Before taking your photo:           │
+│                                     │
+│ ✓ Use natural light near a window  │
+│ ✓ Same time of day as baseline     │
+│ ✓ Hold phone at arm's length        │
+│ ✓ Face straight ahead               │
+│ ✓ Plain background                  │
+│ ✓ Neutral expression                │
+│                                     │
+│ [View Baseline Photo]               │
+│ [Take Check-In Photo]               │
+│                                     │
+│ Real-time guidance:                 │
+│ 🟢 Lighting: Good                   │
+│ 🟢 Distance: Perfect                │
+│ 🟡 Angle: Tilt slightly left        │
+│ 🟢 Background: Clear                │
+└─────────────────────────────────────┘
+```
+
+**Database Schema:**
+
+```sql
+CREATE TABLE challenges (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  description TEXT,
+  duration_days INT NOT NULL,
+  difficulty TEXT NOT NULL,
+  focus_areas TEXT[],
+  requirements JSONB NOT NULL,
+  schedule JSONB NOT NULL,
+  rewards JSONB NOT NULL,
+  photo_guidance JSONB NOT NULL,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE challenge_participations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  challenge_id UUID REFERENCES challenges(id),
+  user_id UUID REFERENCES users(id),
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  completed_at TIMESTAMPTZ,
+  status TEXT DEFAULT 'active', -- 'active', 'completed', 'abandoned'
+  current_day INT DEFAULT 1,
+  compliance_rate NUMERIC,
+  calibration_photo_url TEXT,
+  UNIQUE(challenge_id, user_id)
+);
+
+CREATE TABLE challenge_checkins (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  participation_id UUID REFERENCES challenge_participations(id) ON DELETE CASCADE,
+  day INT NOT NULL,
+  photo_url TEXT,
+  photo_verified BOOLEAN DEFAULT false,
+  verification_data JSONB,
+  score NUMERIC,
+  notes TEXT,
+  checked_in_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_challenge_participations_user ON challenge_participations(user_id);
+CREATE INDEX idx_challenge_participations_status ON challenge_participations(status);
+CREATE INDEX idx_challenge_checkins_participation ON challenge_checkins(participation_id);
+```
+
+---
+
+#### F20: Ethical Guardrails & Mental Health Resources
+
+**Requirements:**
+
+- Sensitive inference opt-in/opt-out controls
+- Clear disclaimers about AI limitations
+- Mental health resource links
+- Frequency monitoring and intervention
+- Positive messaging framework
+
+**Ethical Controls:**
+
+```typescript
+interface EthicalSettings {
+  sensitiveInferences: {
+    ageEstimation: boolean; // Default: opt-in
+    ethnicityDetection: boolean; // Default: opt-out
+    bodyTypeInferences: boolean; // Default: opt-in
+    advancedFacialFeatures: boolean; // Default: opt-in
+  };
+  
+  disclaimersAcknowledged: {
+    aiLimitations: boolean;
+    notMedicalAdvice: boolean;
+    beautyStandards: boolean;
+    personalWorth: boolean;
+  };
+  
+  mentalHealthSettings: {
+    enableWellnessChecks: boolean; // Default: true
+    checkFrequency: 'weekly' | 'biweekly' | 'monthly';
+    showResourcesOnLowScores: boolean; // Default: true
+  };
+}
+```
+
+**Disclaimers (Shown During Onboarding):**
+
+```
+┌─────────────────────────────────────┐
+│ ⚠️ Important Information            │
+│                                     │
+│ BlackPill uses AI to analyze facial │
+│ attractiveness. Please understand: │
+│                                     │
+│ ✓ Results are algorithmic estimates │
+│   not absolute truth                │
+│                                     │
+│ ✓ Based on conventional beauty      │
+│   standards, not universal values   │
+│                                     │
+│ ✓ Your worth as a person extends    │
+│   far beyond physical appearance    │
+│                                     │
+│ ✓ This is NOT medical advice        │
+│   Consult professionals for health  │
+│   concerns                          │
+│                                     │
+│ If you experience negative thoughts │
+│ about your appearance, please reach │
+│ out to mental health resources.     │
+│                                     │
+│ [View Resources] [I Understand]     │
+└─────────────────────────────────────┘
+```
+
+**Mental Health Resources:**
+
+```typescript
+const MENTAL_HEALTH_RESOURCES = [
+  {
+    name: "NAMI Helpline",
+    phone: "1-800-950-6264",
+    description: "National Alliance on Mental Illness",
+    available: "Mon-Fri, 10am-10pm ET"
+  },
+  {
+    name: "Crisis Text Line",
+    sms: "Text HOME to 741741",
+    description: "24/7 crisis support via text",
+    available: "24/7"
+  },
+  {
+    name: "BDD Support",
+    url: "https://bdd.iocdf.org",
+    description: "Body Dysmorphic Disorder Foundation",
+    available: "Online resources"
+  },
+  {
+    name: "7 Cups",
+    url: "https://www.7cups.com",
+    description: "Free emotional support chat",
+    available: "24/7"
+  },
+  {
+    name: "BetterHelp",
+    url: "https://www.betterhelp.com",
+    description: "Professional online therapy",
+    available: "Paid service, financial aid available"
+  }
+];
+```
+
+**Wellness Checks:**
+
+```typescript
+// Trigger wellness check if:
+async function shouldShowWellnessCheck(userId) {
+  const user = await getUser(userId);
+  const recentAnalyses = await getRecentAnalyses(userId, 7); // Last 7 days
+  
+  const triggers = {
+    highFrequency: recentAnalyses.length > 10,
+    lowScores: recentAnalyses.filter(a => a.score < 5.0).length > 3,
+    obsessivePattern: await detectObsessivePattern(userId),
+    recentDecline: await hasRecentScoreDecline(userId, 1.0) // > 1 point drop
+  };
+  
+  return Object.values(triggers).some(t => t === true);
+}
+
+// Show compassionate message
+const WELLNESS_MESSAGES = [
+  {
+    trigger: 'highFrequency',
+    message: "We noticed you've been analyzing frequently. Remember, you're more than a number! Take a break and focus on your journey, not just the destination.",
+    tone: 'gentle'
+  },
+  {
+    trigger: 'lowScores',
+    message: "Scores can vary based on many factors (lighting, angles, even mood!). Don't let numbers define you. Focus on feeling confident and healthy.",
+    tone: 'supportive'
+  },
+  {
+    trigger: 'recentDecline',
+    message: "Score fluctuations are normal! External factors like sleep, hydration, and stress affect appearance. Focus on wellness, not perfection.",
+    tone: 'reassuring'
+  }
+];
+```
+
+**Always-Visible Resources:**
+
+```
+// Footer on every results screen
+┌─────────────────────────────────────┐
+│ ℹ️ This is just one perspective.    │
+│ Your worth isn't defined by a score.│
+│                                     │
+│ Struggling with body image?         │
+│ [Mental Health Resources] 💚        │
+└─────────────────────────────────────┘
+```
+
+**Database Schema:**
+
+```sql
+CREATE TABLE user_ethical_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) UNIQUE,
+  age_estimation BOOLEAN DEFAULT true,
+  ethnicity_detection BOOLEAN DEFAULT false,
+  body_type_inferences BOOLEAN DEFAULT true,
+  advanced_features BOOLEAN DEFAULT true,
+  disclaimers_acknowledged BOOLEAN DEFAULT false,
+  enable_wellness_checks BOOLEAN DEFAULT true,
+  check_frequency TEXT DEFAULT 'weekly',
+  show_resources_on_low_scores BOOLEAN DEFAULT true,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE wellness_checks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id),
+  trigger_reason TEXT NOT NULL,
+  message_shown TEXT NOT NULL,
+  resources_accessed BOOLEAN DEFAULT false,
+  user_response TEXT, -- 'dismissed', 'viewed_resources', 'contacted_support'
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_wellness_checks_user ON wellness_checks(user_id, created_at DESC);
+```
+
+---
+
+#### F21: Wearable Integration (Wellness-Aesthetic Correlation)
+
+**Requirements:**
+
+- Integration with Apple Health (iOS) and Google Fit (Android)
+- Track wellness metrics: sleep, hydration, exercise, stress (HRV)
+- Correlate wellness data with facial analysis scores
+- Provide personalized insights based on correlations
+- Holistic health positioning
+
+**Integrated Metrics:**
+
+```typescript
+interface WellnessData {
+  sleep: {
+    hours: number;
+    quality: 'poor' | 'fair' | 'good' | 'excellent';
+    source: 'Apple Watch' | 'Fitbit' | 'Whoop' | 'Manual';
+    deepSleepMinutes?: number;
+    remSleepMinutes?: number;
+  };
+  
+  hydration: {
+    ounces: number;
+    goal: number;
+    percentage: number;
+    source: 'Apple Health' | 'Manual';
+  };
+  
+  stress: {
+    hrv: number; // Heart rate variability (ms)
+    restingHR: number;
+    stressLevel: 'low' | 'medium' | 'high';
+    source: 'Apple Watch' | 'Fitbit' | 'Whoop';
+  };
+  
+  exercise: {
+    minutes: number;
+    intensity: 'light' | 'moderate' | 'vigorous';
+    type: string[]; // ['cardio', 'strength', 'yoga']
+    calories: number;
+    source: 'Apple Health' | 'Google Fit';
+  };
+  
+  nutrition: {
+    caloriesConsumed: number;
+    proteinGrams?: number;
+    waterIntake: number;
+    source: 'MyFitnessPal' | 'Manual';
+  };
+}
+```
+
+**Correlation Analysis:**
+
+```typescript
+async function analyzeWellnessImpact(userId) {
+  // Get last 30 days of analyses and wellness data
+  const analyses = await getUserAnalyses(userId, 30);
+  const wellness = await getWellnessData(userId, 30);
+  
+  // Calculate correlations
+  const correlations = {
+    sleep: calculateCorrelation(
+      wellness.map(d => d.sleep.hours),
+      analyses.map(a => a.breakdown.skin)
+    ),
+    hydration: calculateCorrelation(
+      wellness.map(d => d.hydration.ounces),
+      analyses.map(a => a.breakdown.skin)
+    ),
+    exercise: calculateCorrelation(
+      wellness.map(d => d.exercise.minutes),
+      analyses.map(a => a.score)
+    ),
+    stress: calculateCorrelation(
+      wellness.map(d => d.stress.hrv),
+      analyses.map(a => a.score)
+    )
+  };
+  
+  // Generate insights
+  const insights = [];
+  
+  if (correlations.sleep > 0.5) {
+    const avgSkinScoreGoodSleep = avg(analyses.filter((a, i) => 
+      wellness[i].sleep.hours >= 7.5).map(a => a.breakdown.skin)
+    );
+    const avgSkinScorePoorSleep = avg(analyses.filter((a, i) => 
+      wellness[i].sleep.hours < 7).map(a => a.breakdown.skin)
+    );
+    const delta = avgSkinScoreGoodSleep - avgSkinScorePoorSleep;
+    
+    insights.push({
+      category: 'sleep',
+      impact: delta,
+      message: `Your skin score is ${delta.toFixed(1)} points higher on days you sleep 7.5+ hours`,
+      recommendation: 'Prioritize 7.5-8 hours of sleep for better skin appearance',
+      priority: 'high'
+    });
+  }
+  
+  // Similar for other metrics...
+  
+  return { correlations, insights };
+}
+```
+
+**UI Widget:**
+
+```
+┌─────────────────────────────────────┐
+│ 🏃 Wellness Impact on Your Score    │
+│                                     │
+│ Sleep: 7.2 hrs avg → Skin +0.5 ⭐   │
+│ [View Analysis]                     │
+│                                     │
+│ Hydration: 52 oz → ⚠️ Below goal    │
+│ Target: 64 oz/day for +0.3 boost   │
+│                                     │
+│ Exercise: 2x/week → Add cardio!     │
+│ Target: 4x/week for +0.4 boost     │
+│                                     │
+│ [Connect Apple Health]              │
+│ [Connect Google Fit]                │
+└─────────────────────────────────────┘
+```
+
+**Wellness Insights Dashboard:**
+
+- **Top Correlations**: Which factors affect your scores most
+- **Optimization Tips**: Specific actions to improve
+- **Trend Charts**: Wellness metrics vs. appearance scores over time
+- **Daily Checklist**: Sleep, hydration, exercise goals
+- **Streak Tracking**: Days meeting wellness targets
+
+**Integration Implementation:**
+
+```dart
+// iOS: HealthKit
+import 'package:health/health.dart';
+
+Future<void> syncAppleHealth() async {
+  final health = Health();
+  
+  // Request permissions
+  final types = [
+    HealthDataType.SLEEP_IN_BED,
+    HealthDataType.WATER,
+    HealthDataType.HEART_RATE,
+    HealthDataType.STEPS,
+    HealthDataType.WORKOUT,
+  ];
+  
+  final permissions = await health.requestAuthorization(types);
+  
+  if (permissions) {
+    // Fetch data
+    final now = DateTime.now();
+    final yesterday = now.subtract(Duration(days: 1));
+    
+    final data = await health.getHealthDataFromTypes(yesterday, now, types);
+    
+    // Send to backend
+    await api.syncWellnessData(data);
+  }
+}
+
+// Android: Google Fit
+import 'package:fit_kit/fit_kit.dart';
+
+Future<void> syncGoogleFit() async {
+  final permissions = [
+    DataType.SLEEP,
+    DataType.WATER,
+    DataType.HEART_RATE,
+    DataType.DISTANCE,
+  ];
+  
+  final hasPermissions = await FitKit.requestPermissions(permissions);
+  
+  if (hasPermissions) {
+    final now = DateTime.now();
+    final yesterday = now.subtract(Duration(days: 1));
+    
+    final data = await FitKit.read(DataType.SLEEP, yesterday, now);
+    
+    await api.syncWellnessData(data);
+  }
+}
+```
+
+**Database Schema:**
+
+```sql
+CREATE TABLE user_wellness_data (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  sleep_hours NUMERIC,
+  sleep_quality TEXT,
+  hydration_oz INT,
+  exercise_minutes INT,
+  exercise_intensity TEXT,
+  stress_hrv INT,
+  resting_hr INT,
+  calories_consumed INT,
+  data_source TEXT, -- 'apple_health', 'google_fit', 'manual'
+  raw_data JSONB,
+  synced_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, date)
+);
+
+CREATE TABLE wellness_correlations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) UNIQUE,
+  sleep_skin_correlation NUMERIC,
+  hydration_skin_correlation NUMERIC,
+  exercise_overall_correlation NUMERIC,
+  stress_score_correlation NUMERIC,
+  insights JSONB,
+  last_calculated TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_wellness_data_user_date ON user_wellness_data(user_id, date DESC);
+```
+
+**Marketing Angle:**
+
+- "The first looksmaxxing app that connects appearance to wellness"
+- "Your face reflects your health - optimize both together"
+- "Science-backed: Better sleep = Better appearance"
+
+---
+
+#### F22: Leaderboard
 - Your rank display (highlighted row)
 - Filters: This Week, All-Time, By Location
 - Top 3 badges: 🥇 Gold, 🥈 Silver, 🥉 Bronze
@@ -1418,8 +3031,11 @@ coupon_applied (code: string)
 
 | 1.1 | Dec 20, 2025 | Updated F5: Hybrid payment system (app + web flows), source tracking, deep link handling (`blackpill://subscribe/success`), subscription status polling, analytics events (`subscription_success`, `subscription_activated`). Updated API spec to support unauthenticated web flow. Updated database schema to include `source` field in subscriptions table. Fixed Unlimited tier annual price ($209.89/yr). | Product Team |
 
+| 1.2 | Oct 30, 2025 | **MAJOR UPDATE - Competitive Feature Additions:** Added Phase 2 (F7-F11): Custom Routines System (AI-generated personalized daily routines with task tracking, streaks, analytics), Before/After Comparison View (side-by-side photo comparison with deltas), Daily Check-In Streaks (habit building with rewards), Achievement Badges System (40+ unlockable badges), Photo History Gallery (grid/timeline view with time-lapse generator). Added Phase 2.5 (F12-F16): AI Chat Coach (conversational AI with rate limiting), Goal Setting & Tracking (smart milestones), Enhanced Push Notifications (behavior-based scheduling), In-App Product Marketplace (affiliate monetization), Personalized Insights Dashboard (AI-generated correlations and predictions). Updated success metrics: MRR $600K→$900K, DAU/MAU 40%→65%, Subscription Rate 15-20%→22-25%, Churn <5%→<3%. All features based on competitive analysis of Umaxx, LookMax AI, Maxxing, and Alpha Aura apps. Total investment: $39K over 6 months, expected ROI: 184x, additional ARR: +$7.2M. | Product Team |
+
+| 1.3 | Oct 30, 2025 | **ADVANCED DIFFERENTIATION UPDATE - Phase 2.6 Added:** Added Phase 2.6 (F17-F21): Transparent Scoring Methodology (user-adjustable weights, full methodology page, scientific references), 3-Tier Action Plans (DIY/OTC/Professional guidance with cost/time estimates for each weak area), Structured Challenges with Photo Verification (7/30/60/90-day programs with real-time photo guidance and consistency checks), Ethical Guardrails & Mental Health Resources (sensitive inference controls, wellness checks, always-visible resources, compassionate messaging), Wearable Integration (Apple Health/Google Fit sync, wellness-aesthetic correlation analysis, holistic insights). These features create a 10-year competitive moat through transparency, ethical positioning, and wellness integration. Updated success metrics: MRR $900K→$1.2M (+$3.6M ARR), DAU/MAU 65%→75%, Subscription Rate 22-25%→28-30%, Churn <3%→<2%, NPS 60→75. Additional investment: $19.5K, Total ROI: 246x. Features address major competitive gaps: transparent scoring (vs "black box" competitors), multi-tier action plans (vs single-solution apps), photo verification (vs unreliable progress tracking), ethical design (vs unregulated competitors), wellness integration (first in category). | Product Team |
+
 ---
-Also i want just 2 env files, one in backend and one in mobile.
 **END OF DOCUMENT**
 
 This PRD is the authoritative specification for Black Pill. All development must adhere to these requirements. Changes require Product Team approval and version increment.

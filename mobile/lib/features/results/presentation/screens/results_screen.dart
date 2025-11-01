@@ -13,6 +13,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../subscription/presentation/screens/paywall_screen.dart';
+import '../../../ethical/presentation/widgets/mental_health_resources_dialog.dart';
 import '../widgets/score_circle.dart';
 import '../widgets/breakdown_bar.dart';
 import '../widgets/share_platform_buttons.dart';
@@ -185,9 +186,22 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Breakdown',
-                          style: Theme.of(context).textTheme.headlineMedium,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Breakdown',
+                              style: Theme.of(context).textTheme.headlineMedium,
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.info_outline, size: 20),
+                              onPressed: () {
+                                context.push('/scoring/methodology?analysisId=${widget.analysisId}');
+                              },
+                              color: AppColors.neonCyan,
+                              tooltip: 'View Scoring Methodology',
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 16),
                         BreakdownBar(
@@ -252,6 +266,62 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                     ),
                   ),
                   
+                  const SizedBox(height: 24),
+                  
+                  // Action Plans for weak areas
+                  if (_hasWeakAreas(breakdown))
+                    GlassCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.trending_up, color: AppColors.neonPink, size: 24),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Improvement Plans',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Get personalized action plans for your weak areas with DIY, OTC, and professional options.',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                          ),
+                          const SizedBox(height: 16),
+                          ..._getWeakAreas(breakdown).map((area) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: OutlinedButton(
+                                  onPressed: () {
+                                    final score = (breakdown[area] as num).toDouble();
+                                    context.push(
+                                      '/action-plan?analysisId=${widget.analysisId}&category=$area&currentScore=$score&targetScore=${(score + 1.5).clamp(score, 9.5)}',
+                                    );
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.neonPink,
+                                    side: const BorderSide(color: AppColors.neonPink),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(area.toUpperCase()),
+                                      Icon(Icons.arrow_forward, size: 16),
+                                    ],
+                                  ),
+                                ),
+                              )),
+                        ],
+                      ),
+                    ),
+                  
                   const SizedBox(height: 32),
                   
                   // Share button
@@ -259,6 +329,54 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                     text: 'Share Results',
                     icon: Icons.share,
                     onPressed: _shareResults,
+                  ),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // Mental Health Resources Footer
+                  GlassCard(
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.info_outline,
+                              color: AppColors.neonCyan,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'This is just one perspective. Your worth isn\'t defined by a score.',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => const MentalHealthResourcesDialog(),
+                            );
+                          },
+                          icon: const Icon(Icons.favorite, size: 18),
+                          label: const Text('Mental Health Resources'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.neonGreen,
+                            side: const BorderSide(color: AppColors.neonGreen),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   
                   const SizedBox(height: 32),
@@ -284,6 +402,17 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
         ],
       ),
     );
+  }
+
+  bool _hasWeakAreas(Map<String, dynamic> breakdown) {
+    return breakdown.values.any((score) => (score as num).toDouble() < 7.0);
+  }
+
+  List<String> _getWeakAreas(Map<String, dynamic> breakdown) {
+    return breakdown.entries
+        .where((entry) => (entry.value as num).toDouble() < 7.0)
+        .map((entry) => entry.key)
+        .toList();
   }
 
   Widget _buildTip(String title, String description, String timeframe) {

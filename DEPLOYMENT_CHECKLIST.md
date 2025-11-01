@@ -166,8 +166,9 @@ SUPABASE_URL=https://xxxxx.supabase.co
 SUPABASE_ANON_KEY=eyJhbGc...
 API_BASE_URL=https://your-backend.vercel.app
 STRIPE_PUBLISHABLE_KEY=pk_live_...
-GOOGLE_CLIENT_ID_ANDROID=xxx.apps.googleusercontent.com
-GOOGLE_CLIENT_ID_IOS=xxx.apps.googleusercontent.com
+# No GOOGLE_CLIENT_ID_ANDROID or GOOGLE_CLIENT_ID_IOS needed!
+# We use Supabase OAuth which only requires Web OAuth client ID configured in Supabase Dashboard
+# See docs/SUPABASE_OAUTH_SETUP.md for setup instructions
 POSTHOG_API_KEY=phc_...
 POSTHOG_HOST=https://app.posthog.com
 SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx

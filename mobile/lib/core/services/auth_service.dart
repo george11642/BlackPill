@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import '../config/env_config.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService();
@@ -8,7 +8,6 @@ final authServiceProvider = Provider<AuthService>((ref) {
 
 class AuthService {
   final _supabase = Supabase.instance.client;
-  final _googleSignIn = GoogleSignIn();
 
   User? get currentUser => _supabase.auth.currentUser;
   
@@ -24,7 +23,7 @@ class AuthService {
     final response = await _supabase.auth.signUp(
       email: email,
       password: password,
-      emailRedirectTo: 'blackpill://auth/callback',
+      emailRedirectTo: '${EnvConfig.deepLinkScheme}://auth/callback',
       data: {
         'age_verified': ageVerified,
         'marketing_opt_in': marketingOptIn,
@@ -60,41 +59,29 @@ class AuthService {
     return response;
   }
 
-  /// Sign in with Google
+  /// Sign in with Google using Supabase OAuth
+  /// Uses Supabase's built-in OAuth flow - no Android/iOS client IDs needed!
+  /// Only requires Web OAuth client ID configured in Supabase Dashboard
   Future<AuthResponse> signInWithGoogle() async {
     try {
-      final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        throw Exception('Google sign-in cancelled');
-      }
-
-      final googleAuth = await googleUser.authentication;
-      final accessToken = googleAuth.accessToken;
-      final idToken = googleAuth.idToken;
-
-      if (accessToken == null || idToken == null) {
-        throw Exception('Missing Google auth tokens');
-      }
-
-      final response = await _supabase.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
-        idToken: idToken,
-        accessToken: accessToken,
+      final response = await _supabase.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: '${EnvConfig.deepLinkScheme}://auth/callback',
+        authScreenLaunchMode: LaunchMode.externalApplication,
       );
       
-      if (response.user != null) {
-        await _createUserProfile(response.user!);
-      }
+      // Note: The actual user creation happens automatically via Supabase
+      // when the OAuth callback completes. We'll handle profile creation
+      // in the auth state listener in the app initialization.
       
       return response;
     } catch (e) {
-      rethrow;
+      throw Exception('Failed to initiate Google sign-in: $e');
     }
   }
 
   /// Sign out
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
     await _supabase.auth.signOut();
   }
 
@@ -118,6 +105,11 @@ class AuthService {
 
   /// Create user profile in database
   Future<void> _createUserProfile(User user) async {
+    await createUserProfileIfNeeded(user);
+  }
+
+  /// Create user profile if it doesn't exist (public for OAuth callbacks)
+  Future<void> createUserProfileIfNeeded(User user) async {
     try {
       // Check if profile already exists
       final existing = await _supabase

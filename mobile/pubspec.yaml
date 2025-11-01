@@ -34,7 +34,6 @@ dependencies:
   
   # Authentication
   supabase_flutter: ^2.0.2
-  google_sign_in: ^6.1.6
   
   # Image Handling
   image_picker: ^1.0.7
@@ -67,6 +66,10 @@ dependencies:
   device_info_plus: ^9.1.1
   package_info_plus: ^5.0.1
   permission_handler: ^11.1.0
+  
+  # Health Services
+  health: ^10.0.0
+  fit_kit: ^0.2.0
 
 dev_dependencies:
   flutter_test:

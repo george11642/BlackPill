@@ -247,6 +247,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     },
                   ),
                   
+                  const SizedBox(height: 12),
+                  
+                  _buildMenuItem(
+                    'Ethical Settings',
+                    Icons.favorite,
+                    () => context.push('/ethical/settings'),
+                  ),
+                  
+                  const SizedBox(height: 12),
+                  
+                  _buildMenuItem(
+                    'Wellness Dashboard',
+                    Icons.fitness_center,
+                    () => context.push('/wellness'),
+                  ),
+                  
+                  const SizedBox(height: 12),
+                  
+                  _buildMenuItem(
+                    'Challenges',
+                    Icons.emoji_events,
+                    () => context.push('/challenges'),
+                  ),
+                  
+                  const SizedBox(height: 12),
+                  
+                  _buildMenuItem(
+                    'Marketplace',
+                    Icons.shopping_bag,
+                    () => context.push('/marketplace'),
+                  ),
+                  
+                  const SizedBox(height: 12),
+                  
+                  _buildMenuItem(
+                    'Insights Dashboard',
+                    Icons.insights,
+                    () => context.push('/insights'),
+                  ),
+                  
                   const SizedBox(height: 24),
                   
                   // Account deletion button

@@ -18,6 +18,16 @@ import '../features/home/presentation/home_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/onboarding/presentation/permissions_screen.dart';
 import '../features/creators/presentation/screens/creator_application_screen.dart';
+import '../features/ethical/presentation/screens/ethical_settings_screen.dart';
+import '../features/scoring/presentation/screens/scoring_methodology_screen.dart';
+import '../features/action_plans/presentation/screens/action_plan_screen.dart';
+import '../features/challenges/presentation/screens/challenges_list_screen.dart';
+import '../features/challenges/presentation/screens/challenge_detail_screen.dart';
+import '../features/challenges/presentation/screens/challenge_checkin_screen.dart';
+import '../features/wellness/presentation/screens/wellness_dashboard_screen.dart';
+import '../features/products/presentation/screens/marketplace_screen.dart';
+import '../features/insights/presentation/screens/insights_dashboard_screen.dart';
+import '../features/onboarding/presentation/disclaimers_screen.dart';
 import '../core/services/auth_service.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -61,6 +71,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/auth/password-reset',
         builder: (context, state) => const PasswordResetScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding/disclaimers',
+        builder: (context, state) => const DisclaimersScreen(),
       ),
       GoRoute(
         path: '/onboarding/permissions',
@@ -123,6 +137,68 @@ final routerProvider = Provider<GoRouter>((ref) {
           // Handle referral code
           return const SplashScreen(); // Will handle referral in splash
         },
+      ),
+      GoRoute(
+        path: '/ethical/settings',
+        builder: (context, state) => const EthicalSettingsScreen(),
+      ),
+      GoRoute(
+        path: '/scoring/methodology',
+        builder: (context, state) {
+          final analysisId = state.uri.queryParameters['analysisId'];
+          return ScoringMethodologyScreen(analysisId: analysisId);
+        },
+      ),
+      GoRoute(
+        path: '/action-plan',
+        builder: (context, state) {
+          final analysisId = state.uri.queryParameters['analysisId'] ?? '';
+          final category = state.uri.queryParameters['category'] ?? '';
+          final currentScore = double.tryParse(state.uri.queryParameters['currentScore'] ?? '0') ?? 0.0;
+          final targetScore = double.tryParse(state.uri.queryParameters['targetScore'] ?? '7.5') ?? 7.5;
+          return ActionPlanScreen(
+            analysisId: analysisId,
+            category: category,
+            currentScore: currentScore,
+            targetScore: targetScore,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/challenges',
+        builder: (context, state) => const ChallengesListScreen(),
+      ),
+      GoRoute(
+        path: '/challenges/:challengeId',
+        builder: (context, state) {
+          final challengeId = state.pathParameters['challengeId'] ?? '';
+          return ChallengeDetailScreen(challengeId: challengeId);
+        },
+      ),
+      GoRoute(
+        path: '/challenges/:challengeId/checkin',
+        builder: (context, state) {
+          final challengeId = state.pathParameters['challengeId'] ?? '';
+          final participationId = state.uri.queryParameters['participationId'] ?? '';
+          final day = int.tryParse(state.uri.queryParameters['day'] ?? '1') ?? 1;
+          return ChallengeCheckinScreen(
+            challengeId: challengeId,
+            participationId: participationId,
+            day: day,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/wellness',
+        builder: (context, state) => const WellnessDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/marketplace',
+        builder: (context, state) => const MarketplaceScreen(),
+      ),
+      GoRoute(
+        path: '/insights',
+        builder: (context, state) => const InsightsDashboardScreen(),
       ),
     ],
   );

@@ -1,6 +1,6 @@
 # Quick Google OAuth Setup for BlackPill
 
-Your Supabase Project: **taipdljedbcluebtfimk**
+Your Supabase Project: **wzsxpxwwgaqiaoxdyhnf** (BlackPill)
 
 ---
 
@@ -14,12 +14,12 @@ Your Supabase Project: **taipdljedbcluebtfimk**
 6. Name it: `Supabase OAuth`
 7. Add these URLs under **Authorized JavaScript origins:**
    ```
-   https://taipdljedbcluebtfimk.supabase.co
+   https://wzsxpxwwgaqiaoxdyhnf.supabase.co
    https://black-pill.app
    ```
 8. Add these under **Authorized redirect URIs:**
    ```
-   https://taipdljedbcluebtfimk.supabase.co/auth/v1/callback
+   https://wzsxpxwwgaqiaoxdyhnf.supabase.co/auth/v1/callback
    https://black-pill.app/auth/v1/callback
    https://localhost:3000/auth/v1/callback
    ```
@@ -31,7 +31,7 @@ Your Supabase Project: **taipdljedbcluebtfimk**
 ## Step 2: Add Google OAuth to Supabase (2 minutes)
 
 1. Go to [Supabase Dashboard](https://app.supabase.com/)
-2. Select project **taipdljedbcluebtfimk**
+2. Select project **BlackPill** (wzsxpxwwgaqiaoxdyhnf)
 3. Go to **Authentication** → **Providers**
 4. Click on **Google**
 5. Toggle **Enable Google**
@@ -64,7 +64,7 @@ No Android/iOS certificates needed. Supabase handles everything automatically.
 
 Your env variables are already set:
 ```
-SUPABASE_URL=https://taipdljedbcluebtfimk.supabase.co
+SUPABASE_URL=https://wzsxpxwwgaqiaoxdyhnf.supabase.co
 SUPABASE_ANON_KEY=your-existing-key
 ```
 

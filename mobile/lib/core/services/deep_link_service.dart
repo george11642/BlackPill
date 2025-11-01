@@ -38,8 +38,15 @@ class DeepLinkService {
   void _handleDeepLink(String link, BuildContext context) {
     print('Deep link received: $link');
 
+    // Handle OAuth callback: blackpill://auth/callback
+    // Supabase handles this automatically, but we log it for debugging
+    if (link.contains('auth/callback')) {
+      print('OAuth callback received - Supabase will handle authentication automatically');
+      // Supabase OAuth flow handles this via auth state listener in app.dart
+      return;
+    }
     // Handle subscription success: blackpill://subscribe/success?session_id=xxx
-    if (link.contains('subscribe/success')) {
+    else if (link.contains('subscribe/success')) {
       _handleSubscriptionSuccess(link, context);
     }
     // Handle referral links: blackpill://ref/INVITE-XXXX-YYYY or https://black-pill.app/ref/INVITE-XXXX-YYYY

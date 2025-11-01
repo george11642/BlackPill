@@ -72,10 +72,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
       ref.read(analyticsServiceProvider).trackSignupEmailCompleted();
       ref.read(analyticsServiceProvider).trackOnboardingStepCompleted('signup');
-      ref.read(analyticsServiceProvider).trackOnboardingCompleted();
 
       if (mounted) {
-        context.go('/onboarding/permissions');
+        // Show disclaimers before permissions for new users
+        context.go('/onboarding/disclaimers');
       }
     } catch (e) {
       if (mounted) {
@@ -126,7 +126,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       ref.read(analyticsServiceProvider).trackSignupGoogleCompleted();
 
       if (mounted) {
-        context.go('/camera');
+        // Check if new user and show disclaimers
+        final isNewUser = authService.currentUser?.userMetadata?['isNewUser'] == true;
+        
+        if (isNewUser) {
+          context.go('/onboarding/disclaimers');
+        } else {
+          context.go('/camera');
+        }
       }
     } catch (e) {
       if (mounted) {
