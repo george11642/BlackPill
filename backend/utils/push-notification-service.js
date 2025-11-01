@@ -1,5 +1,5 @@
 const admin = require('firebase-admin');
-const config = require('./config');
+const { supabaseAdmin } = require('./supabase');
 
 /**
  * Initialize Firebase Admin SDK
@@ -45,20 +45,29 @@ async function sendNotificationToUser(userId, title, body, data = {}) {
   try {
     initializeFirebase();
 
-    const db = admin.firestore();
-    
-    // Get user's push tokens from database
-    const tokensSnapshot = await db
-      .collection('user_device_tokens')
-      .where('user_id', '==', userId)
-      .get();
+    // Get user's push tokens from Supabase database
+    const { data: tokensData, error: tokensError } = await supabaseAdmin
+      .from('user_device_tokens')
+      .select('token')
+      .eq('user_id', userId);
 
-    if (tokensSnapshot.empty) {
+    if (tokensError) {
+      console.error('Error fetching push tokens:', tokensError);
+      return { success: false, error: tokensError.message };
+    }
+
+    if (!tokensData || tokensData.length === 0) {
       console.log(`No push tokens found for user ${userId}`);
       return { success: false, message: 'No tokens found' };
     }
 
-    const tokens = tokensSnapshot.docs.map(doc => doc.data().token);
+    const tokens = tokensData.map(row => row.token);
+
+    // Convert data object values to strings for FCM (required)
+    const stringifiedData = {};
+    for (const [key, value] of Object.entries(data)) {
+      stringifiedData[key] = String(value);
+    }
 
     // Send to all tokens
     const message = {
@@ -67,7 +76,7 @@ async function sendNotificationToUser(userId, title, body, data = {}) {
         body,
       },
       data: {
-        ...data,
+        ...stringifiedData,
         click_action: 'FLUTTER_NOTIFICATION_CLICK',
       },
       android: {
