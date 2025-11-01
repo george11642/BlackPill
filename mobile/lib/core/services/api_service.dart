@@ -109,7 +109,7 @@ class ApiService {
 
   /// Get subscription status
   Future<Map<String, dynamic>> getSubscriptionStatus() async {
-    final response = await _dio.get('/api/subscription/status');
+    final response = await _dio.get('/api/subscriptions/status');
     return response.data;
   }
 
