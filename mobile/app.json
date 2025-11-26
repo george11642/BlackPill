@@ -62,7 +62,15 @@
       ],
       "expo-dev-client",
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "blackpill",
+          "organization": "apps-ml"
+        }
+      ]
     ],
     "extra": {
       "eas": {
@@ -71,4 +79,3 @@
     }
   }
 }
-
