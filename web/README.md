@@ -33,7 +33,7 @@ Open http://localhost:3000
 Create `.env.local`:
 
 ```bash
-NEXT_PUBLIC_API_URL=https://your-backend.vercel.app
+NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
 ```
 
 ## Deployment

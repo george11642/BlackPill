@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "backend",
     "web",
     "mobile"
   ],
   "scripts": {
-    "install:all": "npm install && cd backend && npm install && cd ../web && npm install"
+    "install:all": "npm install && cd mobile && npm install && cd ../web && npm install",
+    "build": "cd mobile && npm install && cd ../web && npm install && npm run build",
+    "dev:web": "cd web && npm run dev",
+    "dev:mobile": "cd mobile && npm start"
   }
 }

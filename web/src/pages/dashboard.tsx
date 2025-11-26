@@ -25,11 +25,11 @@ export default function Dashboard() {
         return;
       }
 
-      // Use production API URL directly
-      const apiUrl = 'https://api.black-pill.app';
+      // Use app URL (API routes are on same domain)
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://black-pill.app';
 
       // Fetch dashboard stats
-      const statsRes = await fetch(`${apiUrl}/api/creators/dashboard`, {
+      const statsRes = await fetch(`${appUrl}/api/creators/dashboard`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -49,7 +49,7 @@ export default function Dashboard() {
       setStats(statsData);
 
       // Fetch performance data
-      const perfRes = await fetch(`${apiUrl}/api/creators/performance`, {
+      const perfRes = await fetch(`${appUrl}/api/creators/performance`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

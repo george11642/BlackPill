@@ -4,6 +4,9 @@
 .env.*.local
 .env.production.local
 
+# VAPID keys (keep private)
+VAPID_KEYS.txt
+
 # Dependencies
 node_modules/
 web/node_modules/
@@ -12,7 +15,6 @@ web/node_modules/
 .vercel
 .vercel/
 web/.vercel
-backend/.vercel
 
 # Lock files (use package managers to regenerate)
 yarn.lock
@@ -29,36 +31,32 @@ service-account*.json
 google-services.json
 GoogleService-Info.plist
 
-# Mobile (Flutter)
-mobile/.dart_tool/
-mobile/.flutter-plugins
-mobile/.flutter-plugins-dependencies
-mobile/.packages
-mobile/build/
-mobile/.flutter_tool_state
-mobile/ios/Pods/
-mobile/ios/.symlinks/
-mobile/ios/Flutter/Flutter.framework
-mobile/ios/Flutter/Flutter.podspec
-mobile/.ios/
-mobile/.android/
-mobile/pubspec.lock
-mobile/android/app/google-services.json
-mobile/ios/Runner/GoogleService-Info.plist
+# Mobile (React Native/Expo) - Legacy Flutter entries removed
+# Expo build outputs
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
 
-# Backend (Node.js)
-backend/node_modules/
-backend/dist/
-backend/build/
-backend/.env
-backend/.env.local
-backend/.env.*.local
-backend/package-lock.json
-backend/*.log
+# Mobile (React Native/Expo)
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/.expo-shared/
+mobile/web-build/
+mobile/.next/
 
-# Google Cloud credentials
-backend/service-account*.json
-backend/credentials*.json
+# Web (Next.js)
+web/node_modules/
+web/.next/
+web/out/
+web/.vercel/
+web/.env.local
+web/.env.*.local
+web/*.log
+
+# Google Cloud credentials (now in web/)
+web/service-account*.json
+web/credentials*.json
 
 # Logs
 *.log

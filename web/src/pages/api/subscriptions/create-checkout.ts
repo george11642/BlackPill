@@ -14,14 +14,14 @@ export default async function handler(
   }
 
   try {
-    // Hardcoded backend API URL
-    const backendApiUrl = 'https://api.black-pill.app';
+    // Use app URL (API routes are on same domain)
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://black-pill.app';
     
-    console.log('Forwarding request to:', `${backendApiUrl}/api/subscriptions/create-checkout`);
+    console.log('Forwarding request to:', `${appUrl}/api/subscriptions/create-checkout`);
     console.log('Request body:', req.body);
     
-    // Forward request to backend API
-    const backendResponse = await fetch(`${backendApiUrl}/api/subscriptions/create-checkout`, {
+    // Forward request to API route on same domain
+    const backendResponse = await fetch(`${appUrl}/api/subscriptions/create-checkout`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -46,7 +46,7 @@ export default async function handler(
       
       return res.status(500).json({
         error: 'Backend configuration error',
-        message: 'The backend API is not configured correctly. Please check that api.black-pill.app is deployed and the Stripe environment variables are set.',
+        message: 'The API is not configured correctly. Please check that the app URL is set correctly and the Stripe environment variables are configured.',
       });
     }
   } catch (error: any) {
