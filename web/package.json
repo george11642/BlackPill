@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
-    "@vercel/og": "^0.6.9",
+    "@vercel/og": "^0.6.2",
     "@supabase/supabase-js": "^2.83.0",
     "@upstash/ratelimit": "^2.0.7",
     "@upstash/redis": "^1.35.7",
