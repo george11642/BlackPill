@@ -10,16 +10,21 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
+    "@headlessui/react": "^1.7.17",
     "@supabase/ssr": "^0.7.0",
-    "@vercel/og": "^0.6.2",
     "@supabase/supabase-js": "^2.83.0",
     "@upstash/ratelimit": "^2.0.7",
     "@upstash/redis": "^1.35.7",
     "@vercel/functions": "^3.3.4",
+    "@vercel/og": "^0.6.2",
     "axios": "^1.6.2",
     "canvas": "^3.2.0",
+    "cloudinary": "^2.8.0",
     "date-fns": "^2.30.0",
     "framer-motion": "^12.23.24",
+    "gif.js": "^0.2.0",
     "ioredis": "^5.8.2",
     "lucide-react": "^0.554.0",
     "next": "^16.0.3",
@@ -35,8 +40,7 @@
     "stripe": "^20.0.0",
     "tailwind-merge": "^3.4.0",
     "uuid": "^11.0.3",
-    "web-push": "^3.6.7",
-    "@headlessui/react": "^1.7.17"
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -55,4 +59,3 @@
     "typescript": "^5"
   }
 }
-

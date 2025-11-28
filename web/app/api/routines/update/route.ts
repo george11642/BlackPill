@@ -16,7 +16,7 @@ export const PUT = withAuth(async (request: Request, user) => {
 
   try {
     const body = await request.json();
-    const { routine_id, name, goal, focus_categories, is_active } = body;
+    const { routine_id, name, goal, focus_categories, is_active, time_commitment, tier_preference } = body;
 
     if (!routine_id) {
       return createResponseWithId(
@@ -57,6 +57,8 @@ export const PUT = withAuth(async (request: Request, user) => {
     if (goal !== undefined) updates.goal = goal;
     if (focus_categories !== undefined) updates.focus_categories = focus_categories;
     if (is_active !== undefined) updates.is_active = is_active;
+    if (time_commitment !== undefined) updates.time_commitment = time_commitment;
+    if (tier_preference !== undefined) updates.tier_preference = tier_preference;
 
     // Update routine
     const { data: updatedRoutine, error: updateError } = await supabaseAdmin

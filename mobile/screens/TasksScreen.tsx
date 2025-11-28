@@ -9,6 +9,7 @@ import {
 import { apiGet, apiPost } from '../lib/api/client';
 import { useAuth } from '../lib/auth/context';
 import { GlassCard } from '../components/GlassCard';
+import { BackHeader } from '../components/BackHeader';
 import { RoutineTask } from '../lib/types';
 import { DarkTheme } from '../lib/theme';
 
@@ -76,6 +77,7 @@ export function TasksScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
+        <BackHeader title="Today's Tasks" variant="large" />
         <Text style={styles.loading}>Loading...</Text>
       </View>
     );
@@ -83,9 +85,7 @@ export function TasksScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Today's Tasks</Text>
-      </View>
+      <BackHeader title="Today's Tasks" variant="large" />
       <FlatList
         data={tasks}
         renderItem={renderItem}
@@ -100,16 +100,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: DarkTheme.colors.background,
-  },
-  header: {
-    padding: DarkTheme.spacing.lg,
-    paddingTop: 60,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: DarkTheme.colors.text,
-    fontFamily: DarkTheme.typography.fontFamily,
   },
   list: {
     padding: DarkTheme.spacing.md,

@@ -6,9 +6,10 @@ import { Navigation } from '../components/Navigation';
 import { Section } from '../components/Section';
 import { Button } from '../components/Button';
 import { Footer } from '../components/Footer';
+import { trackAffiliateReferralClick } from '@/lib/utils/affiliate-referral-tracking';
 
 interface SubscriptionTier {
-  tier: 'free' | 'basic' | 'pro' | 'unlimited';
+  tier: 'free' | 'pro' | 'elite';
   name: string;
   monthlyPrice: string;
   annualPrice: string;
@@ -33,28 +34,14 @@ const tiers: SubscriptionTier[] = [
     ],
   },
   {
-    tier: 'basic',
-    name: 'Basic',
-    monthlyPrice: '$4.99',
-    annualPrice: '$54.99',
-    monthlyScans: '5 scans/month',
-    annualScans: '5 scans/month',
-    features: [
-      'Full 6-dimension breakdown',
-      'Advanced AI tips',
-      'Ad-free experience',
-      'Referral bonuses',
-    ],
-  },
-  {
     tier: 'pro',
     name: 'Pro',
     monthlyPrice: '$9.99',
-    annualPrice: '$109.89',
+    annualPrice: '$119.99',
     monthlyScans: '20 scans/month',
     annualScans: '20 scans/month',
     features: [
-      'All Basic features',
+      'All Free features',
       'Priority analysis (<10 seconds)',
       'Comparison mode',
       'Weekly progress reports',
@@ -62,10 +49,10 @@ const tiers: SubscriptionTier[] = [
     highlight: true,
   },
   {
-    tier: 'unlimited',
-    name: 'Unlimited',
+    tier: 'elite',
+    name: 'Elite',
     monthlyPrice: '$19.99',
-    annualPrice: '$209.89',
+    annualPrice: '$219.99',
     monthlyScans: 'Unlimited scans',
     annualScans: 'Unlimited scans',
     features: [
@@ -85,8 +72,9 @@ export default function PricingPage() {
   const email = searchParams.get('email');
   const tierParam = searchParams.get('tier');
   const intervalParam = searchParams.get('interval');
+  const ref = searchParams.get('ref'); // Affiliate referral code
   
-  const [selectedTier, setSelectedTier] = useState<'basic' | 'pro' | 'unlimited'>('pro');
+  const [selectedTier, setSelectedTier] = useState<'pro' | 'elite'>('pro');
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
   const [emailValue, setEmailValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -99,16 +87,23 @@ export default function PricingPage() {
       setEmailValue(email);
     }
     
-    if (tierParam && ['basic', 'pro', 'unlimited'].includes(tierParam)) {
-      setSelectedTier(tierParam as 'basic' | 'pro' | 'unlimited');
+    if (tierParam && ['pro', 'elite'].includes(tierParam)) {
+      setSelectedTier(tierParam as 'pro' | 'elite');
     }
     
     if (intervalParam && ['monthly', 'annual'].includes(intervalParam)) {
       setBillingInterval(intervalParam as 'monthly' | 'annual');
     }
-  }, [isAppSource, email, tierParam, intervalParam]);
 
-  const handleSubscribe = async (tierToSubscribe: 'basic' | 'pro' | 'unlimited') => {
+    // Track affiliate referral click if ref parameter is present
+    if (ref) {
+      trackAffiliateReferralClick(ref).catch(err => {
+        console.error('Failed to track affiliate referral:', err);
+      });
+    }
+  }, [isAppSource, email, tierParam, intervalParam, ref]);
+
+  const handleSubscribe = async (tierToSubscribe: 'pro' | 'elite') => {
     setIsLoading(true);
     setError(null);
 
@@ -206,7 +201,7 @@ export default function PricingPage() {
               }`}
             >
               Annual
-              <span className="badge badge-success text-xs">Save 10%</span>
+              <span className="badge badge-success text-xs">Save 20%</span>
             </button>
           </div>
 
@@ -224,7 +219,7 @@ export default function PricingPage() {
                   } ${tierOption.highlight ? 'relative' : ''}`}
                   onClick={() => {
                     if (tierOption.tier !== 'free') {
-                      setSelectedTier(tierOption.tier as 'basic' | 'pro' | 'unlimited');
+                      setSelectedTier(tierOption.tier as 'pro' | 'elite');
                     }
                   }}
                 >
@@ -271,7 +266,7 @@ export default function PricingPage() {
                     ) : (
                       <Button
                         onClick={() => {
-                          handleSubscribe(tierOption.tier as 'basic' | 'pro' | 'unlimited');
+                          handleSubscribe(tierOption.tier as 'pro' | 'elite');
                         }}
                         disabled={isLoading}
                         className={tierOption.highlight ? 'btn-primary w-full' : 'btn-secondary w-full'}

@@ -74,7 +74,7 @@ export function SignupScreen() {
     setLoading(true);
     try {
       await signInWithGoogle();
-      navigation.navigate('Home' as never);
+      // Navigation will happen automatically when user state updates
     } catch (error: any) {
       Alert.alert('Google Sign-Up Failed', error.message || 'Please try again');
     } finally {

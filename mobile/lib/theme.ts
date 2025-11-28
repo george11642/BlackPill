@@ -1,65 +1,225 @@
-// Black Pill Theme Configuration
-// Matching Flutter design system from PRD.md
+import { Platform } from 'react-native';
+
+// Black Pill Premium Theme Configuration
+// Luxury Dark aesthetic with gold/amber accents
+
+// Helper to create cross-platform shadows
+const createShadow = (
+  color: string,
+  offsetY: number,
+  opacity: number,
+  radius: number,
+  elevation: number
+) => {
+  if (Platform.OS === 'web') {
+    return {
+      boxShadow: `0px ${offsetY}px ${radius}px rgba(${color === '#D4AF37' ? '212, 175, 55' : '0, 0, 0'}, ${opacity})`,
+    };
+  }
+  return {
+    shadowColor: color,
+    shadowOffset: { width: 0, height: offsetY },
+    shadowOpacity: opacity,
+    shadowRadius: radius,
+    elevation: elevation,
+  };
+};
 
 export const DarkTheme = {
   colors: {
-    // Backgrounds
-    background: '#0F0F1E',      // Deep Black
-    card: '#1A1A2E',            // Dark Gray (cards)
-    hover: '#2A2A3E',          // Charcoal (hover)
+    // Backgrounds - Pure black to deep charcoal
+    background: '#000000',
+    backgroundSecondary: '#0A0A0F',
+    card: '#111116',
+    cardElevated: '#18181F',
+    surface: '#1C1C24',
     
-    // Neon Accents
-    primary: '#FF0080',         // Pink (primary actions)
-    secondary: '#00D9FF',       // Cyan (secondary actions)
-    premium: '#B700FF',         // Purple (premium)
-    warning: '#FFFF00',         // Yellow (warnings)
-    success: '#00FF41',         // Green (success)
+    // Gold/Amber Accents - Premium feel
+    primary: '#D4AF37',        // Classic gold
+    primaryLight: '#FFD700',   // Bright gold
+    primaryDark: '#B8962E',    // Deep gold
+    accent: '#E8C547',         // Amber highlight
     
-    // Text
-    text: '#FFFFFF',            // Primary text
-    textSecondary: '#B8BACC',   // Secondary text
-    textTertiary: '#6B6D7F',    // Tertiary text
-    textDisabled: '#4A4C5A',   // Disabled text
+    // Secondary colors
+    secondary: '#F5F5F0',      // Warm white
+    secondaryDark: '#C9C9C4',  // Muted warm white
     
-    // Borders
-    border: 'rgba(255,255,255,0.1)',
+    // Semantic colors
+    success: '#4ADE80',        // Green
+    warning: '#FBBF24',        // Amber warning
+    error: '#EF4444',          // Red
+    info: '#60A5FA',           // Blue
     
-    // Glass card effect
-    glassCard: 'rgba(26,26,46,0.7)',
+    // Text hierarchy
+    text: '#FFFFFF',
+    textSecondary: '#A1A1AA',
+    textTertiary: '#71717A',
+    textDisabled: '#52525B',
+    textGold: '#D4AF37',
+    
+    // Borders and dividers
+    border: 'rgba(212, 175, 55, 0.2)',
+    borderSubtle: 'rgba(255, 255, 255, 0.08)',
+    borderGold: 'rgba(212, 175, 55, 0.5)',
+    
+    // Glass effects
+    glass: 'rgba(17, 17, 22, 0.85)',
+    glassLight: 'rgba(28, 28, 36, 0.7)',
+    glassBorder: 'rgba(212, 175, 55, 0.15)',
+    
+    // Gradients (defined as arrays for LinearGradient)
+    gradientGold: ['#D4AF37', '#FFD700', '#E8C547'],
+    gradientDark: ['#000000', '#0A0A0F', '#111116'],
+    gradientCard: ['rgba(17, 17, 22, 0.9)', 'rgba(28, 28, 36, 0.8)'],
+    gradientPremium: ['#D4AF37', '#B8962E'],
+    
+    // Score colors (gradient from low to high)
+    scoreLow: '#EF4444',       // Red for low scores
+    scoreMid: '#FBBF24',       // Amber for mid scores
+    scoreHigh: '#4ADE80',      // Green for high scores
+    scorePerfect: '#D4AF37',   // Gold for perfect scores
   },
+  
   typography: {
+    // Premium font family
     fontFamily: 'Inter',
+    fontFamilyBold: 'Inter',
+    
+    // Display - Large headlines
+    display: {
+      fontSize: 48,
+      fontWeight: '700' as const,
+      letterSpacing: -1.5,
+      lineHeight: 56,
+    },
+    
+    // H1 - Page titles
     h1: {
-      fontSize: 36,
-      fontWeight: '700',
-      letterSpacing: -1,
+      fontSize: 32,
+      fontWeight: '700' as const,
+      letterSpacing: -0.5,
+      lineHeight: 40,
     },
+    
+    // H2 - Section headers
+    h2: {
+      fontSize: 24,
+      fontWeight: '600' as const,
+      letterSpacing: -0.3,
+      lineHeight: 32,
+    },
+    
+    // H3 - Card titles
+    h3: {
+      fontSize: 20,
+      fontWeight: '600' as const,
+      letterSpacing: 0,
+      lineHeight: 28,
+    },
+    
+    // Body - Regular text
     body: {
-      fontSize: 14,
-      fontWeight: '400',
-      lineHeight: 22.4, // 1.6 line-height
+      fontSize: 16,
+      fontWeight: '400' as const,
+      letterSpacing: 0,
+      lineHeight: 24,
     },
-    button: {
+    
+    // Body small
+    bodySmall: {
       fontSize: 14,
-      fontWeight: '600',
+      fontWeight: '400' as const,
+      letterSpacing: 0,
+      lineHeight: 20,
+    },
+    
+    // Caption - Small labels
+    caption: {
+      fontSize: 12,
+      fontWeight: '500' as const,
+      letterSpacing: 0.2,
+      lineHeight: 16,
+    },
+    
+    // Button text
+    button: {
+      fontSize: 16,
+      fontWeight: '600' as const,
+      letterSpacing: 0.5,
+      lineHeight: 24,
+    },
+    
+    // Score display - Large numbers
+    score: {
+      fontSize: 72,
+      fontWeight: '700' as const,
+      letterSpacing: -2,
+      lineHeight: 80,
+    },
+    
+    // Score label
+    scoreLabel: {
+      fontSize: 14,
+      fontWeight: '500' as const,
+      letterSpacing: 1,
+      lineHeight: 20,
+      textTransform: 'uppercase' as const,
     },
   },
+  
   spacing: {
     xs: 4,
     sm: 8,
     md: 16,
     lg: 24,
     xl: 32,
+    xxl: 48,
+    xxxl: 64,
   },
+  
   borderRadius: {
+    xs: 4,
     sm: 8,
     md: 12,
     lg: 16,
+    xl: 24,
+    full: 9999,
+  },
+  
+  shadows: {
+    sm: createShadow('#000', 2, 0.25, 4, 2),
+    md: createShadow('#000', 4, 0.3, 8, 4),
+    lg: createShadow('#000', 8, 0.4, 16, 8),
+    gold: createShadow('#D4AF37', 4, 0.3, 12, 6),
+    glow: createShadow('#D4AF37', 0, 0.5, 20, 10),
+  },
+  
+  animation: {
+    fast: 150,
+    normal: 300,
+    slow: 500,
+    slower: 800,
   },
 };
 
+// Helper function to get score color based on value
+export const getScoreColor = (score: number): string => {
+  if (score >= 9) return DarkTheme.colors.scorePerfect;
+  if (score >= 7) return DarkTheme.colors.scoreHigh;
+  if (score >= 5) return DarkTheme.colors.scoreMid;
+  return DarkTheme.colors.scoreLow;
+};
+
+// Helper function to get percentile text
+export const getPercentileText = (score: number): string => {
+  // Approximate percentile based on normal distribution
+  const percentile = Math.min(99, Math.round(score * 10));
+  return `Better than ${percentile}% of people`;
+};
+
+// Light theme placeholder (can be expanded later)
 export const LightTheme = {
-  // Light theme can be added later if needed
   ...DarkTheme,
 };
 
+export default DarkTheme;

@@ -11,6 +11,7 @@ import { useRoute } from '@react-navigation/native';
 import { apiGet } from '../lib/api/client';
 import { useAuth } from '../lib/auth/context';
 import { GlassCard } from '../components/GlassCard';
+import { BackHeader } from '../components/BackHeader';
 import { Analysis } from '../lib/types';
 import { DarkTheme } from '../lib/theme';
 
@@ -53,6 +54,7 @@ export function ComparisonScreen() {
   if (loading || !analysis1 || !analysis2) {
     return (
       <View style={styles.container}>
+        <BackHeader title="Progress Comparison" variant="large" />
         <Text style={styles.loading}>Loading...</Text>
       </View>
     );
@@ -69,10 +71,11 @@ export function ComparisonScreen() {
   ] as const;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Progress Comparison</Text>
-        <Text style={styles.delta}>
+    <View style={styles.container}>
+      <BackHeader title="Progress Comparison" variant="large" />
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.delta}>
           {scoreDelta > 0 ? '+' : ''}
           {scoreDelta.toFixed(1)} points
         </Text>
@@ -121,8 +124,9 @@ export function ComparisonScreen() {
             </View>
           );
         })}
-      </GlassCard>
-    </ScrollView>
+        </GlassCard>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -131,19 +135,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: DarkTheme.colors.background,
   },
+  scrollView: {
+    flex: 1,
+  },
   content: {
     padding: DarkTheme.spacing.lg,
+    paddingTop: DarkTheme.spacing.md,
   },
   header: {
     alignItems: 'center',
     marginBottom: DarkTheme.spacing.xl,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: DarkTheme.colors.text,
-    fontFamily: DarkTheme.typography.fontFamily,
-    marginBottom: DarkTheme.spacing.sm,
   },
   delta: {
     fontSize: 32,

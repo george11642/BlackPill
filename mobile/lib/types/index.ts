@@ -35,6 +35,13 @@ export interface RoutineTask {
   description: string;
   completed: boolean;
   completedAt?: string;
+  tier?: 'DIY' | 'OTC' | 'Professional';
+  estimatedCost?: string; // e.g., "$0-30", "$50-150"
+  timeToResults?: string; // e.g., "4-8 weeks", "2-6 months"
+  effectiveness?: 'low' | 'medium' | 'high' | 'very high';
+  scienceBacking?: string; // Why this works scientifically
+  productLink?: string; // For OTC tasks - links to marketplace
+  professionalWarning?: string; // For Professional tier - safety warnings
 }
 
 export interface RoutineSchedule {
@@ -87,3 +94,18 @@ export interface Subscription {
   planId: string;
 }
 
+export interface Product {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  subcategory?: string;
+  price?: number;
+  currency: string;
+  affiliate_link: string;
+  image_url?: string;
+  rating?: number;
+  review_count: number;
+  recommended_for?: string[];
+  is_featured: boolean;
+}

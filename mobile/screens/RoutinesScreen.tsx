@@ -11,6 +11,7 @@ import { apiGet } from '../lib/api/client';
 import { useAuth } from '../lib/auth/context';
 import { GlassCard } from '../components/GlassCard';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { BackHeader } from '../components/BackHeader';
 import { Routine } from '../lib/types';
 import { DarkTheme } from '../lib/theme';
 
@@ -67,14 +68,17 @@ export function RoutinesScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>My Routines</Text>
-        <PrimaryButton
-          title="+ New"
-          onPress={() => navigation.navigate('RoutineDetail' as never, {} as never)}
-          style={styles.newButton}
-        />
-      </View>
+      <BackHeader 
+        title="My Routines" 
+        variant="large"
+        rightElement={
+          <PrimaryButton
+            title="+ New"
+            onPress={() => navigation.navigate('RoutineDetail' as never, {} as never)}
+            size="sm"
+          />
+        }
+      />
       {loading ? (
         <Text style={styles.loading}>Loading...</Text>
       ) : (
@@ -93,23 +97,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: DarkTheme.colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: DarkTheme.spacing.lg,
-    paddingTop: 60,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: DarkTheme.colors.text,
-    fontFamily: DarkTheme.typography.fontFamily,
-  },
-  newButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
   },
   list: {
     padding: DarkTheme.spacing.md,

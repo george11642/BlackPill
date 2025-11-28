@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Request, Response } from 'next/server';
+import { NextResponse } from 'next/server';
 
 /**
  * Add unique request ID to request headers
@@ -23,10 +23,10 @@ export function createResponseWithId(
   body: unknown,
   init?: ResponseInit,
   requestId?: string
-): Response {
-  const response = Response.json(body, init);
+): NextResponse {
+  const response = NextResponse.json(body, init);
   if (requestId) {
-    setRequestIdHeaders(response, requestId);
+    response.headers.set('X-Request-ID', requestId);
   }
   return response;
 }

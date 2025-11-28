@@ -1,6 +1,4 @@
-import Constants from 'expo-constants';
-
-const APP_URL = Constants.expoConfig?.extra?.appUrl || process.env.EXPO_PUBLIC_APP_URL || 'https://black-pill.app';
+import { getApiUrl } from '../utils/apiUrl';
 
 export class ApiError extends Error {
   constructor(
@@ -17,14 +15,24 @@ async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${APP_URL}${endpoint}`;
+  const apiUrl = getApiUrl();
+  const url = `${apiUrl}${endpoint}`;
+  
+  // Debug logging for API URL resolution
+  console.log('[API] Request:', endpoint, '-> Full URL:', url);
+  
+  // Don't set Content-Type for FormData - let the browser set it with boundary
+  const isFormData = options.body instanceof FormData;
+  const headers = isFormData
+    ? { ...options.headers }
+    : {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      };
   
   const response = await fetch(url, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -51,9 +59,12 @@ export async function apiPost<T>(
   data?: any,
   token?: string
 ): Promise<T> {
+  const isFormData = data instanceof FormData;
+  const body = isFormData ? data : (data ? JSON.stringify(data) : undefined);
+  
   return request<T>(endpoint, {
     method: 'POST',
-    body: data ? JSON.stringify(data) : undefined,
+    body,
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 }
@@ -76,6 +87,18 @@ export async function apiDelete<T>(
 ): Promise<T> {
   return request<T>(endpoint, {
     method: 'DELETE',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+}
+
+export async function apiPatch<T>(
+  endpoint: string,
+  data?: any,
+  token?: string
+): Promise<T> {
+  return request<T>(endpoint, {
+    method: 'PATCH',
+    body: data ? JSON.stringify(data) : undefined,
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 }

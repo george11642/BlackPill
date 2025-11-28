@@ -65,6 +65,9 @@ export const GET = withAuth(async (request: Request, user) => {
         const taskDay = task.specific_days.includes(dayOfWeek === 0 ? 7 : dayOfWeek);
         if (!taskDay) return false;
       }
+      
+      // Monthly and weekly tasks (without specific_days) show up any day
+      // No filtering needed for monthly or weekly frequency
 
       // Check time of day
       const timeOfDay = Array.isArray(task.time_of_day) ? task.time_of_day : [task.time_of_day];

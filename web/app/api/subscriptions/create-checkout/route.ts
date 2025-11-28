@@ -34,15 +34,15 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { tier, interval, coupon_code, email, source, user_id } = body;
+    const { tier, interval, coupon_code, email, source, user_id, affiliateReferralCode } = body;
 
     // Validate tier
-    const validTiers = ['basic', 'pro', 'unlimited'];
+    const validTiers = ['pro', 'elite'];
     if (!validTiers.includes(tier)) {
       return createResponseWithId(
         {
           error: 'Invalid tier',
-          message: 'Tier must be one of: basic, pro, unlimited',
+          message: 'Tier must be one of: pro, elite',
         },
         { status: 400, headers: corsHeaders },
         requestId
@@ -111,12 +111,10 @@ export async function POST(request: Request) {
 
     // Define price IDs (these should be created in Stripe Dashboard)
     const priceMap: Record<string, string | undefined> = {
-      'basic-monthly': process.env.STRIPE_PRICE_BASIC_MONTHLY,
-      'basic-annual': process.env.STRIPE_PRICE_BASIC_ANNUAL,
       'pro-monthly': process.env.STRIPE_PRICE_PRO_MONTHLY,
       'pro-annual': process.env.STRIPE_PRICE_PRO_ANNUAL,
-      'unlimited-monthly': process.env.STRIPE_PRICE_UNLIMITED_MONTHLY,
-      'unlimited-annual': process.env.STRIPE_PRICE_UNLIMITED_ANNUAL,
+      'elite-monthly': process.env.STRIPE_PRICE_ELITE_MONTHLY,
+      'elite-annual': process.env.STRIPE_PRICE_ELITE_ANNUAL,
     };
 
     const priceId = priceMap[`${tier}-${interval}`];
@@ -154,6 +152,7 @@ export async function POST(request: Request) {
         tier,
         source: checkoutSource,
         ...(finalUserId && { user_id: finalUserId }),
+        ...(affiliateReferralCode && { affiliate_referral_code: affiliateReferralCode }),
       },
     };
 

@@ -1,5 +1,5 @@
 import { supabase, supabaseAdmin } from '../supabase/client';
-import { Request } from 'next/server';
+import { NextResponse } from 'next/server';
 
 /**
  * User object attached to request after authentication
@@ -86,35 +86,40 @@ export async function checkScansRemaining(userId: string): Promise<{
 /**
  * Helper to create authenticated API route handler
  * Wraps the handler with authentication check
+ * Note: CORS is handled by the global middleware.ts
  */
 export function withAuth<T = unknown>(
   handler: (request: Request, user: AuthenticatedUser) => Promise<Response>
 ) {
   return async (request: Request): Promise<Response> => {
+    // Note: CORS preflight is handled by global middleware.ts
+    // This wrapper only handles authentication
+
     try {
       const user = await getAuthenticatedUser(request);
-      return handler(request, user);
+      const response = await handler(request, user);
+      return response;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Authentication failed';
       
       if (message.includes('Missing') || message.includes('Invalid') || message.includes('expired')) {
-        return Response.json(
+        return NextResponse.json(
           {
             error: 'Unauthorized',
             message,
           },
           { status: 401 }
         );
+      } else {
+        console.error('Auth middleware error:', error);
+        return NextResponse.json(
+          {
+            error: 'Internal Server Error',
+            message: 'Authentication failed',
+          },
+          { status: 500 }
+        );
       }
-
-      console.error('Auth middleware error:', error);
-      return Response.json(
-        {
-          error: 'Internal Server Error',
-          message: 'Authentication failed',
-        },
-        { status: 500 }
-      );
     }
   };
 }

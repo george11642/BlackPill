@@ -9,14 +9,20 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { apiGet } from '../lib/api/client';
 import { useAuth } from '../lib/auth/context';
+import { useSubscription } from '../lib/subscription/context';
 import { GlassCard } from '../components/GlassCard';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { BackHeader } from '../components/BackHeader';
+import { LockedFeatureOverlay } from '../components/LockedFeatureOverlay';
 import { Challenge } from '../lib/types';
 import { DarkTheme } from '../lib/theme';
 
 export function ChallengesScreen() {
   const navigation = useNavigation();
   const { session } = useAuth();
+  const { features } = useSubscription();
+  const isLocked = features.challenges.access === 'locked';
+  
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -61,6 +67,7 @@ export function ChallengesScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
+        <BackHeader title="Challenges" variant="large" />
         <Text style={styles.loading}>Loading...</Text>
       </View>
     );
@@ -68,14 +75,19 @@ export function ChallengesScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Challenges</Text>
-      </View>
+      <BackHeader title="Challenges" variant="large" />
+      <LockedFeatureOverlay
+        isVisible={isLocked}
+        title="Challenges Locked"
+        description="Join the community and compete in challenges. Upgrade to Pro or Elite to unlock."
+        style={{ marginTop: 60 }}
+      />
       <FlatList
         data={challenges}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, isLocked && styles.listLocked]}
+        scrollEnabled={!isLocked}
       />
     </View>
   );
@@ -86,18 +98,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: DarkTheme.colors.background,
   },
-  header: {
-    padding: DarkTheme.spacing.lg,
-    paddingTop: 60,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: DarkTheme.colors.text,
-    fontFamily: DarkTheme.typography.fontFamily,
-  },
   list: {
     padding: DarkTheme.spacing.md,
+  },
+  listLocked: {
+    opacity: 0.3,
   },
   card: {
     marginBottom: DarkTheme.spacing.md,

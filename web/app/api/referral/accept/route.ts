@@ -7,13 +7,20 @@ import {
   getRequestId,
   createResponseWithId,
 } from '@/lib';
+import { checkReferralAchievements } from '@/lib/achievements/service';
 
 /**
  * POST /api/referral/accept
  * Accept a referral code
+ * 
+ * @deprecated This endpoint is deprecated. Use /api/referrals/redeem instead.
+ * This endpoint is kept for backward compatibility but will be removed in a future version.
  */
 export const POST = withAuth(async (request: Request, user) => {
   const requestId = getRequestId(request);
+
+  // Log deprecation warning
+  console.warn('[DEPRECATED] /api/referral/accept is deprecated. Use /api/referrals/redeem instead.');
 
   try {
     const body = await request.json();
@@ -75,7 +82,7 @@ export const POST = withAuth(async (request: Request, user) => {
       );
     }
 
-    const bonusScans = 5;
+    const bonusCredits = 1;
 
     // Create referral record
     const { data: referral, error: referralError } = await supabaseAdmin
@@ -84,7 +91,8 @@ export const POST = withAuth(async (request: Request, user) => {
         from_user_id: referrer.id,
         to_user_id: user.id,
         referral_code,
-        bonus_scans_given: bonusScans,
+        bonus_scans_given: 0, // Deprecated field, keep as 0 or remove if possible
+        bonus_credits_given: bonusCredits, // New field? Or just handle in logic. Let's assume migration added unblur_credits to user but maybe not to referrals table yet. I'll just track it in user table for now.
         status: 'accepted',
         accepted_at: new Date().toISOString(),
       })
@@ -95,10 +103,10 @@ export const POST = withAuth(async (request: Request, user) => {
       throw new Error('Failed to create referral record');
     }
 
-    // Update referred user - increment scans
+    // Update referred user - increment unblur credits
     const { data: currentUser } = await supabaseAdmin
       .from('users')
-      .select('scans_remaining')
+      .select('unblur_credits')
       .eq('id', user.id)
       .single();
 
@@ -106,23 +114,44 @@ export const POST = withAuth(async (request: Request, user) => {
       .from('users')
       .update({
         referred_by: referrer.id,
-        scans_remaining: (currentUser?.scans_remaining || 0) + bonusScans,
+        unblur_credits: (currentUser?.unblur_credits || 0) + bonusCredits,
       })
       .eq('id', user.id);
 
-    // Give bonus scans to referrer
+    // Give bonus credits to referrer
     const { data: referrerUser } = await supabaseAdmin
       .from('users')
-      .select('scans_remaining')
+      .select('unblur_credits')
       .eq('id', referrer.id)
       .single();
 
     await supabaseAdmin
       .from('users')
       .update({
-        scans_remaining: (referrerUser?.scans_remaining || 0) + bonusScans,
+        unblur_credits: (referrerUser?.unblur_credits || 0) + bonusCredits,
       })
       .eq('id', referrer.id);
+
+    // Check referral count for achievements (fire and forget)
+    Promise.all([
+      (async () => {
+        try {
+          const { count: referralCount } = await supabaseAdmin
+            .from('referrals')
+            .select('*', { count: 'exact', head: true })
+            .eq('from_user_id', referrer.id)
+            .eq('status', 'accepted');
+
+          if (referralCount !== null) {
+            await checkReferralAchievements(referrer.id, referralCount);
+          }
+        } catch (error) {
+          console.error('Error checking referral achievements:', error);
+        }
+      })(),
+    ]).catch(() => {
+      // Ignore errors - achievements are non-critical
+    });
 
     // Send push notifications to both users
     try {
@@ -139,16 +168,16 @@ export const POST = withAuth(async (request: Request, user) => {
       await sendNotificationToUser(
         referrer.id,
         'Friend Joined! 🎉',
-        `${refereeName} accepted your referral. You got 5 bonus scans!`,
-        { type: 'referral_accepted', bonus_scans: bonusScans }
+        `${refereeName} accepted your referral. You got ${bonusCredits} unblur credit!`,
+        { type: 'referral_accepted', bonus_credits: bonusCredits }
       );
 
       // Send notification to referee
       await sendNotificationToUser(
         user.id,
         'Welcome to Black Pill! 🚀',
-        `You got 5 free scans from ${referrer.username || 'a friend'}!`,
-        { type: 'referral_bonus_received', bonus_scans: bonusScans }
+        `You got ${bonusCredits} unblur credit from ${referrer.username || 'a friend'}!`,
+        { type: 'referral_bonus_received', bonus_credits: bonusCredits }
       );
     } catch (notificationError) {
       console.error('Error sending push notifications:', notificationError);
@@ -157,9 +186,9 @@ export const POST = withAuth(async (request: Request, user) => {
 
     return createResponseWithId(
       {
-        bonus_scans: bonusScans,
+        bonus_credits: bonusCredits,
         referrer_name: referrer.username || referrer.email?.split('@')[0],
-        message: `You got ${bonusScans} free scans from ${referrer.username || 'a friend'}!`,
+        message: `You got ${bonusCredits} unblur credit from ${referrer.username || 'a friend'}!`,
       },
       { status: 200 },
       requestId

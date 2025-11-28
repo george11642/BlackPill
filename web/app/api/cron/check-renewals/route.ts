@@ -71,9 +71,8 @@ export async function POST(request: Request) {
 
         // Calculate amount (would need to fetch from Stripe)
         const tierPrices: Record<string, number> = {
-          basic: 4.99,
           pro: 9.99,
-          unlimited: 19.99,
+          elite: 19.99,
         };
 
         await sendRenewalReminder((sub.users as any).email, {

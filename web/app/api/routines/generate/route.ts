@@ -113,7 +113,7 @@ export const POST = withAuth(async (request: Request, user) => {
 
   try {
     const body = await request.json();
-    const { analysisId, focusAreas, timeCommitment, preferences } = body;
+    const { analysisId, focusAreas, timeCommitment, preferences, scheduleType, daysOfWeek, customGoal, tierPreference } = body;
 
     if (!analysisId || !focusAreas || !Array.isArray(focusAreas) || focusAreas.length === 0) {
       return createResponseWithId(
@@ -155,18 +155,28 @@ export const POST = withAuth(async (request: Request, user) => {
     const actionPlans = await generateActionPlans(breakdown, analysis.score);
 
     // Generate routine with AI
+    const customGoalSection = customGoal 
+      ? `\n- SPECIFIC USER GOAL: "${customGoal}" (IMPORTANT: Tailor tasks specifically to help achieve this goal)`
+      : '';
+    
     const prompt = `Create a personalized looksmaxxing routine for someone with:
 - Overall score: ${analysis.score}/10
 - Weak areas: ${weakAreas.map((a) => `${a.category} (${a.score}/10)`).join(', ')}
 - Focus goals: ${focusAreas.join(', ')}
 - Daily time commitment: ${timeCommitment || 'medium'} minutes
-- Preferences: ${JSON.stringify(preferences || {})}
+- Preferences: ${JSON.stringify(preferences || {})}${customGoalSection}
 
-Generate a daily routine with 8-12 specific, actionable tasks organized by time of day (morning/evening).
+Generate a comprehensive routine with:
+- 8-10 DAILY tasks (things to do every day)
+- 2-4 WEEKLY tasks (things to do once a week, like deep treatments, exfoliation, etc.)
+${scheduleType === 'monthly' ? '- 1-3 MONTHLY tasks (things to do once per month, like deep cleaning, major treatments, etc.)' : ''}
+
+Organize tasks by time of day (morning/evening).
 For each task, include:
 - Title (concise, e.g., "Apply Sunscreen")
 - Description (specific instructions)
 - Category (skincare/grooming/fitness/nutrition/mewing)
+- Frequency ("daily", "weekly", or "monthly")
 - Time of day (morning/evening or both)
 - Duration in minutes
 - Why it helps (scientific benefit)
@@ -179,13 +189,24 @@ Format as JSON with this structure:
       "title": "Apply Sunscreen",
       "description": "Use broad-spectrum SPF 50+ every morning",
       "category": "skincare",
+      "frequency": "daily",
       "time_of_day": ["morning"],
       "duration_minutes": 2,
       "why_it_helps": "Protects from UV damage, prevents premature aging",
       "product_name": "CeraVe Hydrating Sunscreen",
       "product_link": null
     },
-    ...
+    {
+      "title": "Deep Exfoliation",
+      "description": "Use a chemical exfoliant (AHA/BHA) to remove dead skin cells",
+      "category": "skincare",
+      "frequency": "weekly",
+      "time_of_day": ["evening"],
+      "duration_minutes": 5,
+      "why_it_helps": "Promotes cell turnover, improves skin texture",
+      "product_name": "Paula's Choice BHA Exfoliant",
+      "product_link": null
+    }
   ]
 }
 
@@ -212,16 +233,34 @@ Be constructive and avoid toxic terminology. Focus on actionable, evidence-based
       throw new Error('Invalid routine format from AI');
     }
 
+    // Deactivate existing routines before creating new one
+    const { error: deactivateError } = await supabaseAdmin
+      .from('routines')
+      .update({ is_active: false })
+      .eq('user_id', user.id)
+      .eq('is_active', true);
+
+    if (deactivateError) {
+      console.error('Error deactivating old routines:', deactivateError);
+      // Continue anyway - not critical
+    }
+
     // Create routine in database
     const { data: routine, error: routineError } = await supabaseAdmin
       .from('routines')
       .insert({
         user_id: user.id,
-        name: `${focusAreas.join(' & ')} Improvement Plan`,
-        goal: `Improve ${focusAreas.join(', ')}`,
+        name: customGoal 
+          ? `Custom: ${customGoal.slice(0, 50)}${customGoal.length > 50 ? '...' : ''}`
+          : `${focusAreas.join(' & ')} Improvement Plan`,
+        goal: customGoal || `Improve ${focusAreas.join(', ')}`,
         focus_categories: focusAreas,
         created_from_analysis_id: analysisId,
         is_active: true,
+        routine_set_type: scheduleType || 'daily',
+        days_of_week: daysOfWeek || [0, 1, 2, 3, 4, 5, 6],
+        time_commitment: timeCommitment || 'medium',
+        tier_preference: tierPreference || 'all',
       })
       .select()
       .single();
@@ -231,20 +270,53 @@ Be constructive and avoid toxic terminology. Focus on actionable, evidence-based
       throw routineError;
     }
 
-    // Insert tasks
-    const tasks = generatedRoutine.tasks.map((task: any, index: number) => ({
-      routine_id: routine.id,
-      title: task.title,
-      description: task.description || null,
-      category: task.category,
-      time_of_day: Array.isArray(task.time_of_day) ? task.time_of_day : [task.time_of_day || 'morning'],
-      frequency: task.frequency || 'daily',
-      order_index: index,
-      duration_minutes: task.duration_minutes || null,
-      why_it_helps: task.why_it_helps || null,
-      product_name: task.product_name || null,
-      product_link: task.product_link || null,
-    }));
+    // Insert tasks with tier metadata from action plans
+    const tasks = generatedRoutine.tasks.map((task: any, index: number) => {
+      // Determine tier based on product/treatment type
+      let tier = 'DIY'; // default
+      if (task.product_name) {
+        tier = 'OTC';
+      }
+      if (task.is_professional) {
+        tier = 'Professional';
+      }
+
+      // Get corresponding action plan for this category to extract metadata
+      const relatedPlan = actionPlans.find(p => 
+        p.category.toLowerCase() === task.category?.toLowerCase()
+      );
+      
+      let tierData: any = {};
+      if (relatedPlan) {
+        if (tier === 'DIY' && relatedPlan.diy) {
+          tierData = relatedPlan.diy;
+        } else if (tier === 'OTC' && relatedPlan.otc) {
+          tierData = relatedPlan.otc;
+        } else if (tier === 'Professional' && relatedPlan.professional) {
+          tierData = relatedPlan.professional;
+        }
+      }
+
+      return {
+        routine_id: routine.id,
+        title: task.title,
+        description: task.description || null,
+        category: task.category,
+        time_of_day: Array.isArray(task.time_of_day) ? task.time_of_day : [task.time_of_day || 'morning'],
+        frequency: task.frequency || 'daily',
+        order_index: index,
+        duration_minutes: task.duration_minutes || null,
+        why_it_helps: task.why_it_helps || null,
+        product_name: task.product_name || null,
+        product_link: task.product_link || null,
+        tier: tier,
+        estimated_cost: tierData.estimatedCost || tierData.estimated_cost || null,
+        time_to_results: tierData.timeToResults || tierData.time_to_results || null,
+        effectiveness: tierData.effectiveness || null,
+        science_backing: tierData.scienceBacking || tierData.science_backing || task.why_it_helps || null,
+        professional_warning: tierData.warning || tierData.professional_warning || null,
+      };
+    });
 
     const { data: insertedTasks, error: tasksError } = await supabaseAdmin
       .from('routine_tasks')
@@ -256,6 +328,66 @@ Be constructive and avoid toxic terminology. Focus on actionable, evidence-based
       throw tasksError;
     }
 
+    // Create additional tasks from action plans for OTC and Professional tiers
+    const additionalTasks: any[] = [];
+    let orderIndex = tasks.length;
+
+    for (const plan of actionPlans) {
+      // OTC tasks from products
+      if (plan.otc?.products && Array.isArray(plan.otc.products)) {
+        for (const product of plan.otc.products.slice(0, 2)) { // Limit to 2 per category
+          additionalTasks.push({
+            routine_id: routine.id,
+            title: product.name || `${plan.category} Product`,
+            description: product.purpose || `Recommended for ${plan.category} improvement`,
+            category: plan.category,
+            time_of_day: ['morning', 'evening'],
+            frequency: 'daily',
+            order_index: orderIndex++,
+            tier: 'OTC',
+            estimated_cost: plan.otc.estimatedCost || '$50-150',
+            time_to_results: plan.otc.timeToResults || '4-8 weeks',
+            effectiveness: plan.otc.effectiveness || 'high',
+            science_backing: plan.otc.scienceBacking,
+            product_name: product.name,
+          });
+        }
+      }
+
+      // Professional tasks from treatments
+      if (plan.professional?.treatments && Array.isArray(plan.professional.treatments)) {
+        for (const treatment of plan.professional.treatments.slice(0, 1)) { // Limit to 1 per category
+          additionalTasks.push({
+            routine_id: routine.id,
+            title: treatment.name || `${plan.category} Treatment`,
+            description: treatment.description || `Professional treatment for ${plan.category}`,
+            category: plan.category,
+            time_of_day: ['morning'],
+            frequency: 'monthly',
+            order_index: orderIndex++,
+            tier: 'Professional',
+            estimated_cost: treatment.cost_range || plan.professional.estimatedCost || '$200-1500',
+            time_to_results: plan.professional.timeToResults || '2-6 months',
+            effectiveness: plan.professional.effectiveness || 'very high',
+            science_backing: plan.professional.scienceBacking,
+            professional_warning: plan.professional.warning || 'Consult a licensed professional before proceeding.',
+          });
+        }
+      }
+    }
+
+    // Insert additional OTC/Professional tasks
+    if (additionalTasks.length > 0) {
+      const { error: additionalTasksError } = await supabaseAdmin
+        .from('routine_tasks')
+        .insert(additionalTasks);
+
+      if (additionalTasksError) {
+        console.error('Additional tasks insertion error:', additionalTasksError);
+        // Non-critical, continue
+      }
+    }
+
     // Initialize streak
     await supabaseAdmin.from('routine_streaks').insert({
       routine_id: routine.id,
@@ -264,11 +396,18 @@ Be constructive and avoid toxic terminology. Focus on actionable, evidence-based
       longest_streak: 0,
     });
 
+    // Fetch all tasks including the newly added ones
+    const { data: allTasks } = await supabaseAdmin
+      .from('routine_tasks')
+      .select('*')
+      .eq('routine_id', routine.id)
+      .order('order_index');
+
     return createResponseWithId(
       {
         routine: {
           ...routine,
-          tasks: insertedTasks,
+          tasks: allTasks || insertedTasks,
         },
         actionPlans: actionPlans, // F18: 3-Tier Action Plans
       },

@@ -1,25 +1,20 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useRef } from 'react';
+import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { DarkTheme } from '../lib/theme';
 
 export function SplashScreen() {
-  const navigation = useNavigation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 1500,
-      useNativeDriver: true,
-    }).start();
-
-    const timer = setTimeout(() => {
-      navigation.navigate('Login' as never);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1500,
+        useNativeDriver: Platform.OS !== 'web',
+      }).start();
+    }, [fadeAnim])
+  );
 
   return (
     <View style={styles.container}>

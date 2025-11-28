@@ -8,6 +8,7 @@
     "userInterfaceStyle": "dark",
     "description": "Be Honest About Yourself - AI-powered attractiveness analysis with actionable self-improvement tips.",
     "newArchEnabled": true,
+    "scheme": "blackpill",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -19,7 +20,12 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Black Pill needs access to your camera to take photos for AI analysis.",
         "NSPhotoLibraryUsageDescription": "Black Pill needs access to your photo library to select photos for analysis.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": ["blackpill"]
+          }
+        ]
       }
     },
     "android": {
@@ -32,6 +38,18 @@
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "blackpill"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "web": {
@@ -62,15 +80,7 @@
       ],
       "expo-dev-client",
       "expo-secure-store",
-      "expo-web-browser",
-      [
-        "@sentry/react-native/expo",
-        {
-          "url": "https://sentry.io/",
-          "project": "blackpill",
-          "organization": "apps-ml"
-        }
-      ]
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {

@@ -100,6 +100,20 @@ function generateSimpleMilestones(
 }
 
 /**
+ * Map frontend goal_type values to database values
+ */
+function mapGoalType(frontendType: string): string {
+  const mapping: Record<string, string> = {
+    'score': 'score_improvement',
+    'skin': 'category_improvement',
+    'jawline': 'category_improvement',
+    'routine': 'routine_consistency',
+  };
+  
+  return mapping[frontendType] || 'custom';
+}
+
+/**
  * POST /api/goals/create
  * Create a new goal with smart milestones
  */
@@ -121,12 +135,15 @@ export const POST = withAuth(async (request: Request, user) => {
       );
     }
 
+    // Map frontend goal_type to database value
+    const dbGoalType = mapGoalType(goal_type);
+
     // Create goal
     const { data: goal, error: goalError } = await supabaseAdmin
       .from('user_goals')
       .insert({
         user_id: user.id,
-        goal_type,
+        goal_type: dbGoalType,
         target_value: parseFloat(target_value),
         current_value: current_value ? parseFloat(current_value) : null,
         deadline,

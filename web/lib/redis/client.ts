@@ -41,6 +41,12 @@ export function getRedisClient(): Redis | null {
     return null;
   }
   
+  // Check if URL is a placeholder or invalid
+  if (redisUrl.includes('password@host:port') || redisUrl.includes('your_') || redisUrl === 'redis://default:password@host:port') {
+    console.warn('Redis URL appears to be a placeholder, skipping Redis connection');
+    return null;
+  }
+  
   try {
     const useTls = shouldUseTls(redisUrl);
     
@@ -48,6 +54,7 @@ export function getRedisClient(): Redis | null {
       maxRetriesPerRequest: 3,
       enableReadyCheck: true,
       connectTimeout: 5000,
+      lazyConnect: true, // Don't connect immediately
       // TLS configuration for providers that require it
       // rejectUnauthorized: false is needed for some Redis providers' self-signed certificates
       tls: useTls ? { rejectUnauthorized: false } : undefined,

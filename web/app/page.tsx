@@ -90,7 +90,7 @@ export default function HomePage() {
       tier: 'Basic',
       price: '$4.99',
       interval: '/month',
-      yearlyPrice: '$54.99/year',
+      yearlyPrice: '$59.99/year',
       scans: '5 scans/month',
       features: [
         { text: 'Full 6-dimension breakdown', included: true },
@@ -105,7 +105,7 @@ export default function HomePage() {
       tier: 'Pro',
       price: '$9.99',
       interval: '/month',
-      yearlyPrice: '$109.89/year',
+      yearlyPrice: '$119.99/year',
       scans: '20 scans/month',
       features: [
         { text: 'All Basic features', included: true },
@@ -117,10 +117,10 @@ export default function HomePage() {
       highlight: true,
     },
     {
-      tier: 'Unlimited',
+      tier: 'Elite',
       price: '$19.99',
       interval: '/month',
-      yearlyPrice: '$209.89/year',
+      yearlyPrice: '$219.99/year',
       scans: 'Unlimited scans',
       features: [
         { text: 'All Pro features', included: true },
@@ -158,7 +158,7 @@ export default function HomePage() {
     },
     {
       question: 'What\'s included in the free tier?',
-      answer: 'You get 1 lifetime scan with basic score and limited improvement tips. Share with friends via referral code and both of you get 5 bonus scans.',
+      answer: 'You get 1 lifetime scan with a score and improvement tips. Share with friends via referral code and both of you get bonus scans.',
     },
     {
       question: 'How does the referral system work?',
@@ -294,7 +294,7 @@ export default function HomePage() {
             }`}
           >
             Annual 
-            <span className="badge badge-success text-xs">Save 10%</span>
+            <span className="badge badge-success text-xs">Save 20%</span>
           </button>
         </div>
 

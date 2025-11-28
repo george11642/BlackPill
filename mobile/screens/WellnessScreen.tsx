@@ -11,6 +11,7 @@ import { apiGet, apiPost } from '../lib/api/client';
 import { useAuth } from '../lib/auth/context';
 import { GlassCard } from '../components/GlassCard';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { BackHeader } from '../components/BackHeader';
 import { DarkTheme } from '../lib/theme';
 
 export function WellnessScreen() {
@@ -49,19 +50,21 @@ export function WellnessScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
+        <BackHeader title="Wellness & Health" variant="large" />
         <Text style={styles.loading}>Loading...</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Wellness & Health</Text>
-        <Text style={styles.subtitle}>
-          Track correlations between health metrics and your scores
-        </Text>
-      </View>
+    <View style={styles.container}>
+      <BackHeader title="Wellness & Health" variant="large" />
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.subtitle}>
+            Track correlations between health metrics and your scores
+          </Text>
+        </View>
 
       <GlassCard style={styles.card}>
         <Text style={styles.cardTitle}>Health Metrics</Text>
@@ -84,11 +87,12 @@ export function WellnessScreen() {
       </GlassCard>
 
       <PrimaryButton
-        title="Sync Health Data"
-        onPress={syncHealthData}
-        style={styles.button}
-      />
-    </ScrollView>
+          title="Sync Health Data"
+          onPress={syncHealthData}
+          style={styles.button}
+        />
+      </ScrollView>
+    </View>
   );
 }
 
@@ -97,19 +101,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: DarkTheme.colors.background,
   },
+  scrollView: {
+    flex: 1,
+  },
   content: {
     padding: DarkTheme.spacing.lg,
-    paddingTop: 60,
+    paddingTop: DarkTheme.spacing.md,
   },
   header: {
     marginBottom: DarkTheme.spacing.xl,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: DarkTheme.colors.text,
-    fontFamily: DarkTheme.typography.fontFamily,
-    marginBottom: DarkTheme.spacing.xs,
   },
   subtitle: {
     fontSize: 14,

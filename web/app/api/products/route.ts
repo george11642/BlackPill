@@ -13,6 +13,7 @@ export const GET = withAuth(async (request: Request, user) => {
     const category = searchParams.get('category');
     const recommended_for = searchParams.get('recommended_for');
     const featured = searchParams.get('featured');
+    const search = searchParams.get('search');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
@@ -22,6 +23,10 @@ export const GET = withAuth(async (request: Request, user) => {
       .eq('is_active', true)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
+
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+    }
 
     if (category) {
       query = query.eq('category', category);

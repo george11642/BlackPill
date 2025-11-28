@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { GlassCard } from '../components/GlassCard';
+import { BackHeader } from '../components/BackHeader';
 import { DarkTheme } from '../lib/theme';
 
 export function SettingsScreen() {
@@ -15,10 +16,9 @@ export function SettingsScreen() {
   const [analytics, setAnalytics] = useState(true);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Settings</Text>
-      </View>
+    <View style={styles.container}>
+      <BackHeader title="Settings" variant="large" />
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
 
       <GlassCard style={styles.card}>
         <Text style={styles.cardTitle}>Preferences</Text>
@@ -58,7 +58,8 @@ export function SettingsScreen() {
           <Text style={styles.linkText}>Terms of Service</Text>
         </TouchableOpacity>
       </GlassCard>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -67,18 +68,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: DarkTheme.colors.background,
   },
+  scrollView: {
+    flex: 1,
+  },
   content: {
     padding: DarkTheme.spacing.lg,
-    paddingTop: 60,
-  },
-  header: {
-    marginBottom: DarkTheme.spacing.xl,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: DarkTheme.colors.text,
-    fontFamily: DarkTheme.typography.fontFamily,
+    paddingTop: DarkTheme.spacing.md,
   },
   card: {
     marginBottom: DarkTheme.spacing.lg,

@@ -3,11 +3,17 @@ import { useEffect, useState } from 'react';
 import { NavigationContainer, DarkTheme as NavDarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View, ActivityIndicator, StyleSheet, useColorScheme, Platform } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, useColorScheme, Platform, LogBox } from 'react-native';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AuthProvider, useAuth } from './lib/auth/context';
+import { SubscriptionProvider } from './lib/subscription/context';
 import { DarkTheme } from './lib/theme';
+
+// Ignore warnings from third-party libraries
+LogBox.ignoreLogs([
+  'Unknown event handler property `onResponderTerminate`', // react-native-chart-kit warning
+]);
 
 // Screens
 import { SplashScreen } from './screens/SplashScreen';
@@ -34,7 +40,21 @@ import { SettingsScreen } from './screens/SettingsScreen';
 import { SubscriptionScreen } from './screens/SubscriptionScreen';
 import { EthicalSettingsScreen } from './screens/EthicalSettingsScreen';
 import { AICoachScreen } from './screens/AICoachScreen';
+import { AITransformScreen } from './screens/AITransformScreen';
+import { DailyRoutineScreen } from './screens/DailyRoutineScreen';
+import { ProgressPicturesScreen } from './screens/ProgressPicturesScreen';
+import { CreateRoutineScreen } from './screens/CreateRoutineScreen';
+import AffiliateDashboardScreen from './screens/AffiliateDashboardScreen';
+import { ReferralsScreen } from './screens/ReferralsScreen';
+import { NotificationsScreen } from './screens/NotificationsScreen';
+import { HelpAndSupportScreen } from './screens/HelpAndSupportScreen';
+import { TimelapseSelectionScreen } from './screens/TimelapseSelectionScreen';
+import { TimelapseGenerationScreen } from './screens/TimelapseGenerationScreen';
+import { CreateGoalScreen } from './screens/CreateGoalScreen';
+import { MethodologyScreen } from './screens/MethodologyScreen';
+import { MarketplaceScreen } from './screens/MarketplaceScreen';
 import * as Sentry from '@sentry/react-native';
+import { initializeRevenueCat } from './lib/revenuecat/client';
 
 Sentry.init({
   dsn: 'https://19300b03c051d8d44647dd9b21725290@o4510410685612032.ingest.us.sentry.io/4510433262436352',
@@ -60,14 +80,19 @@ const Stack = createNativeStackNavigator();
 function RootNavigator() {
   const { user, loading } = useAuth();
 
-  if (loading) {
-    return <SplashScreen />;
-  }
+  // Initialize RevenueCat when user is available
+  useEffect(() => {
+    if (user?.id && !loading) {
+      initializeRevenueCat(user.id);
+    }
+  }, [user?.id, loading]);
 
   return (
     <NavigationContainer theme={NavDarkTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {user ? (
+        {loading ? (
+          <Stack.Screen name="Splash" component={SplashScreen} />
+        ) : user ? (
           <>
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Camera" component={CameraScreen} />
@@ -89,10 +114,22 @@ function RootNavigator() {
             <Stack.Screen name="Subscription" component={SubscriptionScreen} />
             <Stack.Screen name="EthicalSettings" component={EthicalSettingsScreen} />
             <Stack.Screen name="AICoach" component={AICoachScreen} />
+            <Stack.Screen name="AITransform" component={AITransformScreen} />
+            <Stack.Screen name="DailyRoutine" component={DailyRoutineScreen} />
+            <Stack.Screen name="ProgressPictures" component={ProgressPicturesScreen} />
+            <Stack.Screen name="CreateRoutine" component={CreateRoutineScreen} />
+            <Stack.Screen name="Affiliate" component={AffiliateDashboardScreen} />
+            <Stack.Screen name="Referrals" component={ReferralsScreen} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} />
+            <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
+            <Stack.Screen name="TimelapseSelection" component={TimelapseSelectionScreen} />
+            <Stack.Screen name="TimelapseGeneration" component={TimelapseGenerationScreen} />
+            <Stack.Screen name="CreateGoal" component={CreateGoalScreen} />
+            <Stack.Screen name="Methodology" component={MethodologyScreen} />
+            <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
           </>
         ) : (
           <>
-            <Stack.Screen name="Splash" component={SplashScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Signup" component={SignupScreen} />
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
@@ -119,8 +156,10 @@ function App() {
     <ErrorBoundary>
       <SafeAreaProvider>
         <AuthProvider>
-          <StatusBar style="light" />
-          <RootNavigator />
+          <SubscriptionProvider>
+            <StatusBar style="light" />
+            <RootNavigator />
+          </SubscriptionProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </ErrorBoundary>

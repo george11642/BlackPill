@@ -10,17 +10,30 @@ export const GET = withAuth(async (request: Request, user) => {
 
   try {
     const { searchParams } = new URL(request.url);
-    const conversationId = searchParams.get('conversationId');
+    let conversationId = searchParams.get('conversationId');
 
+    // If no conversationId provided, get user's most recent conversation
     if (!conversationId) {
-      return createResponseWithId(
-        {
-          error: 'Invalid request',
-          message: 'conversationId is required',
-        },
-        { status: 400 },
-        requestId
-      );
+      const { data: recentConversation } = await supabaseAdmin
+        .from('ai_conversations')
+        .select('id')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (recentConversation) {
+        conversationId = recentConversation.id;
+      } else {
+        // No conversation exists, return empty array
+        return createResponseWithId(
+          {
+            messages: [],
+          },
+          { status: 200 },
+          requestId
+        );
+      }
     }
 
     // Verify conversation belongs to user

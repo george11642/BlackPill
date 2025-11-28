@@ -42,6 +42,7 @@ export { handleApiError, withErrorHandler, ApiError } from './errors/handler';
 
 // Middleware
 export { getRequestId, setRequestIdHeaders, createResponseWithId } from './middleware/request-id';
+export { addCorsHeaders, handleCorsPreFlight, withCors, withCorsAndAuth } from './middleware/cors';
 
 // Email
 export { sendEmail, sendRenewalReminder, sendPaymentFailedEmail } from './emails/service';
@@ -57,4 +58,18 @@ export { sendNotificationToUser, sendNotificationToToken } from './notifications
 
 // Share Card
 export { generateShareCardImage } from './share-card/generator';
+
+// Achievements
+export {
+  unlockAchievement,
+  checkAnalysisAchievements,
+  checkImprovementAchievements,
+  checkLeaderboardAchievements,
+  checkReferralAchievements,
+  checkGoalAchievements,
+  ACHIEVEMENT_DEFINITIONS,
+} from './achievements/service';
+
+// Goals
+export { updateGoalsFromAnalysis } from './goals/service';
 

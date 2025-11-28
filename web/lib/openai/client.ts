@@ -20,15 +20,23 @@ interface FaceMetrics {
   confidence?: number;
 }
 
+interface FeatureAnalysis {
+  score: number;
+  description: string;  // Detailed personalized description of this feature
+  improvement: string;  // Actionable improvement tip for this specific category
+}
+
 interface AnalysisResult {
   score: number;
   breakdown: {
-    symmetry: number;
-    jawline: number;
-    eyes: number;
-    lips: number;
-    skin: number;
-    bone_structure: number;
+    masculinity: FeatureAnalysis;
+    skin: FeatureAnalysis;
+    jawline: FeatureAnalysis;
+    cheekbones: FeatureAnalysis;
+    eyes: FeatureAnalysis;
+    symmetry: FeatureAnalysis;
+    lips: FeatureAnalysis;
+    hair: FeatureAnalysis;
   };
   tips: Array<{
     title: string;
@@ -47,47 +55,99 @@ export async function analyzeFacialAttractiveness(
   imageUrl: string,
   faceMetrics: FaceMetrics = {}
 ): Promise<AnalysisResult> {
-  const prompt = `You are an expert facial analysis AI that provides constructive, actionable feedback.
+  const prompt = `You are an expert facial analysis AI providing detailed, personalized assessments.
 
-Analyze this person's facial features and provide:
-1. An overall attractiveness score (1-10, one decimal place)
-2. Scores for 6 specific categories (1-10, one decimal):
-   - Symmetry
-   - Jawline
-   - Eyes
-   - Lips
-   - Skin Quality
-   - Bone Structure
-3. 3-5 actionable improvement tips with timeframes
+Analyze this person's face and provide DETAILED scores AND descriptions for 8 categories.
 
-IMPORTANT RULES:
-- Use ONLY constructive, positive language
-- NEVER use terms like: "subhuman", "it's over", "cope", "rope", "beta", "alpha"
-- Focus on controllable factors: grooming, fitness, skincare, style
-- Include realistic timeframes (e.g., "1-2 weeks", "1-3 months")
-- Be honest but kind and motivating
+For EACH category, provide:
+- A score (1-10, one decimal)
+- A personalized 1-2 sentence description specific to THIS person's features
+- An actionable improvement tip specific to THIS person's weaknesses in this category
 
-Face metrics detected: ${JSON.stringify(faceMetrics)}
+THE 8 CATEGORIES TO ANALYZE:
 
-Respond in JSON format:
+1. MASCULINITY: Overall facial structure strength - brow ridge prominence, facial width-to-height ratio, angular vs soft features, hunter eyes vs prey eyes, forward growth
+   
+2. SKIN QUALITY: Texture analysis - pore visibility, acne/scarring, tone evenness, under-eye darkness, hydration appearance, signs of aging, overall clarity
+
+3. JAWLINE: Definition and angularity - gonial angle sharpness, mandible definition, chin projection, jaw width, masseter visibility, submental area tightness
+
+4. CHEEKBONES: Zygomatic prominence - height and projection of cheekbones, hollow beneath them, facial thirds balance, midface structure
+
+5. EYES: Complete eye area - canthal tilt (positive/negative/neutral), eye spacing (IPD), upper eyelid exposure, under-eye support, limbal rings, scleral show, eye shape
+
+6. SYMMETRY: Left-right balance - facial midline alignment, eye level matching, nostril symmetry, lip corners, overall proportional harmony
+
+7. LIPS: Shape and proportion - Cupid's bow definition, vermillion border, upper-to-lower lip ratio, lip fullness, philtrum definition, mouth width to nose ratio
+
+8. HAIR: Complete assessment - density, hairline shape (straight/rounded/receding), temple points, texture quality, current styling effectiveness, color vibrancy
+
+SCORING GUIDELINES:
+- 9-10: Exceptional/model-tier for this feature
+- 7-8: Above average, noticeably attractive
+- 5-6: Average, typical
+- 3-4: Below average, noticeable weakness
+- 1-2: Significant concern
+- USE THE FULL RANGE - not everyone is 6-8
+
+Respond in this exact JSON structure:
 {
-  "score": 7.5,
+  "score": <overall 1-10>,
   "breakdown": {
-    "symmetry": 8.0,
-    "jawline": 7.0,
-    "eyes": 8.5,
-    "lips": 7.5,
-    "skin": 6.5,
-    "bone_structure": 7.0
+    "masculinity": {
+      "score": <1-10>,
+      "description": "<specific observation about their facial structure strength, brow ridge, angularity>",
+      "improvement": "<actionable tip to improve masculinity based on their specific weaknesses>"
+    },
+    "skin": {
+      "score": <1-10>,
+      "description": "<specific observation about their skin texture, clarity, tone>",
+      "improvement": "<actionable tip to improve skin quality based on their specific issues>"
+    },
+    "jawline": {
+      "score": <1-10>,
+      "description": "<specific observation about their jaw definition, angle, chin>",
+      "improvement": "<actionable tip to improve jawline definition based on their specific weaknesses>"
+    },
+    "cheekbones": {
+      "score": <1-10>,
+      "description": "<specific observation about their zygomatic structure, midface>",
+      "improvement": "<actionable tip to enhance cheekbone prominence based on their specific structure>"
+    },
+    "eyes": {
+      "score": <1-10>,
+      "description": "<specific observation about eye shape, tilt, spacing, area>",
+      "improvement": "<actionable tip to improve eye area appeal based on their specific features>"
+    },
+    "symmetry": {
+      "score": <1-10>,
+      "description": "<specific observation about facial balance and harmony>",
+      "improvement": "<actionable tip to improve facial symmetry based on their specific imbalances>"
+    },
+    "lips": {
+      "score": <1-10>,
+      "description": "<specific observation about lip shape, fullness, proportion>",
+      "improvement": "<actionable tip to improve lip appearance based on their specific features>"
+    },
+    "hair": {
+      "score": <1-10>,
+      "description": "<specific observation about hairline, density, styling>",
+      "improvement": "<actionable tip to improve hair quality and styling based on their specific hair characteristics>"
+    }
   },
   "tips": [
     {
-      "title": "Improve Skin Health",
-      "description": "Start a daily skincare routine with cleanser, moisturizer, and SPF 30+ sunscreen",
-      "timeframe": "2-4 weeks for visible results"
-    },
-    ...
+      "title": "<actionable tip title>",
+      "description": "<detailed personalized advice based on their specific weaknesses - be comprehensive and specific>",
+      "timeframe": "<realistic timeframe>"
+    }
   ]
+  
+IMPORTANT: Provide 5-7 comprehensive, actionable tips in the tips array. Focus on their biggest areas for improvement based on the scores. Each tip should be:
+- Highly personalized to their specific facial features and weaknesses
+- Actionable with clear steps they can take
+- Realistic with achievable timeframes
+- Cover different aspects: skincare, grooming, fitness, styling, etc.
 }`;
 
   try {
@@ -97,7 +157,7 @@ Respond in JSON format:
         {
           role: 'system',
           content:
-            'You are a professional facial analysis expert who provides constructive, actionable feedback focused on self-improvement.',
+            'You are a professional facial analysis expert. You MUST analyze each face individually and provide UNIQUE, ACCURATE scores based on what you actually observe. Different people have different features - your scores should reflect real differences. Avoid defaulting to average scores (6-8 range) for everything. Use the full 1-10 scale appropriately. Provide constructive, actionable feedback focused on self-improvement.',
         },
         {
           role: 'user',
@@ -117,7 +177,7 @@ Respond in JSON format:
       ],
       response_format: { type: 'json_object' },
       temperature: 0.7,
-      max_tokens: 1000,
+      max_tokens: 5000,
     });
 
     const result = JSON.parse(response.choices[0].message.content || '{}') as AnalysisResult;
@@ -153,36 +213,81 @@ function validateAnalysisResult(result: AnalysisResult): void {
     throw new Error('Invalid score in AI response');
   }
 
-  const requiredCategories = ['symmetry', 'jawline', 'eyes', 'lips', 'skin', 'bone_structure'];
+  const requiredCategories = ['masculinity', 'skin', 'jawline', 'cheekbones', 'eyes', 'symmetry', 'lips', 'hair'];
   for (const category of requiredCategories) {
-    if (
-      !result.breakdown[category as keyof typeof result.breakdown] ||
-      result.breakdown[category as keyof typeof result.breakdown] < 1 ||
-      result.breakdown[category as keyof typeof result.breakdown] > 10
-    ) {
+    const feature = result.breakdown[category as keyof typeof result.breakdown];
+    if (!feature || typeof feature !== 'object') {
+      throw new Error(`Missing ${category} in AI response`);
+    }
+    if (!feature.score || feature.score < 1 || feature.score > 10) {
       throw new Error(`Invalid ${category} score in AI response`);
+    }
+    if (!feature.description || typeof feature.description !== 'string' || feature.description.length < 10) {
+      throw new Error(`Invalid ${category} description in AI response`);
+    }
+    if (!feature.improvement || typeof feature.improvement !== 'string' || feature.improvement.length < 20) {
+      throw new Error(`Invalid ${category} improvement tip in AI response`);
     }
   }
 
-  if (!Array.isArray(result.tips) || result.tips.length < 3) {
-    throw new Error('Insufficient tips in AI response');
+  if (!Array.isArray(result.tips) || result.tips.length < 5) {
+    throw new Error('Insufficient tips in AI response - need at least 5 comprehensive tips');
+  }
+  
+  // Validate each tip has required fields
+  for (let i = 0; i < result.tips.length; i++) {
+    const tip = result.tips[i];
+    if (!tip.title || typeof tip.title !== 'string' || tip.title.length < 5) {
+      throw new Error(`Invalid tip title at index ${i} in AI response`);
+    }
+    if (!tip.description || typeof tip.description !== 'string' || tip.description.length < 30) {
+      throw new Error(`Invalid tip description at index ${i} in AI response`);
+    }
+    if (!tip.timeframe || typeof tip.timeframe !== 'string' || tip.timeframe.length < 5) {
+      throw new Error(`Invalid tip timeframe at index ${i} in AI response`);
+    }
   }
 
-  // Check for banned terms
+  // Check for banned terms (incel/blackpill terminology)
+  // These are terms that are ALWAYS inappropriate regardless of context
   const bannedTerms = [
     'subhuman',
     "it's over",
-    'cope',
-    'rope',
-    'beta',
-    'alpha',
-    'chad',
+    'its over',
     'incel',
+    'blackpill',
+    'looksmaxing',
+    'mogging',
+    'foid',
+    'stacy',
+    'becky',
   ];
+  
+  // Terms that need word boundary matching to avoid false positives
+  // (e.g., "jump rope" is fine, "rope" alone is not; "microscope" is fine)
+  const wordBoundaryTerms = [
+    'beta male',
+    'alpha male',
+    'chad',
+    'cope',   // Allow "microscope", "horoscope", etc.
+    'rope',   // Allow "jump rope", "tightrope", etc.
+    'mog',    // Allow "mogul", etc.
+  ];
+  
   const fullText = JSON.stringify(result).toLowerCase();
   
   for (const term of bannedTerms) {
     if (fullText.includes(term)) {
+      console.warn(`Banned term detected: "${term}" in AI response`);
+      throw new Error('AI response contains inappropriate terminology');
+    }
+  }
+  
+  // Check word boundary terms with regex
+  for (const term of wordBoundaryTerms) {
+    const regex = new RegExp(`\\b${term}\\b`, 'i');
+    if (regex.test(fullText)) {
+      console.warn(`Banned term detected: "${term}" in AI response`);
       throw new Error('AI response contains inappropriate terminology');
     }
   }

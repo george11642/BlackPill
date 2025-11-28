@@ -11,15 +11,23 @@ interface FaceMetrics {
   };
 }
 
+interface FeatureAnalysis {
+  score: number;
+  description: string;
+  improvement: string;
+}
+
 interface AnalysisResult {
   score: number;
   breakdown: {
-    symmetry: number;
-    jawline: number;
-    eyes: number;
-    lips: number;
-    skin: number;
-    bone_structure: number;
+    masculinity: FeatureAnalysis;
+    skin: FeatureAnalysis;
+    jawline: FeatureAnalysis;
+    cheekbones: FeatureAnalysis;
+    eyes: FeatureAnalysis;
+    symmetry: FeatureAnalysis;
+    lips: FeatureAnalysis;
+    hair: FeatureAnalysis;
   };
   tips: Array<{
     title: string;
@@ -37,24 +45,64 @@ export function calculateFallbackScore(faceMetrics: FaceMetrics): AnalysisResult
   // Extract key measurements
   const { landmarks, likelihood } = faceMetrics;
   
+  const skinScore = calculateSkinScore(likelihood);
+  const symmetryScore = calculateSymmetryScore(landmarks);
+  
   // Calculate scores for each category (simple heuristics)
   const breakdown = {
-    symmetry: calculateSymmetryScore(landmarks),
-    jawline: 7.0, // Baseline
-    eyes: 7.5, // Baseline
-    lips: 7.0, // Baseline
-    skin: calculateSkinScore(likelihood),
-    bone_structure: 7.0, // Baseline
+    masculinity: {
+      score: 7.0,
+      description: 'Unable to perform detailed analysis - using baseline score. Try again when service is available.',
+      improvement: 'Focus on strength training and maintaining a healthy body fat percentage to enhance facial structure definition.',
+    },
+    skin: {
+      score: skinScore,
+      description: skinScore >= 7.5 
+        ? 'Image quality suggests clear skin with good texture.' 
+        : 'Unable to fully assess skin quality from this image.',
+      improvement: 'Establish a daily skincare routine with cleanser, moisturizer, and SPF 30+ sunscreen. Stay hydrated.',
+    },
+    jawline: {
+      score: 7.0,
+      description: 'Unable to perform detailed analysis - using baseline score. Try again when service is available.',
+      improvement: 'Incorporate jaw exercises and maintain lower body fat percentage to enhance jawline definition.',
+    },
+    cheekbones: {
+      score: 7.0,
+      description: 'Unable to perform detailed analysis - using baseline score. Try again when service is available.',
+      improvement: 'Facial exercises and maintaining optimal body fat can help enhance cheekbone prominence.',
+    },
+    eyes: {
+      score: 7.5,
+      description: 'Unable to perform detailed analysis - using baseline score. Try again when service is available.',
+      improvement: 'Ensure adequate sleep and hydration to reduce under-eye circles and improve eye area appearance.',
+    },
+    symmetry: {
+      score: symmetryScore,
+      description: 'Basic symmetry analysis performed. Full analysis unavailable.',
+      improvement: 'Practice good posture and consider professional consultation for any significant asymmetries.',
+    },
+    lips: {
+      score: 7.0,
+      description: 'Unable to perform detailed analysis - using baseline score. Try again when service is available.',
+      improvement: 'Stay hydrated and use lip balm with SPF to maintain healthy, well-defined lips.',
+    },
+    hair: {
+      score: 7.0,
+      description: 'Unable to perform detailed analysis - using baseline score. Try again when service is available.',
+      improvement: 'Get a professional haircut that complements your face shape and maintain regular grooming.',
+    },
   };
 
-  // Calculate overall score (average of breakdown)
-  const score = Object.values(breakdown).reduce((sum, val) => sum + val, 0) / 6;
+  // Calculate overall score (average of breakdown scores)
+  const scores = Object.values(breakdown).map(f => f.score);
+  const score = scores.reduce((sum, val) => sum + val, 0) / scores.length;
   
   // Round to 1 decimal
   const roundedScore = Math.round(score * 10) / 10;
 
   // Generic improvement tips
-  const tips = generateGenericTips(breakdown);
+  const tips = generateGenericTips();
 
   return {
     score: roundedScore,
@@ -100,7 +148,7 @@ function calculateSkinScore(
 /**
  * Generate generic improvement tips
  */
-function generateGenericTips(breakdown: AnalysisResult['breakdown']) {
+function generateGenericTips() {
   const tips: Array<{ title: string; description: string; timeframe: string }> = [];
 
   // Skin care tip (always included)

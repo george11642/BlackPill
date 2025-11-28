@@ -3,7 +3,20 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['supabase.co', 'black-pill.app'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'black-pill.app',
+      },
+    ],
+  },
+  // Fix lockfiles warning - specify parent directory as the root
+  turbopack: {
+    root: '..',
   },
   // Serve Expo web app static files from public/app
   async rewrites() {
@@ -17,12 +30,6 @@ const nextConfig: NextConfig = {
         destination: '/app/assets/:path*',
       },
     ];
-  },
-  // Allow raw body for webhooks
-  api: {
-    bodyParser: {
-      sizeLimit: '1mb',
-    },
   },
 };
 

@@ -44,7 +44,7 @@ export function LoginScreen() {
     setLoading(true);
     try {
       await signIn(email.trim(), password);
-      navigation.navigate('Home' as never);
+      // Navigation will happen automatically when user state updates
     } catch (error: any) {
       Alert.alert('Login Failed', error.message || 'Please check your credentials');
     } finally {
@@ -56,7 +56,7 @@ export function LoginScreen() {
     setLoading(true);
     try {
       await signInWithGoogle();
-      navigation.navigate('Home' as never);
+      // Navigation will happen automatically when user state updates
     } catch (error: any) {
       Alert.alert('Google Sign-In Failed', error.message || 'Please try again');
     } finally {

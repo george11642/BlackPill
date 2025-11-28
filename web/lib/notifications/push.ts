@@ -1,5 +1,7 @@
-import { createClient } from '@/lib/supabase/server';
+import { supabaseServer } from '@/lib/supabase/server';
 import webpush from 'web-push';
+
+const createClient = () => supabaseServer;
 
 // VAPID keys for web push notifications
 // Public key is hardcoded (safe to expose), private key from env

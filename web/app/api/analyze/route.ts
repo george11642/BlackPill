@@ -1,4 +1,4 @@
-import { Request } from 'next/server';
+import { Request, NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -9,9 +9,29 @@ import {
   analyzeFacialAttractiveness,
   handleApiError,
   getRequestId,
-  createResponseWithId,
   initRedis,
 } from '@/lib';
+import {
+  checkAnalysisAchievements,
+  checkImprovementAchievements,
+} from '@/lib/achievements/service';
+import { updateGoalsFromAnalysis } from '@/lib/goals/service';
+
+// CORS headers - allow all origins for mobile app
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-ID',
+  'Access-Control-Max-Age': '86400',
+};
+
+/**
+ * OPTIONS /api/analyze
+ * Handle CORS preflight requests
+ */
+export async function OPTIONS(request: Request) {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
 
 /**
  * POST /api/analyze
@@ -32,47 +52,92 @@ export const POST = withAuth(async (request: Request, user) => {
 
     // Parse form data
     const formData = await request.formData();
+    
+    // Debug: Log formdata keys
+    console.log('[Analyze] FormData keys:', Array.from(formData.keys()));
+    
     const imageFile = formData.get('image') as File | null;
 
     if (!imageFile) {
-      return createResponseWithId(
+      console.error('[Analyze] No image file found in formdata');
+      return NextResponse.json(
         {
           error: 'No image provided',
           message: 'Please upload an image file',
         },
-        { status: 400 },
-        requestId
+        { 
+          status: 400,
+          headers: {
+            ...corsHeaders,
+            'X-Request-ID': requestId,
+          },
+        }
       );
     }
 
     // Validate file type
-    if (!imageFile.type.startsWith('image/')) {
-      return createResponseWithId(
+    console.log('[Analyze] Image file info:', { 
+      name: imageFile.name, 
+      type: imageFile.type, 
+      size: imageFile.size 
+    });
+    
+    if (!imageFile.type || !imageFile.type.startsWith('image/')) {
+      return NextResponse.json(
         {
           error: 'Invalid file type',
           message: 'Only image files are allowed',
         },
-        { status: 400 },
-        requestId
+        { 
+          status: 400,
+          headers: {
+            ...corsHeaders,
+            'X-Request-ID': requestId,
+          },
+        }
       );
     }
 
-    // Validate file size (2MB limit)
+    // Validate file size (must be > 0 and < 2MB)
     const maxSize = 2 * 1024 * 1024; // 2MB
+    if (imageFile.size === 0) {
+      console.error('[Analyze] Image file is empty after reading');
+      return NextResponse.json(
+        {
+          error: 'File is empty',
+          message: 'Image file is empty. Please try taking the photo again.',
+        },
+        { 
+          status: 400,
+          headers: {
+            ...corsHeaders,
+            'X-Request-ID': requestId,
+          },
+        }
+      );
+    }
+    
     if (imageFile.size > maxSize) {
-      return createResponseWithId(
+      return NextResponse.json(
         {
           error: 'File too large',
           message: 'Image must be less than 2MB',
         },
-        { status: 400 },
-        requestId
+        { 
+          status: 400,
+          headers: {
+            ...corsHeaders,
+            'X-Request-ID': requestId,
+          },
+        }
       );
     }
 
     // Convert File to Buffer
     const arrayBuffer = await imageFile.arrayBuffer();
     const imageBuffer = Buffer.from(arrayBuffer);
+    
+    console.log('[Analyze] Buffer created with size:', imageBuffer.length);
 
     // Process image
     const processedImage = await sharp(imageBuffer)
@@ -96,12 +161,19 @@ export const POST = withAuth(async (request: Request, user) => {
       throw new Error(`Failed to upload image: ${uploadError.message}`);
     }
 
-    // Get public URL
-    const {
-      data: { publicUrl: imageUrl },
-    } = supabaseAdmin.storage.from('analyses').getPublicUrl(fileName);
+    // Get signed URL (1 hour expiration) - bucket is now private
+    const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin.storage
+      .from('analyses')
+      .createSignedUrl(fileName, 3600); // 1 hour expiration
+
+    if (signedUrlError || !signedUrlData) {
+      throw new Error(`Failed to create signed URL: ${signedUrlError?.message || 'Unknown error'}`);
+    }
+
+    const imageUrl = signedUrlData.signedUrl;
 
     // Analyze with OpenAI Vision API (handles face detection and content moderation)
+    // Signed URLs work with OpenAI Vision API as long as they're accessible
     const analysisResult = await analyzeFacialAttractiveness(imageUrl);
 
     // Create thumbnail
@@ -124,10 +196,17 @@ export const POST = withAuth(async (request: Request, user) => {
       console.error('Thumbnail upload error:', thumbUploadError);
       // Continue without thumbnail rather than failing the entire request
     } else {
-      const {
-        data: { publicUrl },
-      } = supabaseAdmin.storage.from('analyses').getPublicUrl(thumbnailFileName);
-      thumbnailUrl = publicUrl;
+      // Get signed URL for thumbnail (1 hour expiration)
+      const { data: thumbSignedUrlData, error: thumbSignedUrlError } = await supabaseAdmin.storage
+        .from('analyses')
+        .createSignedUrl(thumbnailFileName, 3600); // 1 hour expiration
+
+      if (thumbSignedUrlError || !thumbSignedUrlData) {
+        console.error('Thumbnail signed URL error:', thumbSignedUrlError);
+        // Continue without thumbnail rather than failing the entire request
+      } else {
+        thumbnailUrl = thumbSignedUrlData.signedUrl;
+      }
     }
 
     // Save analysis to database
@@ -148,8 +227,8 @@ export const POST = withAuth(async (request: Request, user) => {
       throw new Error(`Failed to save analysis: ${dbError.message}`);
     }
 
-    // Decrement scans remaining (unless unlimited)
-    if (tier !== 'unlimited') {
+    // Decrement scans remaining (unless elite)
+    if (tier !== 'elite') {
       // Get current total_scans_used to increment it
       const { data: currentUser } = await supabaseAdmin
         .from('users')
@@ -175,17 +254,56 @@ export const POST = withAuth(async (request: Request, user) => {
       .eq('id', user.id)
       .single();
 
+    // Check if this is user's first scan
+    const { count: analysisCount } = await supabaseAdmin
+      .from('analyses')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+
+    const isFirstScan = (analysisCount || 0) === 1;
+
+    // Check and unlock achievements (fire and forget - don't block response)
+    Promise.all([
+      checkAnalysisAchievements(user.id, analysis.score, isFirstScan),
+      checkImprovementAchievements(user.id, analysis.score),
+    ]).catch((error) => {
+      console.error('Error checking achievements:', error);
+      // Don't throw - achievements are non-critical
+    });
+
+    // Update goals based on analysis (fire and forget - don't block response)
+    const goalUpdatePromise = updateGoalsFromAnalysis(
+      user.id,
+      analysis.score,
+      analysis.breakdown
+    ).catch((error) => {
+      console.error('Error updating goals:', error);
+      // Don't throw - goal updates are non-critical
+      return { updatedGoals: [], completedMilestones: [] };
+    });
+
+    // Wait for goal update to complete so we can include it in response
+    const goalUpdateResult = await goalUpdatePromise;
+
     // Return response
-    return createResponseWithId(
+    return NextResponse.json(
       {
         analysis_id: analysis.id,
         score: analysis.score,
         breakdown: analysis.breakdown,
         tips: analysis.tips,
         scans_remaining: userData?.scans_remaining || 0,
+        goals_updated: goalUpdateResult.updatedGoals.length > 0,
+        completed_milestones: goalUpdateResult.completedMilestones,
+        completed_goals: goalUpdateResult.updatedGoals.filter(g => g.goal_completed).map(g => g.id),
       },
-      { status: 200 },
-      requestId
+      { 
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          'X-Request-ID': requestId,
+        },
+      }
     );
   } catch (error) {
     console.error('Analysis error:', {
@@ -193,6 +311,11 @@ export const POST = withAuth(async (request: Request, user) => {
       user_id: user.id,
       request_id: requestId,
     });
+
+    // Check for insufficient scans (402 Payment Required)
+    const isInsufficientScans =
+      error instanceof Error &&
+      error.message.includes('Insufficient scans');
 
     // Determine if this is a client error (4xx) or server error (5xx)
     const isClientError =
@@ -207,22 +330,29 @@ export const POST = withAuth(async (request: Request, user) => {
         error.message.includes('Invalid') ||
         error.message.includes('File too large'));
 
-    const statusCode = isClientError ? 400 : 500;
-    const errorMessage = isClientError
+    const statusCode = isInsufficientScans ? 402 : (isClientError ? 400 : 500);
+    const errorMessage = isInsufficientScans
+      ? 'Insufficient scans remaining. Please upgrade your subscription to continue.'
+      : isClientError
       ? error instanceof Error
         ? error.message
         : 'Invalid photo'
       : 'Our servers encountered an error processing your photo. Please try again in a moment.';
 
-    return createResponseWithId(
+    return NextResponse.json(
       {
-        error: isClientError ? 'Invalid photo' : 'Analysis failed',
+        error: isInsufficientScans ? 'Insufficient scans' : (isClientError ? 'Invalid photo' : 'Analysis failed'),
         message: errorMessage,
         ...(process.env.NODE_ENV === 'development' &&
           error instanceof Error && { details: error.message }),
       },
-      { status: statusCode },
-      requestId
+      { 
+        status: statusCode,
+        headers: {
+          ...corsHeaders,
+          'X-Request-ID': requestId,
+        },
+      }
     );
   }
 });

@@ -44,12 +44,13 @@ export const POST = withAuth(async (request: Request, user) => {
 
     // Use custom weights or default weights
     const weights = customWeights || {
-      symmetry: 20,
-      skin: 20,
-      jawline: 15,
-      eyes: 15,
-      lips: 15,
-      bone_structure: 15,
+      symmetry: 18,
+      skin: 18,
+      jawline: 13,
+      eyes: 13,
+      lips: 13,
+      bone_structure: 13,
+      hair: 12,
     };
 
     // Validate weights sum to 100
@@ -74,6 +75,7 @@ export const POST = withAuth(async (request: Request, user) => {
       lips: 'lips',
       bone_structure: 'bone_structure',
       boneStructure: 'bone_structure',
+      hair: 'hair',
     };
 
     // Recalculate with custom weights

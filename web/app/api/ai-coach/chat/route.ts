@@ -19,9 +19,8 @@ const openai = new OpenAI({
 function getRateLimit(tier: string): number {
   const limits: Record<string, number> = {
     free: 5,
-    basic: 30,
-    pro: 100,
-    unlimited: Infinity,
+    pro: 20,
+    elite: 100,
   };
   return limits[tier] || limits.free;
 }

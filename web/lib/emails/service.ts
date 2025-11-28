@@ -136,3 +136,118 @@ export async function sendPaymentFailedEmail(
   });
 }
 
+/**
+ * Send affiliate referral conversion notification
+ */
+export async function sendAffiliateReferralSuccessEmail(
+  affiliateEmail: string,
+  referreeName: string,
+  commissionAmount: number,
+  commissionRate: number
+): Promise<{ id: string } | null> {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: 'Inter', Arial, sans-serif; background: #0F0F1E; color: #FFFFFF; padding: 40px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { font-size: 28px; font-weight: 700; margin-bottom: 24px; color: #00D9FF; }
+        .content { font-size: 16px; line-height: 1.6; color: #B8BACC; }
+        .highlight { background: rgba(0, 217, 255, 0.1); padding: 24px; border-radius: 12px; border-left: 4px solid #00D9FF; margin: 24px 0; }
+        .cta { background: linear-gradient(135deg, #FF0080 0%, #00D9FF 100%); color: #FFFFFF; padding: 16px 32px; border-radius: 12px; text-decoration: none; display: inline-block; margin-top: 24px; font-weight: 600; }
+        .footer { margin-top: 40px; font-size: 12px; color: #6B6D7F; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">🎉 Referral Conversion!</div>
+        <div class="content">
+          <p>Congratulations!</p>
+          <p><strong>${referreeName}</strong> just subscribed to Black Pill using your referral link!</p>
+          <div class="highlight">
+            <p style="margin: 0;"><strong>Commission Earned:</strong></p>
+            <p style="margin: 12px 0 0 0; font-size: 24px; color: #00D9FF;">$${commissionAmount.toFixed(2)}</p>
+            <p style="margin: 8px 0 0 0; font-size: 14px; color: #B8BACC;">${commissionRate}% of their first month</p>
+          </div>
+          <p>This will be paid out with your next commission cycle. Keep sharing to earn more!</p>
+          <p><a href="https://black-pill.app/dashboard/affiliate" class="cta">View Your Dashboard</a></p>
+        </div>
+        <div class="footer">
+          <p>Black Pill Affiliate Program</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: affiliateEmail,
+    subject: `🎉 You earned $${commissionAmount.toFixed(2)} from a referral!`,
+    html,
+  });
+}
+
+/**
+ * Send affiliate tier upgrade notification
+ */
+export async function sendAffiliateCommissionTierUpgradeEmail(
+  affiliateEmail: string,
+  newTier: string,
+  newRate: number,
+  totalReferrals: number
+): Promise<{ id: string } | null> {
+  const getTierLabel = (tier: string) => {
+    switch (tier) {
+      case 'tier_3':
+        return 'Tier 3 - Elite Affiliate';
+      case 'tier_2':
+        return 'Tier 2 - Pro Affiliate';
+      default:
+        return 'Base Tier';
+    }
+  };
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: 'Inter', Arial, sans-serif; background: #0F0F1E; color: #FFFFFF; padding: 40px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { font-size: 28px; font-weight: 700; margin-bottom: 24px; color: #FFD700; }
+        .content { font-size: 16px; line-height: 1.6; color: #B8BACC; }
+        .highlight { background: rgba(255, 215, 0, 0.1); padding: 24px; border-radius: 12px; border-left: 4px solid #FFD700; margin: 24px 0; }
+        .cta { background: linear-gradient(135deg, #FF0080 0%, #00D9FF 100%); color: #FFFFFF; padding: 16px 32px; border-radius: 12px; text-decoration: none; display: inline-block; margin-top: 24px; font-weight: 600; }
+        .footer { margin-top: 40px; font-size: 12px; color: #6B6D7F; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">⭐ You've Been Promoted!</div>
+        <div class="content">
+          <p>Great news!</p>
+          <p>You've reached the ${getTierLabel(newTier)} level and your commission rate has increased!</p>
+          <div class="highlight">
+            <p style="margin: 0;"><strong>New Commission Rate:</strong></p>
+            <p style="margin: 8px 0 0 0; font-size: 24px; color: #FFD700;">${newRate}%</p>
+            <p style="margin: 12px 0 0 0; font-size: 14px;">You now have <strong>${totalReferrals} active referrals</strong></p>
+          </div>
+          <p>Keep sharing and earning! As you grow your network, your earnings grow too.</p>
+          <p><a href="https://black-pill.app/dashboard/affiliate" class="cta">View Your Dashboard</a></p>
+        </div>
+        <div class="footer">
+          <p>Black Pill Affiliate Program</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: affiliateEmail,
+    subject: `⭐ Congratulations! You're now ${getTierLabel(newTier)} - ${newRate}% commission`,
+    html,
+  });
+}
+

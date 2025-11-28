@@ -11,6 +11,7 @@ import { apiGet, apiPost } from '../lib/api/client';
 import { useAuth } from '../lib/auth/context';
 import { GlassCard } from '../components/GlassCard';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { BackHeader } from '../components/BackHeader';
 import { Challenge } from '../lib/types';
 import { DarkTheme } from '../lib/theme';
 
@@ -54,11 +55,30 @@ export function ChallengeDetailScreen() {
     }
   };
 
-  const checkIn = async () => {
+  const checkIn = async (photoUri?: string) => {
     try {
+      // Check if photo is required (e.g. weekly check-in)
+      const isWeeklyCheckIn = challenge?.checkInFrequency === 'weekly';
+      
+      if (isWeeklyCheckIn && !photoUri) {
+        // Navigate to camera for photo verification
+        navigation.navigate('Camera' as never, {
+          context: 'challenge_check_in',
+          challengeId: challengeId,
+          onCapture: (uri: string) => {
+            // Recursive call with photo URI
+            checkIn(uri);
+          }
+        } as never);
+        return;
+      }
+
       await apiPost(
         '/api/challenges/checkin',
-        { challengeId },
+        { 
+          challengeId,
+          photoUri // Include photo if present
+        },
         session?.access_token
       );
       Alert.alert('Success', 'Check-in recorded!');
@@ -70,6 +90,7 @@ export function ChallengeDetailScreen() {
   if (loading || !challenge) {
     return (
       <View style={styles.container}>
+        <BackHeader title="Challenge" variant="large" />
         <Text style={styles.loading}>Loading...</Text>
       </View>
     );
@@ -81,11 +102,12 @@ export function ChallengeDetailScreen() {
   const daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{challenge.name}</Text>
-        <Text style={styles.description}>{challenge.description}</Text>
-      </View>
+    <View style={styles.container}>
+      <BackHeader title={challenge.name} />
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.description}>{challenge.description}</Text>
+        </View>
 
       <GlassCard style={styles.card}>
         <Text style={styles.cardTitle}>Challenge Details</Text>
@@ -101,19 +123,20 @@ export function ChallengeDetailScreen() {
       </GlassCard>
 
       {challenge.joined ? (
-        <PrimaryButton
-          title="Check In Today"
-          onPress={checkIn}
-          style={styles.button}
-        />
-      ) : (
-        <PrimaryButton
-          title="Join Challenge"
-          onPress={joinChallenge}
-          style={styles.button}
-        />
-      )}
-    </ScrollView>
+          <PrimaryButton
+            title="Check In Today"
+            onPress={checkIn}
+            style={styles.button}
+          />
+        ) : (
+          <PrimaryButton
+            title="Join Challenge"
+            onPress={joinChallenge}
+            style={styles.button}
+          />
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -122,19 +145,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: DarkTheme.colors.background,
   },
+  scrollView: {
+    flex: 1,
+  },
   content: {
     padding: DarkTheme.spacing.lg,
-    paddingTop: 60,
+    paddingTop: DarkTheme.spacing.md,
   },
   header: {
     marginBottom: DarkTheme.spacing.xl,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: DarkTheme.colors.text,
-    fontFamily: DarkTheme.typography.fontFamily,
-    marginBottom: DarkTheme.spacing.xs,
   },
   description: {
     fontSize: 16,
