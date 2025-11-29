@@ -1,6 +1,6 @@
 import { RateLimiterRedis } from 'rate-limiter-flexible';
 import { getRedisClient } from '../redis/client';
-import { Request } from 'next/server';
+
 
 let rateLimiters: Record<string, RateLimiterRedis> = {};
 

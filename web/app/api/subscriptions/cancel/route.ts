@@ -1,4 +1,4 @@
-import { Request } from 'next/server';
+
 import Stripe from 'stripe';
 import { withAuth, supabaseAdmin, config, handleApiError, getRequestId, createResponseWithId } from '@/lib';
 
@@ -57,7 +57,7 @@ export const POST = withAuth(async (request: Request, user) => {
     return createResponseWithId(
       {
         success: true,
-        effective_date: new Date(updatedSubscription.current_period_end * 1000).toISOString(),
+        effective_date: new Date((updatedSubscription as any).current_period_end * 1000).toISOString(),
       },
       { status: 200 },
       requestId

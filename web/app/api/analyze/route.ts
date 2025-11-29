@@ -1,4 +1,4 @@
-import { Request, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -54,9 +54,9 @@ export const POST = withAuth(async (request: Request, user) => {
     const formData = await request.formData();
     
     // Debug: Log formdata keys
-    console.log('[Analyze] FormData keys:', Array.from(formData.keys()));
+    console.log('[Analyze] FormData keys:', Array.from((formData as any).keys()));
     
-    const imageFile = formData.get('image') as File | null;
+    const imageFile = (formData as any).get('image') as File | null;
 
     if (!imageFile) {
       console.error('[Analyze] No image file found in formdata');

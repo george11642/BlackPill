@@ -28,7 +28,11 @@ export async function sendEmail({
       html,
     });
 
-    return data;
+    if (data.error) {
+      throw new Error(data.error.message || 'Failed to send email');
+    }
+
+    return { id: data.data?.id || 'unknown' };
   } catch (error) {
     console.error('Email send error:', error);
     throw error;

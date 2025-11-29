@@ -1,4 +1,4 @@
-import { Request } from 'next/server';
+
 
 /**
  * Custom error class for API errors
@@ -23,7 +23,7 @@ export function handleApiError(error: unknown, request?: Request): Response {
   // Log to Sentry with context (if available)
   // Note: Sentry integration would be added separately
   if (typeof window === 'undefined' && global.Sentry) {
-    // @ts-expect-error - Sentry global may not be typed
+    // @ts-ignore - Sentry global may not be typed
     global.Sentry.captureException(error, {
       tags: {
         endpoint: request?.url || 'unknown',

@@ -1,7 +1,6 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Link from 'next/link';
 import { ArrowRight, Users, TrendingUp, DollarSign, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -117,15 +116,14 @@ export default function AffiliateProgramPage() {
                 Subscribe to BlackPill and you'll automatically get access to your affiliate
                 dashboard with your unique referral link and tracking tools.
               </p>
-              <Link href="/pricing">
-                <Button
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] px-2 py-1"
-                >
-                  Subscribe Now
-                  <ArrowRight className="w-2.5 h-2.5 ml-1" />
-                </Button>
-              </Link>
+              <Button
+                href="/pricing"
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] px-2 py-1"
+              >
+                Subscribe Now
+                <ArrowRight className="w-2.5 h-2.5 ml-1" />
+              </Button>
             </Card>
 
             <h2 className="text-sm sm:text-base font-display font-bold text-gray-900 dark:text-gray-100 mb-2">

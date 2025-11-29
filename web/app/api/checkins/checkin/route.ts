@@ -1,4 +1,4 @@
-import { Request } from 'next/server';
+
 import { withAuth, supabaseAdmin, handleApiError, getRequestId, createResponseWithId } from '@/lib';
 
 /**
@@ -22,13 +22,14 @@ async function awardBonus(userId: string, scans: number, achievementKey: string)
   try {
     await supabaseAdmin
       .from('user_achievements')
-      .insert({
+      .upsert({
         user_id: userId,
         achievement_key: achievementKey,
         unlocked_at: new Date().toISOString(),
-      })
-      .onConflict('user_id,achievement_key')
-      .ignore();
+      }, {
+        onConflict: 'user_id,achievement_key',
+        ignoreDuplicates: true
+      });
   } catch (error) {
     // Achievements table might not exist yet
     console.log('Achievements table not available:', error instanceof Error ? error.message : 'Unknown error');

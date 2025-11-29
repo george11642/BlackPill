@@ -1,4 +1,4 @@
-import { Request } from 'next/server';
+
 import Stripe from 'stripe';
 import {
   config,
@@ -105,7 +105,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
 
   // Get customer email from Stripe
   const customer = await stripe.customers.retrieve(customerId);
-  const customerEmail = typeof customer === 'object' && !customer.deleted ? customer.email : null;
+  const customerEmail = typeof customer === 'object' && !(customer as any).deleted ? (customer as any).email : null;
 
   if (!customerEmail) {
     console.error('No email found for customer:', customerId);
@@ -171,8 +171,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
       status: 'active',
       source,
       referred_by_user_id: referredByUserId,
-      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
+      current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
     });
 
   if (subscriptionError) {
@@ -225,7 +225,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
     .from('subscriptions')
     .update({
       status: subscription.status,
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
     })
     .eq('stripe_subscription_id', subscription.id);
 }
@@ -257,7 +257,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
   const { data: subscriptionRecord } = await supabaseAdmin
     .from('subscriptions')
     .select('user_id, tier, referred_by_user_id')
-    .eq('stripe_subscription_id', invoice.subscription as string)
+    .eq('stripe_subscription_id', (invoice as any).subscription as string)
     .single();
 
   // Calculate commission or grant credits if this is a paid invoice
@@ -282,7 +282,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          subscriptionId: invoice.subscription,
+          subscriptionId: (invoice as any).subscription,
           amount: amount,
           referred_user_id: subscriptionRecord.user_id,
           referrer_user_id: referrerUserId,
@@ -303,7 +303,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
   const { data: subscriptionRecord } = await supabaseAdmin
     .from('subscriptions')
     .select('user_id, tier')
-    .eq('stripe_subscription_id', invoice.subscription as string)
+    .eq('stripe_subscription_id', (invoice as any).subscription as string)
     .single();
 
   if (subscriptionRecord?.user_id) {

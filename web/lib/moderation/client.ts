@@ -59,7 +59,7 @@ export async function moderateContent(content: string): Promise<ModerationResult
         ...(result.categories.violence ? ['violence'] : []),
         ...(containsBlockedTerms ? ['blocked terminology'] : []),
       ],
-      scores: result.category_scores,
+      scores: result.category_scores as unknown as Record<string, number>,
     };
   } catch (error) {
     console.error('Moderation error:', error);

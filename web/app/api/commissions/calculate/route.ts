@@ -100,7 +100,7 @@ export async function POST(request: Request) {
             commission_rate: 20.0,
             is_active: true,
           })
-          .select('id, commission_rate, tier')
+          .select('id, commission_rate, tier, user_id')
           .single();
 
         if (affiliateError || !newAffiliate) {
@@ -222,7 +222,8 @@ export async function POST(request: Request) {
             await sendCommissionTierUpgradeEmail(
               affiliateUser.email,
               newTier,
-              newRate
+              newRate,
+              activeCount
             );
           } catch (emailError) {
             console.error('Failed to send tier upgrade email:', emailError);

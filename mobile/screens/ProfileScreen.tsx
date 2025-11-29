@@ -31,9 +31,10 @@ import {
   Flame,
   Clock,
   Globe,
+  Trash2,
 } from 'lucide-react-native';
 
-import { apiGet } from '../lib/api/client';
+import { apiGet, apiDelete } from '../lib/api/client';
 import { useAuth } from '../lib/auth/context';
 import { useSubscription } from '../lib/subscription/context';
 import { GlassCard } from '../components/GlassCard';
@@ -165,6 +166,35 @@ export function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             await signOut();
+          },
+        },
+      ],
+    });
+  };
+
+  const handleDeleteAccount = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    showAlert({
+      title: 'Delete Account',
+      message: 'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.',
+      buttons: [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiDelete('/api/user/delete', session?.access_token);
+              // Sign out after successful deletion
+              await signOut();
+            } catch (error: any) {
+              console.error('Failed to delete account:', error);
+              showAlert({
+                title: 'Error',
+                message: error?.data?.error || error?.message || 'Failed to delete account. Please try again.',
+                buttons: [{ text: 'OK' }],
+              });
+            }
           },
         },
       ],
@@ -361,6 +391,16 @@ export function ProfileScreen() {
           <View style={styles.signOutContent}>
             <LogOut size={20} color={DarkTheme.colors.error} />
             <Text style={styles.signOutText}>Sign Out</Text>
+          </View>
+        </GlassCard>
+      </Animated.View>
+
+      {/* Delete Account */}
+      <Animated.View style={[styles.deleteAccountContainer, contentAnimatedStyle]}>
+        <GlassCard variant="subtle" onPress={handleDeleteAccount}>
+          <View style={styles.deleteAccountContent}>
+            <Trash2 size={20} color={DarkTheme.colors.error} />
+            <Text style={styles.deleteAccountText}>Delete Account</Text>
           </View>
         </GlassCard>
       </Animated.View>
@@ -620,7 +660,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   signOutContainer: {
-    marginBottom: DarkTheme.spacing.lg,
+    marginBottom: DarkTheme.spacing.md,
   },
   signOutContent: {
     flexDirection: 'row',
@@ -629,6 +669,21 @@ const styles = StyleSheet.create({
     gap: DarkTheme.spacing.sm,
   },
   signOutText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: DarkTheme.colors.error,
+    fontFamily: DarkTheme.typography.fontFamily,
+  },
+  deleteAccountContainer: {
+    marginBottom: DarkTheme.spacing.lg,
+  },
+  deleteAccountContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: DarkTheme.spacing.sm,
+  },
+  deleteAccountText: {
     fontSize: 16,
     fontWeight: '600',
     color: DarkTheme.colors.error,

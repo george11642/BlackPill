@@ -1,1 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd mobile && npm install && cd ../web && npm install && npm run build",
+  "outputDirectory": "web/.next",
+  "installCommand": "echo 'Dependencies installed in buildCommand'",
+  "framework": "nextjs"
+}
 

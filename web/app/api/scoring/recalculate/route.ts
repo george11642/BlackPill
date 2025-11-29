@@ -1,4 +1,4 @@
-import { Request } from 'next/server';
+
 import { withAuth, supabaseAdmin, handleApiError, getRequestId, createResponseWithId } from '@/lib';
 
 /**
@@ -54,7 +54,7 @@ export const POST = withAuth(async (request: Request, user) => {
     };
 
     // Validate weights sum to 100
-    const total = Object.values(weights).reduce((sum, val) => sum + val, 0);
+    const total = Object.values(weights).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
     if (total !== 100) {
       return createResponseWithId(
         {

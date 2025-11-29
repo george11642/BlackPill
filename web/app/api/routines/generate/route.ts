@@ -1,4 +1,4 @@
-import { Request } from 'next/server';
+
 import OpenAI from 'openai';
 import {
   withAuth,
@@ -334,8 +334,8 @@ Be constructive and avoid toxic terminology. Focus on actionable, evidence-based
 
     for (const plan of actionPlans) {
       // OTC tasks from products
-      if (plan.otc?.products && Array.isArray(plan.otc.products)) {
-        for (const product of plan.otc.products.slice(0, 2)) { // Limit to 2 per category
+      if ((plan.otc as any)?.products && Array.isArray((plan.otc as any).products)) {
+        for (const product of (plan.otc as any).products.slice(0, 2)) { // Limit to 2 per category
           additionalTasks.push({
             routine_id: routine.id,
             title: product.name || `${plan.category} Product`,
@@ -345,18 +345,18 @@ Be constructive and avoid toxic terminology. Focus on actionable, evidence-based
             frequency: 'daily',
             order_index: orderIndex++,
             tier: 'OTC',
-            estimated_cost: plan.otc.estimatedCost || '$50-150',
-            time_to_results: plan.otc.timeToResults || '4-8 weeks',
-            effectiveness: plan.otc.effectiveness || 'high',
-            science_backing: plan.otc.scienceBacking,
+            estimated_cost: (plan.otc as any).estimatedCost || '$50-150',
+            time_to_results: (plan.otc as any).timeToResults || '4-8 weeks',
+            effectiveness: (plan.otc as any).effectiveness || 'high',
+            science_backing: (plan.otc as any).scienceBacking,
             product_name: product.name,
           });
         }
       }
 
       // Professional tasks from treatments
-      if (plan.professional?.treatments && Array.isArray(plan.professional.treatments)) {
-        for (const treatment of plan.professional.treatments.slice(0, 1)) { // Limit to 1 per category
+      if ((plan.professional as any)?.treatments && Array.isArray((plan.professional as any).treatments)) {
+        for (const treatment of (plan.professional as any).treatments.slice(0, 1)) { // Limit to 1 per category
           additionalTasks.push({
             routine_id: routine.id,
             title: treatment.name || `${plan.category} Treatment`,
@@ -366,11 +366,11 @@ Be constructive and avoid toxic terminology. Focus on actionable, evidence-based
             frequency: 'monthly',
             order_index: orderIndex++,
             tier: 'Professional',
-            estimated_cost: treatment.cost_range || plan.professional.estimatedCost || '$200-1500',
-            time_to_results: plan.professional.timeToResults || '2-6 months',
-            effectiveness: plan.professional.effectiveness || 'very high',
-            science_backing: plan.professional.scienceBacking,
-            professional_warning: plan.professional.warning || 'Consult a licensed professional before proceeding.',
+            estimated_cost: treatment.cost_range || (plan.professional as any).estimatedCost || '$200-1500',
+            time_to_results: (plan.professional as any).timeToResults || '2-6 months',
+            effectiveness: (plan.professional as any).effectiveness || 'very high',
+            science_backing: (plan.professional as any).scienceBacking,
+            professional_warning: (plan.professional as any).warning || 'Consult a licensed professional before proceeding.',
           });
         }
       }

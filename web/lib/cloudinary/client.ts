@@ -90,7 +90,7 @@ export async function createVideoFromImages(
   // Create video using Cloudinary's create_slideshow API
   try {
     const result = await cloudinary.uploader.create_slideshow({
-      manifest_json: JSON.stringify(manifest),
+      manifest_json: JSON.stringify(manifest) as any,
       public_id: `timelapse_${Date.now()}`,
       folder: outputFolder,
       overwrite: true,
@@ -101,7 +101,7 @@ export async function createVideoFromImages(
         crop: 'fill',
         gravity: 'center',
       },
-    });
+    } as any);
 
     return {
       url: result.secure_url,

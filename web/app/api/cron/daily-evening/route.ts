@@ -1,4 +1,4 @@
-import { Request } from 'next/server';
+
 import { supabaseAdmin, handleApiError, getRequestId, createResponseWithId, sendNotificationToUser } from '@/lib';
 
 /**

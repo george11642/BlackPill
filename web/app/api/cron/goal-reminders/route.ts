@@ -1,4 +1,4 @@
-import { Request, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { supabaseServer as supabaseAdmin } from '@/lib/supabase/server';
 import { sendNotificationToUser } from '@/lib/notifications/push';
 
@@ -88,16 +88,13 @@ export async function POST(request: Request) {
           try {
             await sendNotificationToUser(
               goal.user_id,
+              title,
+              body,
               {
-                title,
-                body,
-                data: {
-                  type: 'goal_reminder',
-                  goal_id: goal.id,
-                  days_left: daysLeft,
-                },
-              },
-              tokenData.token
+                type: 'goal_reminder',
+                goal_id: goal.id,
+                days_left: daysLeft,
+              }
             );
           } catch (tokenError) {
             console.error(`Failed to send notification to token ${tokenData.token}:`, tokenError);

@@ -1,4 +1,4 @@
-import { Request } from 'next/server';
+
 import OpenAI from 'openai';
 import {
   withAuth,

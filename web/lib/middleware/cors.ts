@@ -1,4 +1,3 @@
-import { Request, Response } from 'next/server';
 
 /**
  * Add CORS headers to response

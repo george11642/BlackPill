@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Navigation } from '../components/Navigation';
 import { Section } from '../components/Section';
@@ -65,7 +65,7 @@ const tiers: SubscriptionTier[] = [
   },
 ];
 
-export default function PricingPage() {
+function PricingContent() {
   const searchParams = useSearchParams();
   const source = searchParams.get('source');
   const user_id = searchParams.get('user_id');
@@ -310,6 +310,24 @@ export default function PricingPage() {
 
       <Footer />
     </>
+  );
+}
+
+export default function PricingPage() {
+  return (
+    <Suspense fallback={
+      <>
+        <Navigation />
+        <Section>
+          <div className="max-w-6xl mx-auto text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          </div>
+        </Section>
+        <Footer />
+      </>
+    }>
+      <PricingContent />
+    </Suspense>
   );
 }
 

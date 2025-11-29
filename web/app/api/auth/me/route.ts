@@ -1,4 +1,4 @@
-import { Request } from 'next/server';
+
 import { withAuth, getRequestId, createResponseWithId } from '@/lib';
 
 /**

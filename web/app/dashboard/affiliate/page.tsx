@@ -377,7 +377,7 @@ export default function AffiliatePage() {
                 </div>
                 <Button
                   onClick={() => copyToClipboard(affiliate.referral_code)}
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
                   className="w-full"
                 >
@@ -401,7 +401,7 @@ export default function AffiliatePage() {
                 </div>
                 <Button
                   onClick={() => copyToClipboard(referralUrl)}
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
                   className="w-full"
                 >
