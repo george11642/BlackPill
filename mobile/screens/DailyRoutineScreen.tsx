@@ -30,7 +30,7 @@ import { GlassCard } from '../components/GlassCard';
 import { ProfileAvatar } from '../components/ProfileAvatar';
 import { PrimaryButton, IconButton } from '../components/PrimaryButton';
 import { GradientText } from '../components/GradientText';
-import { DarkTheme } from '../lib/theme';
+import { DarkTheme, getScoreColor } from '../lib/theme';
 import { deduplicateTasks } from '../lib/routines/taskNormalization';
 
 interface RoutineTask {
@@ -406,7 +406,9 @@ export function DailyRoutineScreen() {
                   showGoldRing
                 />
                 <View style={styles.scoresCompact}>
-                  <Text style={styles.scoreValueCompact}>{stats.overall_score.toFixed(1)}</Text>
+                  <Text style={[styles.scoreValueCompact, { color: getScoreColor(stats.overall_score) }]}>
+                    {stats.overall_score.toFixed(1)}
+                  </Text>
                 </View>
               </View>
             </GlassCard>
@@ -418,79 +420,26 @@ export function DailyRoutineScreen() {
             style={styles.dashboardGridItem}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              navigation.navigate('Camera' as never);
+              (navigation as any).navigate('Camera', {
+                context: 'analysis',
+                baselinePhotoUrl: stats.latest_analysis_image,
+              });
             }}
           >
             <View style={styles.scanCardWrapper}>
               <LinearGradient
-                colors={[DarkTheme.colors.primary, DarkTheme.colors.primaryLight]}
+                colors={['rgba(212, 175, 55, 0.15)', 'rgba(212, 175, 55, 0.08)']}
                 start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
+                end={{ x: 1, y: 1 }}
                 style={styles.scanCardGradient}
               >
-                <Scan size={32} color={DarkTheme.colors.background} />
+                <Scan size={32} color={DarkTheme.colors.primary} />
                 <Text style={styles.scanCardText}>Scan</Text>
               </LinearGradient>
             </View>
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Goal Progress Card */}
-        {primaryGoal && (
-          <Animated.View style={headerAnimatedStyle}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                navigation.navigate('Progress' as never);
-              }}
-            >
-              <GlassCard variant="elevated" style={styles.goalCard}>
-                <View style={styles.goalCardHeader}>
-                  <View style={styles.goalCardTitleRow}>
-                    <Target size={20} color={DarkTheme.colors.primary} />
-                    <Text style={styles.goalCardTitle}>
-                      {primaryGoal.goal_type === 'score_improvement' ? 'Overall Score' :
-                       primaryGoal.goal_type === 'category_improvement' ? 'Category Improvement' :
-                       primaryGoal.goal_type === 'routine_consistency' ? 'Routine Consistency' :
-                       'Goal'}
-                    </Text>
-                  </View>
-                  <Text style={styles.goalCardDeadline}>
-                    {(() => {
-                      const daysLeft = Math.ceil(
-                        (new Date(primaryGoal.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-                      );
-                      return daysLeft > 0 ? `${daysLeft}d left` : 'Overdue';
-                    })()}
-                  </Text>
-                </View>
-                <View style={styles.goalCardProgress}>
-                  <View style={styles.goalCardValues}>
-                    <Text style={styles.goalCardCurrent}>
-                      {primaryGoal.current_value?.toFixed(1) || '0.0'}
-                    </Text>
-                    <Text style={styles.goalCardTarget}>
-                      → {primaryGoal.target_value.toFixed(1)}
-                    </Text>
-                  </View>
-                  <View style={styles.goalCardProgressBar}>
-                    <View 
-                      style={[
-                        styles.goalCardProgressFill, 
-                        { 
-                          width: `${Math.min(100, primaryGoal.current_value 
-                            ? ((primaryGoal.current_value / primaryGoal.target_value) * 100)
-                            : 0)}%` 
-                        }
-                      ]} 
-                    />
-                  </View>
-                </View>
-              </GlassCard>
-            </TouchableOpacity>
-          </Animated.View>
-        )}
 
         {/* Streak Counters with Create Routine */}
         <View style={styles.streaksRow}>
@@ -525,7 +474,7 @@ export function DailyRoutineScreen() {
             }}
             style={styles.createRoutineSmall}
           >
-            <Sparkles size={18} color={DarkTheme.colors.primary} />
+            <Sparkles size={20} color={DarkTheme.colors.primary} />
             <Text style={styles.createRoutineSmallText}>New</Text>
           </TouchableOpacity>
         </View>
@@ -1047,13 +996,12 @@ const styles = StyleSheet.create({
   },
   scoresCompact: {
     flex: 1,
-    alignItems: 'flex-start',
-    paddingLeft: DarkTheme.spacing.sm,
+    alignItems: 'flex-end',
+    paddingRight: DarkTheme.spacing.sm,
   },
   scoreValueCompact: {
     fontSize: 28,
     fontWeight: '700',
-    color: DarkTheme.colors.text,
     fontFamily: DarkTheme.typography.fontFamily,
   },
   scoreLabelCompact: {
@@ -1082,34 +1030,34 @@ const styles = StyleSheet.create({
   scanCardText: {
     fontSize: 14,
     fontWeight: '700',
-    color: DarkTheme.colors.background,
+    color: DarkTheme.colors.primary,
     fontFamily: DarkTheme.typography.fontFamily,
   },
   streaksRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: DarkTheme.spacing.lg,
+    marginBottom: DarkTheme.spacing.sm,
   },
   createRoutineSmall: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: DarkTheme.spacing.sm,
-    paddingVertical: DarkTheme.spacing.sm,
-    paddingHorizontal: DarkTheme.spacing.md,
-    borderRadius: DarkTheme.borderRadius.md,
+    paddingVertical: DarkTheme.spacing.md,
+    paddingHorizontal: DarkTheme.spacing.lg,
+    borderRadius: DarkTheme.borderRadius.lg,
     backgroundColor: `${DarkTheme.colors.primary}15`,
     borderWidth: 1,
     borderColor: `${DarkTheme.colors.primary}30`,
   },
   createRoutineSmallText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: DarkTheme.colors.primary,
     fontFamily: DarkTheme.typography.fontFamily,
   },
   routineSectionHeader: {
-    marginBottom: DarkTheme.spacing.md,
+    marginBottom: DarkTheme.spacing.sm,
   },
   brandTitle: {
     fontSize: 28,
@@ -1586,65 +1534,6 @@ const styles = StyleSheet.create({
     color: DarkTheme.colors.textSecondary,
     fontFamily: DarkTheme.typography.fontFamily,
     textAlign: 'center',
-  },
-  goalCard: {
-    marginBottom: DarkTheme.spacing.md,
-    padding: DarkTheme.spacing.md,
-  },
-  goalCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: DarkTheme.spacing.sm,
-  },
-  goalCardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: DarkTheme.spacing.sm,
-  },
-  goalCardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: DarkTheme.colors.text,
-    fontFamily: DarkTheme.typography.fontFamily,
-  },
-  goalCardDeadline: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: DarkTheme.colors.textTertiary,
-    fontFamily: DarkTheme.typography.fontFamily,
-  },
-  goalCardProgress: {
-    marginTop: DarkTheme.spacing.xs,
-  },
-  goalCardValues: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: DarkTheme.spacing.xs,
-    marginBottom: DarkTheme.spacing.xs,
-  },
-  goalCardCurrent: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: DarkTheme.colors.primary,
-    fontFamily: DarkTheme.typography.fontFamily,
-  },
-  goalCardTarget: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: DarkTheme.colors.textSecondary,
-    fontFamily: DarkTheme.typography.fontFamily,
-  },
-  goalCardProgressBar: {
-    height: 6,
-    backgroundColor: DarkTheme.colors.borderSubtle,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  goalCardProgressFill: {
-    height: '100%',
-    backgroundColor: DarkTheme.colors.primary,
-    borderRadius: 3,
   },
 });
 

@@ -7,10 +7,11 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   TextInput as RNTextInput,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Search, Filter, ArrowLeft } from 'lucide-react-native';
+import { Search, Filter, ArrowLeft, ShoppingBag } from 'lucide-react-native';
 import { DarkTheme } from '../lib/theme';
 import { BackHeader } from '../components/BackHeader';
 import { ProductCard } from '../components/ProductCard';
@@ -18,6 +19,10 @@ import { getProducts } from '../lib/api/products';
 import { GradientText } from '../components/GradientText';
 import { Product } from '../lib/types';
 import { useAuth } from '../lib/auth/context';
+import { GlassCard } from '../components/GlassCard';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = (SCREEN_WIDTH - DarkTheme.spacing.md * 3) / 2;
 
 const CATEGORIES = ['All', 'Skincare', 'Grooming', 'Fitness', 'Style'];
 
@@ -102,9 +107,9 @@ export function MarketplaceScreen() {
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
-      <View style={styles.searchContainer}>
+      <GlassCard variant="subtle" style={styles.searchCard}>
         <View style={styles.searchBar}>
-          <Search size={20} color={DarkTheme.colors.textTertiary} />
+          <Search size={20} color={DarkTheme.colors.primary} />
           <RNTextInput
             style={styles.searchInput}
             placeholder="Search products..."
@@ -114,8 +119,19 @@ export function MarketplaceScreen() {
             onSubmitEditing={handleSearchSubmit}
             returnKeyType="search"
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={() => {
+                setSearchQuery('');
+                loadProducts(true);
+              }}
+              style={styles.clearButton}
+            >
+              <Text style={styles.clearText}>✕</Text>
+            </TouchableOpacity>
+          )}
         </View>
-      </View>
+      </GlassCard>
 
       <View style={styles.categoriesContainer}>
         <FlatList
@@ -160,14 +176,27 @@ export function MarketplaceScreen() {
     if (loading) return null;
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No products found.</Text>
-        <TouchableOpacity onPress={() => {
-          setSearchQuery('');
-          setSelectedCategory('All');
-          loadProducts(true);
-        }}>
-          <Text style={styles.resetText}>Reset Filters</Text>
-        </TouchableOpacity>
+        <GlassCard variant="subtle" style={styles.emptyCard}>
+          <ShoppingBag size={48} color={DarkTheme.colors.textTertiary} />
+          <Text style={styles.emptyTitle}>No products found</Text>
+          <Text style={styles.emptyText}>
+            {searchQuery || selectedCategory !== 'All'
+              ? 'Try adjusting your search or filters'
+              : 'Check back soon for new products'}
+          </Text>
+          {(searchQuery || selectedCategory !== 'All') && (
+            <TouchableOpacity
+              style={styles.resetButton}
+              onPress={() => {
+                setSearchQuery('');
+                setSelectedCategory('All');
+                loadProducts(true);
+              }}
+            >
+              <Text style={styles.resetText}>Reset Filters</Text>
+            </TouchableOpacity>
+          )}
+        </GlassCard>
       </View>
     );
   };
@@ -196,8 +225,14 @@ export function MarketplaceScreen() {
       ) : (
         <FlatList
           data={products}
-          renderItem={({ item }) => <ProductCard product={item} />}
+          renderItem={({ item, index }) => (
+            <View style={[styles.productWrapper, index % 2 === 0 && styles.productWrapperLeft]}>
+              <ProductCard product={item} />
+            </View>
+          )}
           keyExtractor={(item) => item.id}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
           contentContainerStyle={styles.listContent}
           onRefresh={handleRefresh}
           refreshing={refreshing}
@@ -230,49 +265,60 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   headerContainer: {
-    paddingBottom: DarkTheme.spacing.sm,
-  },
-  searchContainer: {
+    paddingBottom: DarkTheme.spacing.md,
     paddingHorizontal: DarkTheme.spacing.md,
-    marginBottom: DarkTheme.spacing.sm,
+  },
+  searchCard: {
+    marginBottom: DarkTheme.spacing.md,
+    padding: 0,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: DarkTheme.colors.card,
-    borderRadius: DarkTheme.borderRadius.full,
-    paddingHorizontal: 16,
-    height: 44,
-    borderWidth: 1,
-    borderColor: DarkTheme.colors.borderSubtle,
+    paddingHorizontal: DarkTheme.spacing.md,
+    height: 48,
+    gap: DarkTheme.spacing.sm,
   },
   searchInput: {
     flex: 1,
-    marginLeft: 10,
     color: DarkTheme.colors.text,
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: DarkTheme.typography.fontFamily,
   },
+  clearButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: DarkTheme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clearText: {
+    fontSize: 12,
+    color: DarkTheme.colors.textSecondary,
+    fontWeight: '600',
+  },
   categoriesContainer: {
-    height: 40,
+    height: 44,
   },
   categoriesList: {
-    paddingHorizontal: DarkTheme.spacing.md,
-    gap: 8,
+    gap: DarkTheme.spacing.sm,
   },
   categoryChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: DarkTheme.colors.card,
+    paddingHorizontal: DarkTheme.spacing.md,
+    paddingVertical: DarkTheme.spacing.sm,
+    borderRadius: DarkTheme.borderRadius.full,
+    backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: DarkTheme.colors.borderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 36,
+    overflow: 'hidden',
   },
   categoryChipActive: {
-    backgroundColor: DarkTheme.colors.primary,
     borderColor: DarkTheme.colors.primary,
+    backgroundColor: DarkTheme.colors.primary,
   },
   categoryText: {
     fontSize: 13,
@@ -283,10 +329,20 @@ const styles = StyleSheet.create({
   categoryTextActive: {
     color: DarkTheme.colors.background,
     fontWeight: '600',
+    fontFamily: DarkTheme.typography.fontFamily,
   },
   listContent: {
     padding: DarkTheme.spacing.md,
     paddingTop: DarkTheme.spacing.sm,
+  },
+  row: {
+    justifyContent: 'space-between',
+  },
+  productWrapper: {
+    width: CARD_WIDTH,
+  },
+  productWrapperLeft: {
+    marginRight: DarkTheme.spacing.sm,
   },
   centerLoader: {
     flex: 1,
@@ -298,15 +354,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyContainer: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 60,
+    paddingTop: 80,
+    paddingHorizontal: DarkTheme.spacing.lg,
+  },
+  emptyCard: {
+    alignItems: 'center',
+    padding: DarkTheme.spacing.xl,
+    width: '100%',
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: DarkTheme.colors.text,
+    marginTop: DarkTheme.spacing.md,
+    marginBottom: DarkTheme.spacing.xs,
+    fontFamily: DarkTheme.typography.fontFamily,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 14,
     color: DarkTheme.colors.textSecondary,
-    marginBottom: 12,
+    textAlign: 'center',
+    marginBottom: DarkTheme.spacing.lg,
     fontFamily: DarkTheme.typography.fontFamily,
+    lineHeight: 20,
+  },
+  resetButton: {
+    paddingHorizontal: DarkTheme.spacing.lg,
+    paddingVertical: DarkTheme.spacing.sm,
+    borderRadius: DarkTheme.borderRadius.md,
+    backgroundColor: DarkTheme.colors.primaryDark,
+    borderWidth: 1,
+    borderColor: DarkTheme.colors.primary,
   },
   resetText: {
     fontSize: 14,

@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { apiGet } from '../lib/api/client';
@@ -25,6 +26,7 @@ export function ChallengesScreen() {
   
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadChallenges();
@@ -32,13 +34,16 @@ export function ChallengesScreen() {
 
   const loadChallenges = async () => {
     try {
+      setError(null);
       const data = await apiGet<{ challenges: Challenge[] }>(
-        '/api/challenges/list',
+        '/api/challenges',
         session?.access_token
       );
-      setChallenges(data.challenges);
-    } catch (error) {
+      console.log('Challenges data:', data);
+      setChallenges(data.challenges || []);
+    } catch (error: any) {
       console.error('Failed to load challenges:', error);
+      setError(error.message || 'Failed to load challenges');
     } finally {
       setLoading(false);
     }
@@ -68,7 +73,22 @@ export function ChallengesScreen() {
     return (
       <View style={styles.container}>
         <BackHeader title="Challenges" variant="large" />
-        <Text style={styles.loading}>Loading...</Text>
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color={DarkTheme.colors.primary} />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <BackHeader title="Challenges" variant="large" />
+        <View style={styles.centerContent}>
+          <Text style={styles.errorText}>{error}</Text>
+          <PrimaryButton title="Retry" onPress={loadChallenges} style={{ marginTop: 20 }} />
+        </View>
       </View>
     );
   }
@@ -88,6 +108,14 @@ export function ChallengesScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={[styles.list, isLocked && styles.listLocked]}
         scrollEnabled={!isLocked}
+        ListEmptyComponent={
+          !loading && !error ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No challenges available right now.</Text>
+              <Text style={styles.emptySubtext}>Check back later!</Text>
+            </View>
+          ) : null
+        }
       />
     </View>
   );
@@ -97,6 +125,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: DarkTheme.colors.background,
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   list: {
     padding: DarkTheme.spacing.md,
@@ -131,12 +164,35 @@ const styles = StyleSheet.create({
   button: {
     marginTop: DarkTheme.spacing.sm,
   },
-  loading: {
+  loadingText: {
     color: DarkTheme.colors.text,
     fontSize: 16,
     fontFamily: DarkTheme.typography.fontFamily,
+    marginTop: DarkTheme.spacing.md,
+  },
+  errorText: {
+    color: DarkTheme.colors.error,
+    fontSize: 16,
+    fontFamily: DarkTheme.typography.fontFamily,
     textAlign: 'center',
-    marginTop: DarkTheme.spacing.xl,
+    paddingHorizontal: 20,
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: DarkTheme.colors.text,
+    fontSize: 18,
+    fontWeight: '600',
+    fontFamily: DarkTheme.typography.fontFamily,
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    color: DarkTheme.colors.textSecondary,
+    fontSize: 14,
+    fontFamily: DarkTheme.typography.fontFamily,
+    textAlign: 'center',
+    marginTop: 8,
   },
 });
-

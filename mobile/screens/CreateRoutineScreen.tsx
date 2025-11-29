@@ -325,7 +325,6 @@ export function CreateRoutineScreen() {
             <GlassCard variant="gold" style={styles.analysisCard}>
               <View style={styles.analysisHeader}>
                 <Text style={styles.analysisTitle}>Based on Your Analysis</Text>
-                <Text style={styles.analysisScore}>{latestAnalysis.score.toFixed(1)}</Text>
               </View>
               {getWeakAreas().length > 0 && (
                 <View style={styles.weakAreasContainer}>
@@ -700,21 +699,12 @@ const styles = StyleSheet.create({
     marginBottom: DarkTheme.spacing.xl,
   },
   analysisHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: DarkTheme.spacing.md,
   },
   analysisTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: DarkTheme.colors.text,
-    fontFamily: DarkTheme.typography.fontFamily,
-  },
-  analysisScore: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: DarkTheme.colors.primary,
     fontFamily: DarkTheme.typography.fontFamily,
   },
   weakAreasContainer: {

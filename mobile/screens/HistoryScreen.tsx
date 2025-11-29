@@ -18,7 +18,7 @@ import { apiGet, apiDelete } from '../lib/api/client';
 import { useAuth } from '../lib/auth/context';
 import { GlassCard } from '../components/GlassCard';
 import { IconButton } from '../components/PrimaryButton';
-import { DarkTheme } from '../lib/theme';
+import { DarkTheme, getScoreColor } from '../lib/theme';
 
 interface Analysis {
   id: string;
@@ -165,12 +165,6 @@ export function HistoryScreen() {
     return 'neutral';
   };
 
-  const getScoreColor = (score: number) => {
-    if (score >= 8) return DarkTheme.colors.success;
-    if (score >= 6) return DarkTheme.colors.primary;
-    if (score >= 4) return DarkTheme.colors.warning;
-    return DarkTheme.colors.error;
-  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

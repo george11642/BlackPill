@@ -73,6 +73,7 @@ export function AchievementsScreen() {
         name: achievement.name,
         description: achievement.description || '', // Ensure description exists
         iconUrl: achievement.iconUrl || '', // Can be empty string
+        emoji: achievement.emoji || undefined, // Include emoji from API
         unlocked: achievement.unlocked || false,
         unlockedAt: achievement.unlockedAt || achievement.unlocked_at || undefined,
       }));
@@ -88,6 +89,22 @@ export function AchievementsScreen() {
   const filteredAchievements = achievements.filter(a => 
     selectedCategory === 'all' || getCategory(a.id) === selectedCategory
   );
+
+  // Sort achievements: unlocked first, then by unlock date (most recent first)
+  const sortedAchievements = [...filteredAchievements].sort((a, b) => {
+    // Unlocked achievements come first
+    if (a.unlocked !== b.unlocked) {
+      return a.unlocked ? -1 : 1;
+    }
+    // If both unlocked, sort by unlock date (most recent first)
+    if (a.unlocked && b.unlocked) {
+      const dateA = a.unlockedAt ? new Date(a.unlockedAt).getTime() : 0;
+      const dateB = b.unlockedAt ? new Date(b.unlockedAt).getTime() : 0;
+      return dateB - dateA;
+    }
+    // Maintain current order for locked achievements
+    return 0;
+  });
 
   const unlockedCount = achievements.filter(a => a.unlocked).length;
   const totalCount = achievements.length;
@@ -112,8 +129,10 @@ export function AchievementsScreen() {
           variant={isUnlocked ? 'elevated' : 'subtle'}
         >
           <View style={styles.cardContent}>
-            <View style={[styles.iconContainer, !isUnlocked && styles.iconContainerLocked]}>
-              {item.iconUrl ? (
+            <View style={[styles.iconContainer, !isUnlocked && styles.iconContainerLocked, isUnlocked && styles.iconContainerUnlocked]}>
+              {isUnlocked && item.emoji ? (
+                <Text style={styles.emojiIcon}>{item.emoji}</Text>
+              ) : item.iconUrl ? (
                 <Image source={{ uri: item.iconUrl }} style={styles.icon} />
               ) : (
                 <Trophy size={24} color={isUnlocked ? DarkTheme.colors.primary : DarkTheme.colors.textDisabled} />
@@ -131,7 +150,7 @@ export function AchievementsScreen() {
                   {item.name}
                 </Text>
                 {isUnlocked && (
-                  <CheckCircle2 size={16} color={DarkTheme.colors.success} />
+                  <CheckCircle2 size={20} color={DarkTheme.colors.success} />
                 )}
               </View>
               
@@ -225,7 +244,7 @@ export function AchievementsScreen() {
         </View>
       ) : (
         <FlatList
-          data={filteredAchievements}
+          data={sortedAchievements}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
@@ -323,7 +342,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardLocked: {
-    opacity: 0.8,
+    opacity: 0.6,
   },
   cardContent: {
     flexDirection: 'row',
@@ -339,8 +358,17 @@ const styles = StyleSheet.create({
     marginRight: DarkTheme.spacing.md,
     position: 'relative',
   },
+  iconContainerUnlocked: {
+    backgroundColor: `${DarkTheme.colors.primary}25`,
+    borderWidth: 2,
+    borderColor: DarkTheme.colors.primary,
+  },
   iconContainerLocked: {
     backgroundColor: DarkTheme.colors.surface,
+  },
+  emojiIcon: {
+    fontSize: 28,
+    lineHeight: 32,
   },
   icon: {
     width: 32,

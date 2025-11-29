@@ -65,6 +65,7 @@ export function ChallengeDetailScreen() {
         navigation.navigate('Camera' as never, {
           context: 'challenge_check_in',
           challengeId: challengeId,
+          baselinePhotoUrl: challenge.baselinePhotoUrl,
           onCapture: (uri: string) => {
             // Recursive call with photo URI
             checkIn(uri);

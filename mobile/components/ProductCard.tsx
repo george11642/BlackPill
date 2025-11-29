@@ -100,11 +100,11 @@ const styles = StyleSheet.create({
     marginBottom: DarkTheme.spacing.md,
   },
   touchable: {
-    flexDirection: 'row',
+    flexDirection: 'column',
   },
   imageContainer: {
-    width: 100,
-    height: '100%',
+    width: '100%',
+    height: 140,
     backgroundColor: DarkTheme.colors.surface,
     position: 'relative',
   },
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   },
   placeholderImage: {
     width: '100%',
-    height: 120, // Min height
+    height: 140,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: DarkTheme.colors.surface,
@@ -136,7 +136,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 12,
+    padding: DarkTheme.spacing.sm,
+    minHeight: 120,
   },
   categoryRow: {
     flexDirection: 'row',
@@ -192,13 +193,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: DarkTheme.colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 6,
     gap: 4,
   },
   buttonText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: DarkTheme.colors.background,
   },

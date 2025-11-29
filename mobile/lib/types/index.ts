@@ -55,6 +55,7 @@ export interface Achievement {
   name: string;
   description: string;
   iconUrl: string;
+  emoji?: string;
   unlocked: boolean;
   unlockedAt?: string;
 }
@@ -68,6 +69,27 @@ export interface Challenge {
   endDate: string;
   participants: number;
   joined: boolean;
+  checkInFrequency?: 'daily' | 'weekly' | 'biweekly';
+  photoGuidance?: PhotoGuidance;
+}
+
+export interface PhotoGuidance {
+  lighting: 'natural' | 'consistent-indoor';
+  timeOfDay: string; // "Morning, near window"
+  distance: string; // "Arm's length"
+  angle: string; // "Straight on, level with camera"
+  background: string; // "Plain, uncluttered"
+  expression: string; // "Neutral"
+}
+
+export interface PhotoVerificationResult {
+  isAligned: boolean;
+  isStable: boolean;
+  pitch: number;
+  roll: number;
+  lightingScore?: number; // Future use
+  overallValid: boolean;
+  feedback: string;
 }
 
 export interface LeaderboardEntry {

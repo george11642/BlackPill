@@ -233,11 +233,10 @@ export function ProgressScreen() {
   }
 
   const getScoreColorForChart = (score: number): string => {
-    if (score >= 8.5) return '#4CAF50'; // Excellent - Green
-    if (score >= 7.5) return '#8BC34A'; // Very Good - Light Green
-    if (score >= 6.5) return '#FFC107'; // Good - Amber
-    if (score >= 5.5) return '#FF9800'; // Fair - Orange
-    return '#F44336'; // Poor - Red
+    // Match analysis screen color scheme: >= 8 green, 5-7.9 amber, < 5 red
+    if (score >= 8) return DarkTheme.colors.success; // Green for high scores
+    if (score >= 5) return DarkTheme.colors.warning; // Amber for mid scores
+    return DarkTheme.colors.error; // Red for low scores
   };
 
   const getCategoryScore = (analysis: Analysis, category: CategoryFilter): number => {

@@ -640,18 +640,6 @@ export function AnalysisResultScreen() {
                     <View style={styles.weaknessContent}>
                     <Text style={styles.weaknessLabel}>{metric.label}</Text>
                     <Text style={styles.weaknessDescription}>{metric.description}</Text>
-                    {/* Tier preview badges */}
-                    <View style={styles.tierBadgesRow}>
-                      <View style={[styles.tierBadge, styles.tierBadgeDIY]}>
-                        <Text style={styles.tierBadgeText}>🏠 DIY</Text>
-                      </View>
-                      <View style={[styles.tierBadge, styles.tierBadgeOTC]}>
-                        <Text style={styles.tierBadgeText}>💊 OTC</Text>
-                      </View>
-                      <View style={[styles.tierBadge, styles.tierBadgePro]}>
-                        <Text style={styles.tierBadgeText}>👨‍⚕️ Pro</Text>
-                      </View>
-                    </View>
                     </View>
                     <View style={styles.weaknessScoreContainer}>
                     <Text style={[styles.weaknessScore, { color: getScoreColor(metric.value) }]}>
@@ -1062,30 +1050,6 @@ const styles = StyleSheet.create({
     color: DarkTheme.colors.textSecondary,
     fontFamily: DarkTheme.typography.fontFamily,
     marginTop: 4,
-  },
-  tierBadgesRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 8,
-  },
-  tierBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  tierBadgeDIY: {
-    backgroundColor: `${DarkTheme.colors.success}30`,
-  },
-  tierBadgeOTC: {
-    backgroundColor: `${DarkTheme.colors.primary}30`,
-  },
-  tierBadgePro: {
-    backgroundColor: '#B700FF30',
-  },
-  tierBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    fontFamily: DarkTheme.typography.fontFamily,
   },
   weaknessTimeframe: {
     flexDirection: 'row',

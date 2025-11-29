@@ -7,6 +7,7 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  Platform,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
@@ -14,11 +15,14 @@ import * as ImagePicker from 'expo-image-picker';
 import Constants from 'expo-constants';
 import { Camera } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as FaceDetector from 'expo-face-detector';
 import { useAuth } from '../lib/auth/context';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { BackHeader } from '../components/BackHeader';
 import { GlassCard } from '../components/GlassCard';
+import { CameraOverlay } from '../components/CameraOverlay';
 import { DarkTheme } from '../lib/theme';
+import { PhotoVerificationResult } from '../lib/types';
 
 export function CameraScreen() {
   const navigation = useNavigation();
@@ -28,6 +32,7 @@ export function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [loading, setLoading] = useState(false);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [verificationResult, setVerificationResult] = useState<PhotoVerificationResult | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -35,8 +40,12 @@ export function CameraScreen() {
   const params = route.params as { 
     context?: 'challenge_check_in' | 'analysis';
     challengeId?: string;
+    baselinePhotoUrl?: string;
     onCapture?: (uri: string) => void;
   } || {};
+  
+  // Enable verification for both challenge check-ins and normal analysis
+  const useVerification = true; // Always enable verification for better quality/consistency
 
   if (!permission) {
     return <View style={styles.container} />;
@@ -102,17 +111,66 @@ export function CameraScreen() {
   const takePicture = async () => {
     if (!cameraRef.current) return;
 
+    if (useVerification && verificationResult && !verificationResult.overallValid) {
+      Alert.alert('Adjust Position', verificationResult.feedback);
+      return;
+    }
+
     try {
+      setLoading(true);
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.8,
         base64: false,
       });
 
       if (photo) {
+        // Perform client-side face detection checks (skip on web - FaceDetector not supported)
+        if (useVerification && Platform.OS !== 'web') {
+          try {
+            const faces = await FaceDetector.detectFacesAsync(photo.uri, {
+              mode: FaceDetector.FaceDetectorMode.accurate,
+              detectLandmarks: FaceDetector.FaceDetectorLandmarks.none,
+              runClassifications: FaceDetector.FaceDetectorClassifications.all,
+            });
+
+            if (faces.faces.length === 0) {
+              setLoading(false);
+              Alert.alert('No Face Detected', 'Please ensure your face is clearly visible in the frame.');
+              return;
+            }
+
+            if (faces.faces.length > 1) {
+              setLoading(false);
+              Alert.alert('Multiple Faces', 'Please ensure only one face is in the frame.');
+              return;
+            }
+
+            const face = faces.faces[0];
+            const { yawAngle, rollAngle } = face;
+            
+            if (Math.abs(yawAngle) > 20) {
+               setLoading(false);
+               Alert.alert('Adjust Angle', 'Please face the camera directly (turn head ' + (yawAngle > 0 ? 'left' : 'right') + ').');
+               return;
+            }
+            
+            if (Math.abs(rollAngle) > 20) {
+               setLoading(false);
+               Alert.alert('Adjust Angle', 'Please keep your head straight (tilt head ' + (rollAngle > 0 ? 'right' : 'left') + ').');
+               return;
+            }
+          } catch (faceError) {
+            // Face detection failed, continue without it
+            console.log('Face detection not available:', faceError);
+          }
+        }
+
         setCapturedPhoto(photo.uri);
       }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to take photo');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -191,19 +249,26 @@ export function CameraScreen() {
     try {
       console.log('[CameraScreen] Starting analysis for URI:', uri);
       
-      // In React Native, FormData requires a specific format for file uploads
-      // We need to pass an object with uri, type, and name properties
       const formData = new FormData();
       
-      // React Native specific: append file as an object with uri, type, name
-      // This is the correct way to upload files in React Native
-      formData.append('image', {
-        uri: uri,
-        type: 'image/jpeg',
-        name: 'photo.jpg',
-      } as any);
+      if (Platform.OS === 'web') {
+        // On web, the URI is a blob URL or data URL - we need to fetch it and create a Blob
+        console.log('[CameraScreen] Web platform - converting URI to blob');
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        formData.append('image', blob, 'photo.jpg');
+        console.log('[CameraScreen] Blob created with size:', blob.size);
+      } else {
+        // React Native specific: append file as an object with uri, type, name
+        // This is the correct way to upload files in React Native
+        formData.append('image', {
+          uri: uri,
+          type: 'image/jpeg',
+          name: 'photo.jpg',
+        } as any);
+      }
 
-      console.log('[CameraScreen] FormData created with image from URI');
+      console.log('[CameraScreen] FormData created with image');
 
       // Use fetch directly to support abort signal
       const APP_URL = Constants.expoConfig?.extra?.appUrl || process.env.EXPO_PUBLIC_APP_URL || 'https://black-pill.app';
@@ -300,6 +365,16 @@ export function CameraScreen() {
         style={styles.camera}
         facing={facing}
       />
+      
+      {/* Challenge Verification Overlay */}
+      {useVerification && (
+        <CameraOverlay 
+          isActive={!capturedPhoto}
+          onVerificationChange={setVerificationResult}
+          baselinePhotoUrl={params.baselinePhotoUrl}
+        />
+      )}
+
       {/* Controls overlay - positioned absolutely outside CameraView */}
       <View style={styles.overlay}>
         <View style={styles.controls}>
@@ -312,11 +387,17 @@ export function CameraScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.captureButton}
+            style={[
+              styles.captureButton,
+              useVerification && verificationResult && !verificationResult.overallValid && styles.captureButtonDisabled
+            ]}
             onPress={takePicture}
             disabled={loading}
           >
-            <View style={styles.captureInner} />
+            <View style={[
+              styles.captureInner,
+              useVerification && verificationResult && !verificationResult.overallValid && styles.captureInnerDisabled
+            ]} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -387,6 +468,13 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     backgroundColor: DarkTheme.colors.text,
+  },
+  captureButtonDisabled: {
+    borderColor: DarkTheme.colors.textTertiary,
+    opacity: 0.5,
+  },
+  captureInnerDisabled: {
+    backgroundColor: DarkTheme.colors.textTertiary,
   },
   text: {
     color: DarkTheme.colors.text,

@@ -203,11 +203,11 @@ export const DarkTheme = {
 };
 
 // Helper function to get score color based on value
+// Matches analysis screen logic: >= 8 is green (high score), < 5 is red (low score)
 export const getScoreColor = (score: number): string => {
-  if (score >= 9) return DarkTheme.colors.scorePerfect;
-  if (score >= 7) return DarkTheme.colors.scoreHigh;
-  if (score >= 5) return DarkTheme.colors.scoreMid;
-  return DarkTheme.colors.scoreLow;
+  if (score >= 8) return DarkTheme.colors.success; // Green for high scores
+  if (score >= 5) return DarkTheme.colors.warning; // Amber for mid scores
+  return DarkTheme.colors.error; // Red for low scores
 };
 
 // Helper function to get percentile text

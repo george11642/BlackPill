@@ -39,7 +39,7 @@ import { useSubscription } from '../lib/subscription/context';
 import { GlassCard } from '../components/GlassCard';
 import { ProfileAvatar } from '../components/ProfileAvatar';
 import { PrimaryButton, IconButton } from '../components/PrimaryButton';
-import { DarkTheme } from '../lib/theme';
+import { DarkTheme, getScoreColor } from '../lib/theme';
 
 interface UserStats {
   score: number;
@@ -205,6 +205,12 @@ export function ProfileScreen() {
       onPress: () => navigation.navigate('Referrals' as never),
     },
     {
+      icon: Trophy,
+      label: 'Challenges',
+      sublabel: 'Join community events',
+      onPress: () => navigation.navigate('Challenges' as never),
+    },
+    {
       icon: Clock,
       label: 'Scan History',
       sublabel: 'View analyses & create time-lapse',
@@ -279,6 +285,18 @@ export function ProfileScreen() {
                     <Text style={styles.rankText}>#{stats.globalRank}</Text>
                   </View>
                 )}
+              </View>
+            </View>
+            {/* Scores Section - Stacked vertically */}
+            <View style={styles.scoresSection}>
+              <View style={styles.scoreStack}>
+                <Text style={[styles.scoreValuePrimary, { color: getScoreColor(stats.score) }]}>
+                  {stats.score.toFixed(1)}
+                </Text>
+                <View style={styles.scoreSeparator} />
+                <Text style={[styles.scoreValueSecondary, { color: getScoreColor(stats.potential) }]}>
+                  {stats.potential.toFixed(1)}
+                </Text>
               </View>
             </View>
           </View>
@@ -481,6 +499,35 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: DarkTheme.colors.background,
     fontFamily: DarkTheme.typography.fontFamily,
+  },
+  scoresSection: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    marginLeft: DarkTheme.spacing.sm,
+  },
+  scoreStack: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scoreValuePrimary: {
+    fontSize: 28,
+    fontWeight: '800',
+    fontFamily: DarkTheme.typography.fontFamily,
+    lineHeight: 32,
+  },
+  scoreSeparator: {
+    width: 24,
+    height: 2,
+    backgroundColor: DarkTheme.colors.borderSubtle,
+    marginVertical: 4,
+    borderRadius: 1,
+  },
+  scoreValueSecondary: {
+    fontSize: 20,
+    fontWeight: '600',
+    fontFamily: DarkTheme.typography.fontFamily,
+    lineHeight: 24,
+    opacity: 0.85,
   },
   streakRow: {
     flexDirection: 'row',
