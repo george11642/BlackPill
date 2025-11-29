@@ -96,17 +96,8 @@ export async function POST(request: Request) {
       }
     } else {
       // Unauthenticated flow (from web marketing)
-      // We'll use customer_email instead of customer, and create customer after checkout
-      if (!finalEmail) {
-        return createResponseWithId(
-          {
-            error: 'Email required',
-            message: 'Email address is required for checkout',
-          },
-          { status: 400, headers: corsHeaders },
-          requestId
-        );
-      }
+      // Stripe will collect the email during checkout if not provided
+      // We'll create customer after checkout via webhook
     }
 
     // Define price IDs (these should be created in Stripe Dashboard)
@@ -157,12 +148,14 @@ export async function POST(request: Request) {
     };
 
     // For authenticated users, use customer ID
-    // For unauthenticated users, use customer_email
+    // For unauthenticated users, optionally use customer_email if provided
+    // Otherwise Stripe will collect email during checkout
     if (customerId) {
       sessionParams.customer = customerId;
-    } else {
+    } else if (finalEmail) {
       sessionParams.customer_email = finalEmail;
     }
+    // If no email provided, Stripe will ask for it during checkout
 
     // Apply coupon if provided
     if (coupon_code) {

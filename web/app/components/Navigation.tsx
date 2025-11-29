@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Button } from './Button';
 
 export const Navigation: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,54 +21,139 @@ export const Navigation: React.FC = () => {
   }, [pathname]);
 
   return (
-    <nav className="border-b border-[rgba(255,255,255,0.1)] sticky top-0 z-50 bg-[#0F0F1E]/95 backdrop-blur">
-      <div className="section-inner py-md">
-        <div className="flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-gradient">
+    <nav
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 50,
+        backgroundColor: 'rgba(15, 15, 30, 0.95)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
+      }}
+      role="navigation"
+      aria-label="Main navigation"
+    >
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '56px' }}>
+          {/* Logo */}
+          <Link 
+            href="/" 
+            style={{ 
+              fontSize: '1.25rem', 
+              fontWeight: 700,
+              background: 'linear-gradient(135deg, #FF0080 0%, #00D9FF 100%)',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              color: 'transparent',
+              textDecoration: 'none',
+            }}
+            aria-label="BlackPill Home"
+          >
             BlackPill
           </Link>
 
-          {/* Desktop Menu */}
-          <div className="hidden md:flex gap-md items-center">
-            <Link href="/pricing" className="text-secondary hover:text-white transition">
+          {/* Desktop Navigation */}
+          <div className="desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <Link 
+              href="/#features" 
+              style={{ 
+                color: '#B8BACC', 
+                textDecoration: 'none', 
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                transition: 'color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#B8BACC'}
+            >
+              Features
+            </Link>
+            <Link 
+              href="/pricing" 
+              style={{ 
+                color: '#B8BACC', 
+                textDecoration: 'none', 
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                transition: 'color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#B8BACC'}
+            >
               Pricing
             </Link>
-            <Link href="/#how-it-works" className="text-secondary hover:text-white transition">
+            <Link 
+              href="/#how-it-works" 
+              style={{ 
+                color: '#B8BACC', 
+                textDecoration: 'none', 
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                transition: 'color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#B8BACC'}
+            >
               How It Works
             </Link>
-            <Link href="/creators" className="text-secondary hover:text-white transition">
-              For Creators
+            <Link 
+              href="/affiliate-program" 
+              style={{ 
+                color: '#B8BACC', 
+                textDecoration: 'none', 
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                transition: 'color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#B8BACC'}
+            >
+              Affiliates
             </Link>
-            <Link href="/#faq" className="text-secondary hover:text-white transition">
-              FAQ
+            <Link 
+              href="/dashboard"
+              style={{
+                background: 'linear-gradient(135deg, #FF0080 0%, #00D9FF 100%)',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '0.5rem',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                textDecoration: 'none',
+                transition: 'all 0.2s',
+                boxShadow: '0 0 15px rgba(255, 0, 128, 0.3)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = '0 0 25px rgba(255, 0, 128, 0.5)';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = '0 0 15px rgba(255, 0, 128, 0.3)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              {isAuthenticated ? 'Dashboard' : 'Get Started'}
             </Link>
-            <Link href="/app" className="text-secondary hover:text-white transition">
-              Try Web App
-            </Link>
-            {isAuthenticated ? (
-              <Link href="/dashboard">
-                <Button variant="primary" size="sm">
-                  Dashboard
-                </Button>
-              </Link>
-            ) : (
-              <Button 
-                variant="primary" 
-                size="sm"
-                onClick={() => {
-                  window.location.href = '/creators?action=signin';
-                }}
-              >
-                Sign In
-              </Button>
-            )}
           </div>
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden text-2xl"
+            className="mobile-menu-btn"
+            style={{
+              display: 'none',
+              background: 'transparent',
+              border: 'none',
+              color: 'white',
+              fontSize: '1.5rem',
+              cursor: 'pointer',
+              padding: '0.5rem',
+            }}
             onClick={() => setIsOpen(!isOpen)}
             aria-label="Toggle menu"
+            aria-expanded={isOpen}
           >
             {isOpen ? '✕' : '☰'}
           </button>
@@ -77,44 +161,78 @@ export const Navigation: React.FC = () => {
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="md:hidden mt-md pt-md border-t border-[rgba(255,255,255,0.1)] space-y-md">
-            <Link href="/pricing" className="block text-secondary hover:text-white transition">
-              Pricing
-            </Link>
-            <Link href="/#how-it-works" className="block text-secondary hover:text-white transition">
-              How It Works
-            </Link>
-            <Link href="/creators" className="block text-secondary hover:text-white transition">
-              For Creators
-            </Link>
-            <Link href="/#faq" className="block text-secondary hover:text-white transition">
-              FAQ
-            </Link>
-            <Link href="/app" className="block text-secondary hover:text-white transition">
-              Try Web App
-            </Link>
-            {isAuthenticated ? (
-              <Link href="/dashboard" className="block">
-                <Button variant="primary" size="sm" className="w-full">
-                  Dashboard
-                </Button>
-              </Link>
-            ) : (
-              <Button 
-                variant="primary" 
-                size="sm" 
-                className="w-full"
-                onClick={() => {
-                  window.location.href = '/creators?action=signin';
-                }}
+          <div 
+            className="mobile-menu"
+            style={{
+              display: 'none',
+              paddingBottom: '1rem',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingTop: '1rem' }}>
+              <Link 
+                href="/#features" 
+                style={{ color: '#B8BACC', textDecoration: 'none', padding: '0.5rem 0' }}
+                onClick={() => setIsOpen(false)}
               >
-                Sign In
-              </Button>
-            )}
+                Features
+              </Link>
+              <Link 
+                href="/pricing" 
+                style={{ color: '#B8BACC', textDecoration: 'none', padding: '0.5rem 0' }}
+                onClick={() => setIsOpen(false)}
+              >
+                Pricing
+              </Link>
+              <Link 
+                href="/#how-it-works" 
+                style={{ color: '#B8BACC', textDecoration: 'none', padding: '0.5rem 0' }}
+                onClick={() => setIsOpen(false)}
+              >
+                How It Works
+              </Link>
+              <Link 
+                href="/affiliate-program" 
+                style={{ color: '#B8BACC', textDecoration: 'none', padding: '0.5rem 0' }}
+                onClick={() => setIsOpen(false)}
+              >
+                Affiliates
+              </Link>
+              <Link 
+                href="/dashboard"
+                style={{
+                  background: 'linear-gradient(135deg, #FF0080 0%, #00D9FF 100%)',
+                  color: 'white',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  textAlign: 'center',
+                  marginTop: '0.5rem',
+                }}
+                onClick={() => setIsOpen(false)}
+              >
+                {isAuthenticated ? 'Dashboard' : 'Get Started'}
+              </Link>
+            </div>
           </div>
         )}
       </div>
+
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .desktop-nav {
+            display: none !important;
+          }
+          .mobile-menu-btn {
+            display: block !important;
+          }
+          .mobile-menu {
+            display: block !important;
+          }
+        }
+      `}</style>
     </nav>
   );
 };
-

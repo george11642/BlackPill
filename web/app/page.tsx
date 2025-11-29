@@ -14,6 +14,38 @@ import { Footer } from './components/Footer';
 
 export default function HomePage() {
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+
+  const handleSubscribe = async (tier: string) => {
+    setCheckoutLoading(tier);
+
+    try {
+      const response = await fetch('/api/subscriptions/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tier: tier,
+          interval: billingInterval,
+          source: 'web',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        alert(data.message || 'Failed to create checkout session');
+        setCheckoutLoading(null);
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Failed to create checkout session. Please try again.');
+      setCheckoutLoading(null);
+    }
+  };
 
   const structuredData = {
     '@context': 'https://schema.org',
@@ -87,33 +119,19 @@ export default function HomePage() {
       highlight: false,
     },
     {
-      tier: 'Basic',
-      price: '$4.99',
-      interval: '/month',
-      yearlyPrice: '$59.99/year',
-      scans: '5 scans/month',
-      features: [
-        { text: 'Full 6-dimension breakdown', included: true },
-        { text: 'Advanced AI tips', included: true },
-        { text: 'Ad-free experience', included: true },
-        { text: 'Referral bonuses', included: true },
-      ],
-      cta: 'Download App',
-      highlight: false,
-    },
-    {
       tier: 'Pro',
       price: '$12.99',
       interval: '/month',
       yearlyPrice: '$119.99/year',
       scans: '20 scans/month',
       features: [
-        { text: 'All Basic features', included: true },
+        { text: 'Full 6-dimension breakdown', included: true },
+        { text: 'Advanced AI tips', included: true },
         { text: 'Priority analysis (<10 seconds)', included: true },
         { text: 'Comparison mode', included: true },
         { text: 'Weekly progress reports', included: true },
       ],
-      cta: 'Download App',
+      cta: 'Subscribe',
       highlight: true,
     },
     {
@@ -129,7 +147,7 @@ export default function HomePage() {
         { text: 'Leaderboard badge', included: true },
         { text: 'Priority support', included: true },
       ],
-      cta: 'Download App',
+      cta: 'Subscribe',
       highlight: false,
     },
   ];
@@ -298,9 +316,10 @@ export default function HomePage() {
           </button>
         </div>
 
-        <div className="grid grid-4 gap-lg">
+        <div className="grid grid-3 gap-lg">
           {pricingTiers.map((tier, index) => {
             const displayPrice = getPrice(tier);
+            const isLoading = checkoutLoading === tier.tier.toLowerCase();
             return (
               <div
                 key={index}
@@ -333,9 +352,10 @@ export default function HomePage() {
                     <Button
                       className={tier.highlight ? 'btn-primary w-full' : 'btn-secondary w-full'}
                       size="lg"
-                      href={`/pricing?tier=${tier.tier.toLowerCase()}&interval=${billingInterval}&source=web`}
+                      onClick={() => handleSubscribe(tier.tier.toLowerCase())}
+                      disabled={isLoading}
                     >
-                      Subscribe to {tier.tier}
+                      {isLoading ? 'Loading...' : `Subscribe to ${tier.tier}`}
                     </Button>
                   )}
                 </div>

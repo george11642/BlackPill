@@ -108,7 +108,8 @@ function PricingContent() {
     setError(null);
 
     try {
-      const checkoutEmail = emailValue || (email as string) || `checkout-${Date.now()}@temp.black-pill.app`;
+      // For app source, use the provided email. For web, let Stripe collect it.
+      const checkoutEmail = isAppSource ? (emailValue || email as string) : undefined;
       
       const response = await fetch('/api/subscriptions/create-checkout', {
         method: 'POST',
@@ -118,7 +119,7 @@ function PricingContent() {
         body: JSON.stringify({
           tier: tierToSubscribe,
           interval: billingInterval,
-          email: checkoutEmail,
+          ...(checkoutEmail && { email: checkoutEmail }),
           source: isAppSource ? 'app' : 'web',
           user_id: isAppSource ? (user_id as string) : undefined,
         }),
@@ -206,7 +207,7 @@ function PricingContent() {
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid grid-4 gap-lg mb-lg">
+          <div className="grid grid-3 gap-lg mb-lg">
             {tiers.map((tierOption) => {
               const isSelected = selectedTier === tierOption.tier;
               const displayPrice = getPrice(tierOption);

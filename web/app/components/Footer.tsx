@@ -1,139 +1,182 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
+  const linkStyle: React.CSSProperties = {
+    color: '#6B6D7F',
+    textDecoration: 'none',
+    fontSize: '0.75rem',
+    transition: 'color 0.2s',
+    display: 'block',
+    padding: '0.125rem 0',
+  };
+
   return (
-    <footer className="border-t border-[rgba(255,255,255,0.1)] py-lg bg-[#0F0F1E]">
-      <div className="section-inner">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-lg mb-lg">
+    <footer 
+      style={{
+        backgroundColor: '#0F0F1E',
+        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+      }}
+      role="contentinfo"
+    >
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1.5rem' }}>
+        {/* Main Grid */}
+        <div 
+          style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: '1.5rem',
+            marginBottom: '1rem',
+          }}
+          className="footer-grid"
+        >
+          {/* Brand Section */}
           <div>
-            <h4 className="mb-md">Download App</h4>
-            <ul className="space-y-sm">
-              <li>
-                <a 
-                  href="https://apps.apple.com/app/blackpill" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="inline-block hover:opacity-80 transition"
-                >
-                  <img 
-                    src="/badges/app-store-badge.svg" 
-                    alt="Download on the App Store" 
-                    className="h-[40px]"
-                  />
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="https://play.google.com/store/apps/details?id=com.blackpill.app" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="inline-block hover:opacity-80 transition"
-                >
-                  <img 
-                    src="/badges/google-play-badge.png" 
-                    alt="Get it on Google Play" 
-                    className="h-[40px]"
-                  />
-                </a>
-              </li>
-              <li>
-                <a href="/#pricing" className="text-secondary hover:text-cyan transition">
-                  Pricing
-                </a>
-              </li>
-            </ul>
+            <Link 
+              href="/" 
+              style={{
+                display: 'inline-block',
+                fontSize: '1rem',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #FF0080 0%, #00D9FF 100%)',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
+                textDecoration: 'none',
+                marginBottom: '0.5rem',
+              }}
+            >
+              BlackPill
+            </Link>
+            <p style={{ color: '#6B6D7F', fontSize: '0.7rem', lineHeight: 1.5, marginBottom: '0.75rem', maxWidth: '180px' }}>
+              AI-powered attractiveness analysis with honest feedback.
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <a
+                href="https://apps.apple.com/app/blackpill"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img 
+                  src="/badges/app-store-badge.svg" 
+                  alt="App Store" 
+                  style={{ height: '24px' }}
+                />
+              </a>
+              <a
+                href="https://play.google.com/store/apps/details?id=com.blackpill.app"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img 
+                  src="/badges/google-play-badge.png" 
+                  alt="Google Play" 
+                  style={{ height: '24px' }}
+                />
+              </a>
+            </div>
           </div>
 
+          {/* Product Links */}
           <div>
-            <h4 className="mb-md">Product</h4>
-            <ul className="space-y-sm">
-              <li>
-                <Link href="/" className="text-secondary hover:text-cyan transition">
-                  Landing Page
-                </Link>
-              </li>
-              <li>
-                <Link href="/#how-it-works" className="text-secondary hover:text-cyan transition">
-                  How It Works
-                </Link>
-              </li>
-              <li>
-                <Link href="/#features" className="text-secondary hover:text-cyan transition">
-                  Features
-                </Link>
-              </li>
-            </ul>
+            <h3 style={{ color: '#fff', fontSize: '0.7rem', fontWeight: 600, marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Product
+            </h3>
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <Link href="/#features" style={linkStyle} onMouseEnter={(e) => e.currentTarget.style.color = '#00D9FF'} onMouseLeave={(e) => e.currentTarget.style.color = '#6B6D7F'}>
+                Features
+              </Link>
+              <Link href="/pricing" style={linkStyle} onMouseEnter={(e) => e.currentTarget.style.color = '#00D9FF'} onMouseLeave={(e) => e.currentTarget.style.color = '#6B6D7F'}>
+                Pricing
+              </Link>
+              <Link href="/#how-it-works" style={linkStyle} onMouseEnter={(e) => e.currentTarget.style.color = '#00D9FF'} onMouseLeave={(e) => e.currentTarget.style.color = '#6B6D7F'}>
+                How It Works
+              </Link>
+              <Link href="/affiliate-program" style={linkStyle} onMouseEnter={(e) => e.currentTarget.style.color = '#00D9FF'} onMouseLeave={(e) => e.currentTarget.style.color = '#6B6D7F'}>
+                Affiliates
+              </Link>
+            </nav>
           </div>
 
+          {/* Legal Links */}
           <div>
-            <h4 className="mb-md">Creator Program</h4>
-            <ul className="space-y-sm">
-              <li>
-                <Link href="/creators" className="text-secondary hover:text-cyan transition">
-                  For Creators
-                </Link>
-              </li>
-              <li>
-                <Link href="/apply" className="text-secondary hover:text-cyan transition">
-                  Apply Now
-                </Link>
-              </li>
-              <li>
-                <Link href="/dashboard" className="text-secondary hover:text-cyan transition">
-                  Dashboard
-                </Link>
-              </li>
-            </ul>
+            <h3 style={{ color: '#fff', fontSize: '0.7rem', fontWeight: 600, marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Legal
+            </h3>
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <Link href="/privacy" style={linkStyle} onMouseEnter={(e) => e.currentTarget.style.color = '#00D9FF'} onMouseLeave={(e) => e.currentTarget.style.color = '#6B6D7F'}>
+                Privacy Policy
+              </Link>
+              <Link href="/terms" style={linkStyle} onMouseEnter={(e) => e.currentTarget.style.color = '#00D9FF'} onMouseLeave={(e) => e.currentTarget.style.color = '#6B6D7F'}>
+                Terms of Service
+              </Link>
+            </nav>
           </div>
 
+          {/* Support Links */}
           <div>
-            <h4 className="mb-md">Legal</h4>
-            <ul className="space-y-sm">
-              <li>
-                <Link href="/privacy" className="text-secondary hover:text-cyan transition">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="/terms" className="text-secondary hover:text-cyan transition">
-                  Terms of Service
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="mb-md">Support</h4>
-            <ul className="space-y-sm">
-              <li>
-                <a href="/#faq" className="text-secondary hover:text-cyan transition">
-                  FAQ
-                </a>
-              </li>
-              <li>
-                <a href="mailto:support@black-pill.app" className="text-secondary hover:text-cyan transition">
-                  Contact Support
-                </a>
-              </li>
-              <li>
-                <a href="https://twitter.com/blackpillapp" target="_blank" rel="noopener noreferrer" className="text-secondary hover:text-cyan transition">
-                  Twitter
-                </a>
-              </li>
-            </ul>
+            <h3 style={{ color: '#fff', fontSize: '0.7rem', fontWeight: 600, marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Support
+            </h3>
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <Link href="/#faq" style={linkStyle} onMouseEnter={(e) => e.currentTarget.style.color = '#00D9FF'} onMouseLeave={(e) => e.currentTarget.style.color = '#6B6D7F'}>
+                FAQ
+              </Link>
+              <a href="mailto:support@black-pill.app" style={linkStyle} onMouseEnter={(e) => e.currentTarget.style.color = '#00D9FF'} onMouseLeave={(e) => e.currentTarget.style.color = '#6B6D7F'}>
+                Contact
+              </a>
+              <a href="https://twitter.com/blackpillapp" target="_blank" rel="noopener noreferrer" style={linkStyle} onMouseEnter={(e) => e.currentTarget.style.color = '#00D9FF'} onMouseLeave={(e) => e.currentTarget.style.color = '#6B6D7F'}>
+                Twitter
+              </a>
+            </nav>
           </div>
         </div>
 
-        <div className="border-t border-[rgba(255,255,255,0.1)] pt-lg text-center">
-          <p className="text-secondary text-sm">
-            © {currentYear} BlackPill. All rights reserved.
+        {/* Bottom Bar */}
+        <div style={{ 
+          paddingTop: '1rem', 
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
+        }}>
+          <p style={{ color: '#6B6D7F', fontSize: '0.7rem', margin: 0 }}>
+            © {currentYear}{' '}
+            <span style={{ 
+              fontWeight: 600,
+              background: 'linear-gradient(135deg, #FF0080 0%, #00D9FF 100%)',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              color: 'transparent',
+            }}>
+              BlackPill
+            </span>
+            . All rights reserved.
+          </p>
+          <p style={{ color: '#4A4C5A', fontSize: '0.65rem', margin: 0, fontStyle: 'italic' }}>
+            Results are for entertainment purposes. Not medical advice.
           </p>
         </div>
       </div>
+
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .footer-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .footer-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </footer>
   );
 };
-

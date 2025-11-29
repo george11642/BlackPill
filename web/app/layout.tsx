@@ -14,8 +14,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <AuthProvider>{children}</AuthProvider>
+      <body className="pt-14 min-h-screen flex flex-col">
+        <AuthProvider>
+          <main className="flex-1">{children}</main>
+        </AuthProvider>
       </body>
     </html>
   );
