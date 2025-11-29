@@ -2,9 +2,14 @@
   "name": "blackpill-monorepo",
   "version": "1.0.0",
   "private": true,
+  "devDependencies": {
+    "next": "^16.0.0"
+  },
   "scripts": {
     "install:all": "npm install && cd mobile && npm install && cd ../web && npm install",
-    "build": "cd mobile && npm install && cd ../web && npm install && npm run build",
+    "build": "cd web && npm run build",
+    "build:web": "cd web && npm run build",
+    "build:mobile": "cd mobile && npm run build",
     "dev:web": "cd web && npm run dev",
     "dev:mobile": "cd mobile && npm start"
   }
