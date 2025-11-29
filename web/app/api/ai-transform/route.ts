@@ -1,40 +1,47 @@
 import { NextResponse } from 'next/server';
 import { withAuth, supabaseAdmin, getRequestId } from '@/lib';
+import { v4 as uuidv4 } from 'uuid';
 
 // CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-ID',
   'Access-Control-Max-Age': '86400',
 };
 
 // Transformation scenarios for the "You as a 10/10" feature
+// Using PhotoMaker - prompts optimized for identity preservation
 const TRANSFORMATION_SCENARIOS = [
   {
     id: 'formal',
     name: 'Formal Event',
-    prompt: 'Transform this person into their most attractive version wearing an elegant black suit at a high-end casino or gala event. Improve facial features to be more symmetrical and defined. Professional lighting, confident expression.',
+    style: 'Photographic (Default)',
+    prompt: 'wearing an elegant black tuxedo, at a luxury gala event, professional studio lighting, confident expression, sharp jawline, clear skin, attractive, solo portrait, no other people in background',
   },
   {
     id: 'casual',
     name: 'Casual Cool',
-    prompt: 'Transform this person into their most attractive version in casual streetwear, looking confident and stylish. Improve facial features, clear skin, well-groomed. Natural daylight, urban background.',
+    style: 'Photographic (Default)',
+    prompt: 'wearing stylish casual streetwear, standing alone, plain studio background, confident pose, clear skin, well-groomed, attractive, modern fashion, solo portrait',
   },
   {
     id: 'fitness',
     name: 'Fitness Model',
-    prompt: 'Transform this person into their most attractive fitness model version with athletic build, defined jawline, clear skin. Gym or outdoor fitness setting, confident pose.',
+    style: 'Photographic (Default)',
+    prompt: 'as a fit athletic fitness model, defined muscles, athletic wear, confident pose, clear skin, healthy glow, plain gym background, solo portrait, no other people',
   },
   {
     id: 'professional',
     name: 'Business Executive',
-    prompt: 'Transform this person into their most attractive version as a successful business executive. Sharp suit, confident expression, improved facial features. Modern office or city skyline background.',
+    style: 'Photographic (Default)',
+    prompt: 'as a successful business executive in a sharp tailored navy suit, plain office background, confident expression, professional headshot, well-groomed, solo portrait',
   },
   {
     id: 'beach',
     name: 'Beach Lifestyle',
-    prompt: 'Transform this person into their most attractive version at a tropical beach. Athletic build, tanned skin, confident smile. Golden hour lighting, luxury beach setting.',
+    style: 'Cinematic',
+    prompt: 'at a tropical beach during golden hour, tanned healthy skin, confident smile, simple beach background, summer vibes, solo portrait, no other people',
   },
 ];
 
@@ -139,20 +146,34 @@ export async function POST(request: Request) {
         ? TRANSFORMATION_SCENARIOS 
         : [TRANSFORMATION_SCENARIOS.find(s => s.id === (scenario || 'formal')) || TRANSFORMATION_SCENARIOS[0]];
 
-      // Generate transformations
-      // Note: In production, this would call an actual AI image generation API
-      // like Replicate, Stability AI, or similar
+      // Generate transformations using PhotoMaker model
       const transformations = await Promise.all(
         scenariosToGenerate.map(async (s) => {
-          // Placeholder for actual AI generation
-          // In production: call Replicate/Stability API with the analysis image and prompt
-          const transformedImageUrl = await generateTransformation(
+          // Generate the transformation
+          const replicateImageUrl = await generateTransformation(
             analysis.image_url,
             s.prompt,
+            (s as any).style || 'Photographic (Default)',
             requestId
           );
 
-          // Store the transformation
+          // Upload to Supabase Storage for permanent storage
+          let storagePath: string | null = null;
+          let finalImageUrl = replicateImageUrl;
+          
+          // Only upload if it's a real image (not a placeholder)
+          if (!replicateImageUrl.includes('placehold.co')) {
+            storagePath = await uploadToStorage(replicateImageUrl, user.id, requestId);
+            if (storagePath) {
+              // Get signed URL for the stored image
+              const signedUrl = await getSignedUrl(storagePath);
+              if (signedUrl) {
+                finalImageUrl = signedUrl;
+              }
+            }
+          }
+
+          // Store the transformation with storage path
           const { data: transformation, error: insertError } = await supabaseAdmin
             .from('ai_transformations')
             .insert({
@@ -161,7 +182,8 @@ export async function POST(request: Request) {
               scenario: s.id,
               scenario_name: s.name,
               original_image_url: analysis.image_url,
-              transformed_image_url: transformedImageUrl,
+              transformed_image_url: finalImageUrl,
+              storage_path: storagePath, // Store the path for future signed URL generation
               prompt_used: s.prompt,
             })
             .select()
@@ -175,7 +197,7 @@ export async function POST(request: Request) {
             id: transformation?.id,
             scenario: s.id,
             scenario_name: s.name,
-            image_url: transformedImageUrl,
+            image_url: finalImageUrl,
           };
         })
       );
@@ -199,75 +221,177 @@ export async function POST(request: Request) {
 }
 
 /**
- * Generate AI transformation using image generation API
- * In production, this would call Replicate, Stability AI, or similar
+ * Generate AI transformation using PhotoMaker model on Replicate
+ * PhotoMaker creates photos in any style while preserving your identity
  */
 async function generateTransformation(
   originalImageUrl: string,
   prompt: string,
+  style: string,
   requestId: string
 ): Promise<string> {
-  // Check if we have Replicate API key configured
-  const replicateApiKey = process.env.REPLICATE_API_KEY;
+  const replicateApiToken = process.env.REPLICATE_API_TOKEN;
   
-  if (!replicateApiKey) {
-    // Return placeholder if no API key configured
-    console.log(`[${requestId}] Replicate API key not configured, returning placeholder`);
+  if (!replicateApiToken) {
+    console.log(`[${requestId}] Replicate API token not configured, returning placeholder`);
     return `https://placehold.co/1024x1024/1a1a2e/d4af37?text=AI+Transformation+Preview`;
   }
 
   try {
-    // Call Replicate API for image-to-image transformation
-    // Using a model like SDXL or similar for face enhancement
+    console.log(`[${requestId}] Starting PhotoMaker transformation`);
+    console.log(`[${requestId}] Image URL: ${originalImageUrl}`);
+    console.log(`[${requestId}] Prompt: ${prompt}`);
+    
+    // Map style to PhotoMaker style_name
+    const styleMap: { [key: string]: string } = {
+      '3D': 'Photographic (Default)',
+      'Video game': 'Cinematic',
+      'Cinematic': 'Cinematic',
+      'default': 'Photographic (Default)',
+    };
+    const styleName = styleMap[style] || 'Photographic (Default)';
+    
+    // Use PhotoMaker model - preserves identity while changing style
+    // Version: ddfc2b08d209f9fa8c1eca692712918bd449f695dabb4a958da31802a9570fe4
     const response = await fetch('https://api.replicate.com/v1/predictions', {
       method: 'POST',
       headers: {
-        'Authorization': `Token ${replicateApiKey}`,
+        'Authorization': `Bearer ${replicateApiToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        // Using a face enhancement/transformation model
-        version: 'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b',
+        version: 'ddfc2b08d209f9fa8c1eca692712918bd449f695dabb4a958da31802a9570fe4',
         input: {
-          image: originalImageUrl,
-          prompt: prompt,
-          negative_prompt: 'ugly, disfigured, low quality, blurry, nsfw',
-          strength: 0.6,
-          guidance_scale: 7.5,
-          num_inference_steps: 30,
+          input_image: originalImageUrl,
+          prompt: `A photo of a man img, ${prompt}`,
+          negative_prompt: 'nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, ugly, disfigured',
+          num_steps: 50,
+          style_name: styleName,
+          style_strength_ratio: 20, // Lower = more like original face
+          guidance_scale: 5,
+          num_outputs: 1,
         },
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`Replicate API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error(`[${requestId}] PhotoMaker API error: ${response.status} - ${errorText}`);
+      return `https://placehold.co/1024x1024/1a1a2e/d4af37?text=Generation+Failed`;
     }
 
     const prediction = await response.json();
+    console.log(`[${requestId}] PhotoMaker prediction started: ${prediction.id}`);
     
     // Poll for completion
     let result = prediction;
-    while (result.status !== 'succeeded' && result.status !== 'failed') {
+    let attempts = 0;
+    const maxAttempts = 90; // 3 minutes max
+    
+    while (result.status !== 'succeeded' && result.status !== 'failed' && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 2000));
+      attempts++;
       
       const pollResponse = await fetch(result.urls.get, {
         headers: {
-          'Authorization': `Token ${replicateApiKey}`,
+          'Authorization': `Bearer ${replicateApiToken}`,
         },
       });
       result = await pollResponse.json();
+      
+      if (attempts % 5 === 0) {
+        console.log(`[${requestId}] Poll attempt ${attempts}: ${result.status}`);
+      }
     }
 
     if (result.status === 'failed') {
-      throw new Error('Image generation failed');
+      console.error(`[${requestId}] PhotoMaker generation failed:`, result.error);
+      return `https://placehold.co/1024x1024/1a1a2e/d4af37?text=Generation+Failed`;
+    }
+    
+    if (attempts >= maxAttempts) {
+      console.error(`[${requestId}] PhotoMaker generation timed out`);
+      return `https://placehold.co/1024x1024/1a1a2e/d4af37?text=Generation+Timeout`;
     }
 
-    // Return the generated image URL
-    return result.output?.[0] || originalImageUrl;
+    const outputUrl = Array.isArray(result.output) ? result.output[0] : result.output;
+    console.log(`[${requestId}] Transformation complete: ${outputUrl}`);
+    return outputUrl || originalImageUrl;
+    
   } catch (error) {
     console.error(`[${requestId}] AI generation error:`, error);
-    // Return placeholder on error
     return `https://placehold.co/1024x1024/1a1a2e/d4af37?text=Generation+Failed`;
+  }
+}
+
+/**
+ * Upload an image from URL to Supabase Storage
+ * Returns the storage path for the uploaded file
+ */
+async function uploadToStorage(
+  imageUrl: string,
+  userId: string,
+  requestId: string
+): Promise<string | null> {
+  try {
+    // Download the image from Replicate
+    console.log(`[${requestId}] Downloading image from: ${imageUrl}`);
+    const imageResponse = await fetch(imageUrl);
+    
+    if (!imageResponse.ok) {
+      console.error(`[${requestId}] Failed to download image: ${imageResponse.status}`);
+      return null;
+    }
+    
+    const imageBuffer = await imageResponse.arrayBuffer();
+    const contentType = imageResponse.headers.get('content-type') || 'image/png';
+    const extension = contentType.includes('jpeg') ? 'jpg' : 'png';
+    
+    // Generate unique filename
+    const filename = `${userId}/${uuidv4()}.${extension}`;
+    
+    // Upload to Supabase Storage
+    console.log(`[${requestId}] Uploading to storage: ${filename}`);
+    const { data, error } = await supabaseAdmin.storage
+      .from('ai-transformations')
+      .upload(filename, imageBuffer, {
+        contentType,
+        cacheControl: '31536000', // 1 year cache
+        upsert: false,
+      });
+    
+    if (error) {
+      console.error(`[${requestId}] Storage upload error:`, error);
+      return null;
+    }
+    
+    console.log(`[${requestId}] Upload successful: ${data.path}`);
+    return data.path;
+    
+  } catch (error) {
+    console.error(`[${requestId}] Upload to storage failed:`, error);
+    return null;
+  }
+}
+
+/**
+ * Get a signed URL for a stored transformation image
+ */
+async function getSignedUrl(storagePath: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabaseAdmin.storage
+      .from('ai-transformations')
+      .createSignedUrl(storagePath, 60 * 60 * 24 * 7); // 7 day expiry
+    
+    if (error) {
+      console.error('Failed to create signed URL:', error);
+      return null;
+    }
+    
+    return data.signedUrl;
+  } catch (error) {
+    console.error('Signed URL error:', error);
+    return null;
   }
 }
 
@@ -298,8 +422,32 @@ export async function GET(request: Request) {
         throw error;
       }
 
+      // Map database fields to API response format and generate fresh signed URLs
+      const mappedTransformations = await Promise.all(
+        (transformations || []).map(async (t: any) => {
+          let imageUrl = t.transformed_image_url;
+          
+          // If we have a storage path, generate a fresh signed URL
+          if (t.storage_path) {
+            const signedUrl = await getSignedUrl(t.storage_path);
+            if (signedUrl) {
+              imageUrl = signedUrl;
+            }
+          }
+          
+          return {
+            id: t.id,
+            scenario: t.scenario,
+            scenario_name: t.scenario_name,
+            image_url: imageUrl,
+            original_image_url: t.original_image_url,
+            created_at: t.created_at,
+          };
+        })
+      );
+
       return NextResponse.json(
-        { transformations },
+        { transformations: mappedTransformations },
         { status: 200, headers: { ...corsHeaders, 'X-Request-ID': requestId } }
       );
     } catch (error) {

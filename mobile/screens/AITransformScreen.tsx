@@ -8,9 +8,13 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Modal,
+  TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -20,7 +24,7 @@ import Animated, {
   Extrapolate,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { X, Download, Share2, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react-native';
+import { X, Download, Share2, ChevronLeft, ChevronRight, Sparkles, Check } from 'lucide-react-native';
 
 import { apiGet, apiPost } from '../lib/api/client';
 import { useAuth } from '../lib/auth/context';
@@ -33,6 +37,7 @@ import { DarkTheme } from '../lib/theme';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const IMAGE_WIDTH = SCREEN_WIDTH - 48;
 const IMAGE_HEIGHT = IMAGE_WIDTH * 1.25;
+const ITEM_WIDTH = IMAGE_WIDTH + 16; // IMAGE_WIDTH + marginRight
 
 interface Transformation {
   id: string;
@@ -75,6 +80,8 @@ export function AITransformScreen() {
   const [generating, setGenerating] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [noAnalysesError, setNoAnalysesError] = useState(false);
+  const [showScenarioSelector, setShowScenarioSelector] = useState(false);
+  const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
 
   // Animation values
@@ -158,6 +165,11 @@ export function AITransformScreen() {
 
       if (data.transformations && data.transformations.length > 0) {
         setTransformations(prev => [...data.transformations, ...prev]);
+        setCurrentIndex(0);
+        // Scroll to the new transformation
+        setTimeout(() => {
+          flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+        }, 100);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (error: any) {
@@ -187,18 +199,27 @@ export function AITransformScreen() {
   const handlePrevious = () => {
     if (currentIndex > 0) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      flatListRef.current?.scrollToIndex({ index: currentIndex - 1, animated: true });
-      setCurrentIndex(currentIndex - 1);
+      const newIndex = currentIndex - 1;
+      flatListRef.current?.scrollToOffset({ offset: newIndex * ITEM_WIDTH, animated: true });
+      setCurrentIndex(newIndex);
     }
   };
 
   const handleNext = () => {
     if (currentIndex < transformations.length - 1) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      flatListRef.current?.scrollToIndex({ index: currentIndex + 1, animated: true });
-      setCurrentIndex(currentIndex + 1);
+      const newIndex = currentIndex + 1;
+      flatListRef.current?.scrollToOffset({ offset: newIndex * ITEM_WIDTH, animated: true });
+      setCurrentIndex(newIndex);
     }
   };
+
+  // getItemLayout for FlatList scrollToIndex support
+  const getItemLayout = (_: any, index: number) => ({
+    length: ITEM_WIDTH,
+    offset: ITEM_WIDTH * index,
+    index,
+  });
 
   const headerAnimatedStyle = useAnimatedStyle(() => ({
     opacity: headerOpacity.value,
@@ -208,22 +229,42 @@ export function AITransformScreen() {
     transform: [{ scale: imageScale.value }],
   }));
 
-  const renderTransformation = ({ item, index }: { item: Transformation; index: number }) => (
-    <Animated.View style={[styles.imageContainer, imageAnimatedStyle]}>
-      <Image
-        source={{ uri: item.image_url }}
-        style={styles.transformedImage}
-        resizeMode="cover"
-      />
-      <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.8)']}
-        style={styles.imageGradient}
-      />
-      <View style={styles.scenarioLabel}>
-        <Text style={styles.scenarioText}>{item.scenario_name}</Text>
-      </View>
-    </Animated.View>
-  );
+  const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>({});
+
+  const renderTransformation = ({ item, index }: { item: Transformation; index: number }) => {
+    const hasError = imageErrors[item.id];
+    
+    return (
+      <Animated.View style={[styles.imageContainer, imageAnimatedStyle]}>
+        {hasError ? (
+          <View style={[styles.transformedImage, styles.imageErrorContainer]}>
+            <Sparkles size={48} color={DarkTheme.colors.textSecondary} />
+            <Text style={styles.imageErrorText}>Image unavailable</Text>
+          </View>
+        ) : (
+          <Image
+            source={{ 
+              uri: item.image_url,
+              cache: 'force-cache', // Force caching
+            }}
+            style={styles.transformedImage}
+            resizeMode="cover"
+            onError={() => {
+              console.log(`Image failed to load: ${item.image_url}`);
+              setImageErrors(prev => ({ ...prev, [item.id]: true }));
+            }}
+          />
+        )}
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.8)']}
+          style={styles.imageGradient}
+        />
+        <View style={styles.scenarioLabel}>
+          <Text style={styles.scenarioText}>{item.scenario_name}</Text>
+        </View>
+      </Animated.View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -286,9 +327,8 @@ export function AITransformScreen() {
             Generate AI-enhanced images showing your potential in different scenarios
           </Text>
           <PrimaryButton
-            title={generating ? 'Generating...' : 'Generate Transformation'}
-            onPress={() => generateTransformation()}
-            loading={generating}
+            title="Choose a Style"
+            onPress={() => setShowScenarioSelector(true)}
             style={styles.generateButton}
             icon={<Sparkles size={20} color={DarkTheme.colors.background} />}
           />
@@ -305,12 +345,13 @@ export function AITransformScreen() {
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={(e) => {
-              const index = Math.round(e.nativeEvent.contentOffset.x / IMAGE_WIDTH);
+              const index = Math.round(e.nativeEvent.contentOffset.x / ITEM_WIDTH);
               setCurrentIndex(index);
             }}
             contentContainerStyle={styles.carouselContent}
-            snapToInterval={IMAGE_WIDTH + 16}
+            snapToInterval={ITEM_WIDTH}
             decelerationRate="fast"
+            getItemLayout={getItemLayout}
           />
 
           {/* Navigation Arrows */}
@@ -363,9 +404,8 @@ export function AITransformScreen() {
 
           {/* Generate More Button */}
           <PrimaryButton
-            title={generating ? 'Generating...' : 'Generate Another'}
-            onPress={() => generateTransformation()}
-            loading={generating}
+            title="Generate Another Style"
+            onPress={() => setShowScenarioSelector(true)}
             variant="ghost"
             style={styles.generateMoreButton}
             icon={<Sparkles size={18} color={DarkTheme.colors.primary} />}
@@ -373,7 +413,7 @@ export function AITransformScreen() {
         </>
       )}
 
-      {/* Scenario Selector (shown when generating) */}
+      {/* Generating Overlay */}
       {generating && (
         <View style={styles.generatingOverlay}>
           <LinearGradient
@@ -386,6 +426,94 @@ export function AITransformScreen() {
           <ActivityIndicator size="large" color={DarkTheme.colors.primary} style={{ marginTop: 24 }} />
         </View>
       )}
+
+      {/* Scenario Selector Modal */}
+      <Modal
+        visible={showScenarioSelector}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowScenarioSelector(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop} 
+            activeOpacity={1} 
+            onPress={() => setShowScenarioSelector(false)} 
+          />
+          <View style={styles.scenarioModal}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Choose Your Style</Text>
+            <Text style={styles.modalSubtitle}>Select how you want to see yourself</Text>
+            
+            <ScrollView 
+              style={styles.scenarioList}
+              showsVerticalScrollIndicator={false}
+            >
+              {SCENARIOS.map((scenario) => {
+                const isSelected = selectedScenario === scenario.id;
+                const alreadyGenerated = transformations.some(t => t.scenario === scenario.id);
+                
+                return (
+                  <TouchableOpacity
+                    key={scenario.id}
+                    style={[
+                      styles.scenarioOption,
+                      isSelected && styles.scenarioOptionSelected,
+                      alreadyGenerated && styles.scenarioOptionGenerated,
+                    ]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSelectedScenario(scenario.id);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.scenarioOptionContent}>
+                      <Text style={styles.scenarioEmoji}>{scenario.emoji}</Text>
+                      <View style={styles.scenarioTextContainer}>
+                        <Text style={styles.scenarioOptionName}>{scenario.name}</Text>
+                        {alreadyGenerated && (
+                          <Text style={styles.scenarioGeneratedLabel}>Already generated</Text>
+                        )}
+                      </View>
+                    </View>
+                    {isSelected && (
+                      <View style={styles.scenarioCheckmark}>
+                        <Check size={20} color={DarkTheme.colors.background} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <View style={styles.modalButtons}>
+              <PrimaryButton
+                title="Cancel"
+                onPress={() => {
+                  setShowScenarioSelector(false);
+                  setSelectedScenario(null);
+                }}
+                variant="outline"
+                style={styles.modalButton}
+              />
+              <PrimaryButton
+                title={generating ? 'Generating...' : 'Generate'}
+                onPress={() => {
+                  if (selectedScenario) {
+                    setShowScenarioSelector(false);
+                    generateTransformation(selectedScenario);
+                    setSelectedScenario(null);
+                  }
+                }}
+                loading={generating}
+                disabled={!selectedScenario}
+                style={styles.modalButton}
+                icon={<Sparkles size={18} color={DarkTheme.colors.background} />}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -480,6 +608,18 @@ const styles = StyleSheet.create({
   transformedImage: {
     width: '100%',
     height: '100%',
+    backgroundColor: DarkTheme.colors.surface,
+  },
+  imageErrorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: DarkTheme.colors.surface,
+  },
+  imageErrorText: {
+    marginTop: DarkTheme.spacing.md,
+    color: DarkTheme.colors.textSecondary,
+    fontSize: 14,
+    fontFamily: DarkTheme.typography.fontFamily,
   },
   imageGradient: {
     position: 'absolute',
@@ -563,6 +703,108 @@ const styles = StyleSheet.create({
     color: DarkTheme.colors.textSecondary,
     fontFamily: DarkTheme.typography.fontFamily,
     marginTop: DarkTheme.spacing.xs,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  scenarioModal: {
+    backgroundColor: DarkTheme.colors.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: DarkTheme.spacing.lg,
+    paddingBottom: 40,
+    maxHeight: SCREEN_HEIGHT * 0.7,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: DarkTheme.colors.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: DarkTheme.spacing.md,
+    marginBottom: DarkTheme.spacing.lg,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: DarkTheme.colors.text,
+    fontFamily: DarkTheme.typography.fontFamily,
+    textAlign: 'center',
+    marginBottom: DarkTheme.spacing.xs,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: DarkTheme.colors.textSecondary,
+    fontFamily: DarkTheme.typography.fontFamily,
+    textAlign: 'center',
+    marginBottom: DarkTheme.spacing.lg,
+  },
+  scenarioList: {
+    maxHeight: 300,
+  },
+  scenarioOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: DarkTheme.colors.surface,
+    borderRadius: DarkTheme.borderRadius.lg,
+    padding: DarkTheme.spacing.md,
+    marginBottom: DarkTheme.spacing.sm,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  scenarioOptionSelected: {
+    borderColor: DarkTheme.colors.primary,
+    backgroundColor: 'rgba(212, 175, 55, 0.1)',
+  },
+  scenarioOptionGenerated: {
+    opacity: 0.6,
+  },
+  scenarioOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  scenarioEmoji: {
+    fontSize: 28,
+    marginRight: DarkTheme.spacing.md,
+  },
+  scenarioTextContainer: {
+    flex: 1,
+  },
+  scenarioOptionName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: DarkTheme.colors.text,
+    fontFamily: DarkTheme.typography.fontFamily,
+  },
+  scenarioGeneratedLabel: {
+    fontSize: 12,
+    color: DarkTheme.colors.textTertiary,
+    fontFamily: DarkTheme.typography.fontFamily,
+    marginTop: 2,
+  },
+  scenarioCheckmark: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: DarkTheme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: DarkTheme.spacing.md,
+    marginTop: DarkTheme.spacing.lg,
+  },
+  modalButton: {
+    flex: 1,
   },
 });
 
