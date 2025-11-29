@@ -34,6 +34,7 @@
     "rate-limiter-flexible": "^5.0.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-is": "^19.2.0",
     "recharts": "^3.4.1",
     "resend": "^6.5.0",
     "sharp": "^0.33.5",
