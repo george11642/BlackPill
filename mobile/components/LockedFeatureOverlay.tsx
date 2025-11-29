@@ -1,31 +1,49 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle, TouchableOpacity } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { Lock, Crown } from 'lucide-react-native';
+import { Lock, Crown, X } from 'lucide-react-native';
 import { DarkTheme } from '../lib/theme';
 import { PrimaryButton } from './PrimaryButton';
 import { useNavigation } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
 
 interface LockedFeatureOverlayProps {
   isVisible: boolean;
   title?: string;
   description?: string;
   style?: ViewStyle;
+  showCloseButton?: boolean;
 }
 
 export function LockedFeatureOverlay({ 
   isVisible, 
   title = "Premium Feature", 
   description = "Subscribe to Pro or Elite to unlock this feature.",
-  style 
+  style,
+  showCloseButton = true,
 }: LockedFeatureOverlayProps) {
   const navigation = useNavigation();
 
   if (!isVisible) return null;
 
+  const handleClose = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.goBack();
+  };
+
   return (
     <View style={[styles.container, style]}>
       <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+      
+      {/* Close button */}
+      {showCloseButton && (
+        <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+          <View style={styles.closeButtonInner}>
+            <X size={24} color={DarkTheme.colors.text} />
+          </View>
+        </TouchableOpacity>
+      )}
+      
       <View style={styles.content}>
         <View style={styles.iconContainer}>
           <Crown size={32} color={DarkTheme.colors.primary} fill={DarkTheme.colors.primary} />
@@ -53,6 +71,22 @@ const styles = StyleSheet.create({
     zIndex: 100,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 50,
+    left: 16,
+    zIndex: 10,
+  },
+  closeButtonInner: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: DarkTheme.colors.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: DarkTheme.colors.borderSubtle,
   },
   content: {
     alignItems: 'center',

@@ -52,7 +52,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
-            'Cache-Control': 'no-cache',
           },
         }
       );

@@ -67,6 +67,7 @@ const WELCOME_SLIDES = [
     emoji: '💊',
     description: 'Your AI-powered companion for facial analysis and self-improvement tracking.',
     accentColor: DarkTheme.colors.primary,
+    useCustomIcon: true,
   },
   {
     title: 'AI Analysis',
@@ -74,6 +75,7 @@ const WELCOME_SLIDES = [
     emoji: '🔬',
     description: 'Get detailed facial analysis using advanced AI that evaluates symmetry, proportions, and features.',
     accentColor: '#00FF94',
+    useCustomIcon: false,
   },
   {
     title: 'Track Progress',
@@ -81,6 +83,7 @@ const WELCOME_SLIDES = [
     emoji: '📈',
     description: 'Monitor changes over time, build healthy habits, and achieve your personal goals.',
     accentColor: '#FFB800',
+    useCustomIcon: false,
   },
 ];
 

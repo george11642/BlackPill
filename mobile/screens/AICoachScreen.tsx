@@ -380,6 +380,26 @@ export function AICoachScreen() {
     </View>
   );
 
+  // If user can't chat, show locked screen
+  if (!canChat) {
+    return (
+      <View style={styles.container}>
+        <BackHeader 
+          title="AI Coach"
+          variant="large"
+        />
+        <View style={styles.lockedContainer}>
+          <LockedFeatureOverlay 
+            isVisible={true} 
+            title="AI Coach Locked" 
+            description="Upgrade to Pro or Elite to chat with your personal AI coach."
+            showCloseButton={false}
+          />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -443,14 +463,6 @@ export function AICoachScreen() {
 
         {/* Input area */}
         <View style={styles.inputWrapper}>
-          {!canChat && (
-            <LockedFeatureOverlay 
-              isVisible={true} 
-              title="AI Coach Locked" 
-              description="Upgrade to Pro or Elite to chat with your personal AI coach."
-              style={styles.lockedOverlay} 
-            />
-          )}
           <View style={[styles.inputContainer, !canChat && styles.inputContainerLocked]}>
             <TextInput
               style={styles.input}
@@ -654,38 +666,37 @@ const styles = StyleSheet.create({
   },
   emptyScrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
+    paddingTop: DarkTheme.spacing.md,
   },
   emptyState: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
     paddingHorizontal: DarkTheme.spacing.xl,
-    paddingBottom: 100,
+    paddingBottom: 20,
   },
   emptyIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: DarkTheme.spacing.lg,
+    marginBottom: DarkTheme.spacing.md,
   },
   emptyTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: DarkTheme.colors.text,
     fontFamily: DarkTheme.typography.fontFamily,
-    marginBottom: DarkTheme.spacing.sm,
+    marginBottom: DarkTheme.spacing.xs,
     textAlign: 'center',
   },
   emptySubtitle: {
-    fontSize: 15,
+    fontSize: 14,
     color: DarkTheme.colors.textSecondary,
     fontFamily: DarkTheme.typography.fontFamily,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: DarkTheme.spacing.xl,
+    lineHeight: 20,
+    marginBottom: DarkTheme.spacing.lg,
   },
   quickPromptsTitle: {
     fontSize: 14,
@@ -734,6 +745,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: DarkTheme.colors.borderSubtle,
     backgroundColor: DarkTheme.colors.background,
+    position: 'relative',
+  },
+  lockedContainer: {
+    flex: 1,
     position: 'relative',
   },
   lockedOverlay: {
