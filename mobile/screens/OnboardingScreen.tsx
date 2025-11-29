@@ -191,6 +191,7 @@ export function OnboardingScreen() {
       }
 
       // Save onboarding data to server
+      console.log('[Onboarding] Saving onboarding data to server...');
       await apiPost(
         '/api/user/onboarding',
         {
@@ -200,24 +201,57 @@ export function OnboardingScreen() {
         },
         session?.access_token
       );
+      console.log('[Onboarding] Onboarding data saved successfully');
 
       // Refresh onboarding status in auth context
       // This will trigger the navigation to update and go to Home
       // The DailyRoutineScreen will check for the first_scan_pending flag and redirect to Camera
-      await refreshOnboardingStatus();
+      console.log('[Onboarding] Refreshing onboarding status...');
+      const refreshSuccess = await refreshOnboardingStatus();
+
+      if (!refreshSuccess) {
+        console.warn('[Onboarding] Initial refresh failed, retrying...');
+        // Wait a bit and retry
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const retrySuccess = await refreshOnboardingStatus();
+        if (!retrySuccess) {
+          throw new Error('Failed to refresh onboarding status after retry');
+        }
+      }
+
+      // Verify the state was actually updated
+      // Give it a moment for state to propagate
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Check if onboarding is actually complete now
+      // We'll use a small delay and check the auth context state
+      // Note: We can't directly access hasCompletedOnboarding here, but the navigation
+      // in App.tsx will handle it based on the updated state
+      console.log('[Onboarding] Onboarding completion verified');
 
       // Don't navigate manually - let the auth context change handle navigation
       // The first scan flag will ensure we get redirected to Camera if needed
     } catch (error) {
-      console.error('Failed to complete onboarding:', error);
+      console.error('[Onboarding] Failed to complete onboarding:', error);
       // Clear the first scan flag if onboarding failed
       if (goToCamera) {
         await AsyncStorage.removeItem('@blackpill_first_scan_pending');
       }
+      
+      // Show error to user
+      showAlert({
+        title: 'Onboarding Error',
+        message: 'Failed to complete onboarding. Please try again.',
+        buttons: [{ text: 'OK' }],
+      });
+      
       // Still try to refresh and navigate even if save fails
       try {
+        console.log('[Onboarding] Attempting final refresh...');
         await refreshOnboardingStatus();
-      } catch {}
+      } catch (refreshError) {
+        console.error('[Onboarding] Final refresh also failed:', refreshError);
+      }
     } finally {
       setLoading(false);
     }

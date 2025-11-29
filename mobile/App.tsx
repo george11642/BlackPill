@@ -80,9 +80,11 @@ Sentry.init({
 const Stack = createNativeStackNavigator();
 
 function RootNavigator() {
-  const { user, loading, hasCompletedOnboarding, onboardingLoading } = useAuth();
+  const { user, loading, hasCompletedOnboarding, onboardingLoading, refreshOnboardingStatus } = useAuth();
   const navigationRef = useRef<any>(null);
   const hasCheckedFirstScan = useRef(false);
+  const onboardingCheckAttempts = useRef(0);
+  const lastOnboardingCheck = useRef<number>(0);
 
   // Initialize RevenueCat when user is available
   useEffect(() => {
@@ -90,6 +92,57 @@ function RootNavigator() {
       initializeRevenueCat(user.id);
     }
   }, [user?.id, loading]);
+
+  // Safety check: If we're stuck showing onboarding but user has actually completed it,
+  // force a refresh of the onboarding status
+  useEffect(() => {
+    // Only run safety check if:
+    // - User is logged in
+    // - Not loading
+    // - Onboarding status says not completed
+    // - We haven't checked too recently (avoid infinite loops)
+    if (!user || loading || onboardingLoading || hasCompletedOnboarding) {
+      return;
+    }
+
+    const now = Date.now();
+    const timeSinceLastCheck = now - lastOnboardingCheck.current;
+    
+    // Only check if it's been at least 2 seconds since last check
+    if (timeSinceLastCheck < 2000) {
+      return;
+    }
+
+    // Limit the number of safety checks to prevent infinite loops
+    if (onboardingCheckAttempts.current >= 3) {
+      console.warn('[App] Max onboarding safety checks reached, stopping');
+      return;
+    }
+
+    const performSafetyCheck = async () => {
+      onboardingCheckAttempts.current += 1;
+      lastOnboardingCheck.current = now;
+      
+      console.log(`[App] Performing onboarding safety check (attempt ${onboardingCheckAttempts.current})...`);
+      
+      try {
+        const success = await refreshOnboardingStatus();
+        if (success) {
+          console.log('[App] Safety check: Onboarding status refreshed successfully');
+          // Reset attempts counter on success
+          onboardingCheckAttempts.current = 0;
+        } else {
+          console.warn('[App] Safety check: Failed to refresh onboarding status');
+        }
+      } catch (error) {
+        console.error('[App] Safety check error:', error);
+      }
+    };
+
+    // Delay the safety check slightly to avoid race conditions
+    const timeoutId = setTimeout(performSafetyCheck, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [user, loading, onboardingLoading, hasCompletedOnboarding, refreshOnboardingStatus]);
 
   // Check for first scan pending flag when onboarding completes
   // This handles navigation to Camera before tabs are shown
@@ -125,6 +178,13 @@ function RootNavigator() {
 
     checkFirstScanPending();
   }, [hasCompletedOnboarding, loading, onboardingLoading]);
+
+  // Reset onboarding check attempts when onboarding completes
+  useEffect(() => {
+    if (hasCompletedOnboarding) {
+      onboardingCheckAttempts.current = 0;
+    }
+  }, [hasCompletedOnboarding]);
 
   // Show splash while loading auth or onboarding status
   const isLoading = loading || (user && onboardingLoading);

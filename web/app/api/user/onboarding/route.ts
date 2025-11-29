@@ -40,10 +40,10 @@ export const POST = withAuth(async (request: Request, user) => {
     }
 
     // Handle avatar upload if provided
-    if (avatarUri && avatarUri.startsWith('file://') || avatarUri?.startsWith('blob:')) {
+    if (avatarUri && (avatarUri.startsWith('file://') || avatarUri.startsWith('blob:'))) {
       // Avatar will be uploaded separately via a different endpoint
       // For now, we just note that we need to handle this
-      console.log('[Onboarding] Avatar URI provided, would need separate upload:', avatarUri?.substring(0, 50));
+      console.log('[Onboarding] Avatar URI provided, would need separate upload:', avatarUri.substring(0, 50));
     }
 
     // Update user record
@@ -57,12 +57,35 @@ export const POST = withAuth(async (request: Request, user) => {
       throw updateError;
     }
 
-    console.log(`[Onboarding] Completed for user ${user.id}, goals: ${goals?.join(', ')}`);
+    // Verify the update succeeded by reading back the value
+    const { data: verifyData, error: verifyError } = await supabaseAdmin
+      .from('users')
+      .select('onboarding_completed, onboarding_goals')
+      .eq('id', user.id)
+      .single();
+
+    if (verifyError) {
+      console.error('[Onboarding] Failed to verify update:', verifyError);
+      // Don't throw - the update might have succeeded even if verification fails
+    } else {
+      const isCompleted = verifyData?.onboarding_completed === true;
+      console.log(`[Onboarding] Completed for user ${user.id}:`, {
+        onboarding_completed: isCompleted,
+        verified: isCompleted,
+        goals: goals?.join(', ') || 'none',
+      });
+
+      // If verification shows it's not completed, log a warning
+      if (!isCompleted) {
+        console.warn('[Onboarding] WARNING: Update may not have persisted correctly');
+      }
+    }
 
     return createResponseWithId(
       { 
         success: true,
         message: 'Onboarding completed successfully',
+        onboarding_completed: true,
       },
       { status: 200 },
       requestId
@@ -76,6 +99,7 @@ export const POST = withAuth(async (request: Request, user) => {
 /**
  * GET /api/user/onboarding
  * Check onboarding status
+ * Note: This endpoint should not be cached to ensure fresh data
  */
 export const GET = withAuth(async (request: Request, user) => {
   const requestId = getRequestId(request);
@@ -92,14 +116,28 @@ export const GET = withAuth(async (request: Request, user) => {
       throw error;
     }
 
-    return createResponseWithId(
+    const onboardingCompleted = userData?.onboarding_completed === true;
+    console.log(`[Onboarding] Status check for user ${user.id}:`, {
+      onboarding_completed: onboardingCompleted,
+      rawValue: userData?.onboarding_completed,
+      type: typeof userData?.onboarding_completed,
+    });
+
+    const response = createResponseWithId(
       {
-        onboarding_completed: userData?.onboarding_completed || false,
+        onboarding_completed: onboardingCompleted,
         onboarding_goals: userData?.onboarding_goals || [],
       },
       { status: 200 },
       requestId
     );
+
+    // Add cache-control headers to prevent caching
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+
+    return response;
   } catch (error) {
     console.error('[Onboarding] Error:', error);
     return handleApiError(error, request);

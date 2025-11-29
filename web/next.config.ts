@@ -14,20 +14,28 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Fix lockfiles warning - specify parent directory as the root
-  turbopack: {
-    root: '..',
-  },
   // Serve Expo web app static files from public/app
   async rewrites() {
     return [
+      // Serve Expo static assets - rewrite /_expo/* to /app/_expo/*
       {
-        source: '/app/_expo/:path*',
+        source: '/_expo/:path*',
         destination: '/app/_expo/:path*',
       },
+      // Serve Expo assets folder (if referenced from root)
       {
-        source: '/app/assets/:path*',
+        source: '/assets/:path*',
         destination: '/app/assets/:path*',
+      },
+      // Serve index.html for /app route
+      {
+        source: '/app',
+        destination: '/app/index.html',
+      },
+      // Handle all other /app/* routes (for client-side routing) - serve index.html
+      {
+        source: '/app/:path((?!_expo|assets|index\\.html).*)',
+        destination: '/app/index.html',
       },
     ];
   },

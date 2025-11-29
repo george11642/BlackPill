@@ -213,7 +213,7 @@ export default function HomePage() {
             </div>
             <p className="text-sm text-tertiary">Available now on iOS and Android • 200K+ downloads</p>
             <div className="mt-md">
-              <Link href="/app">
+              <Link href="/dashboard">
                 <Button variant="secondary" size="lg">
                   Try Web App
                 </Button>

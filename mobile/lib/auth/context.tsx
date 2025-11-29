@@ -18,7 +18,7 @@ type AuthContextType = {
   signUp: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
-  refreshOnboardingStatus: () => Promise<void>;
+  refreshOnboardingStatus: () => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -31,7 +31,7 @@ const AuthContext = createContext<AuthContextType>({
   signUp: async () => {},
   signInWithGoogle: async () => {},
   signOut: async () => {},
-  refreshOnboardingStatus: async () => {},
+  refreshOnboardingStatus: async () => false,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -42,38 +42,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [onboardingLoading, setOnboardingLoading] = useState(true);
 
   // Fetch onboarding status when session changes
-  const fetchOnboardingStatus = async (accessToken: string) => {
+  const fetchOnboardingStatus = async (accessToken: string, retryCount = 0): Promise<boolean> => {
     try {
       setOnboardingLoading(true);
+      // Add cache-busting query parameter to ensure fresh data
+      const cacheBuster = `?t=${Date.now()}`;
       const response = await fetch(
-        `${process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000'}/api/user/onboarding`,
+        `${process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000'}/api/user/onboarding${cacheBuster}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
+            'Cache-Control': 'no-cache',
           },
         }
       );
       
       if (response.ok) {
         const data = await response.json();
-        setHasCompletedOnboarding(data.onboarding_completed || false);
-        console.log('[Auth] Onboarding status:', data.onboarding_completed);
+        const completed = data.onboarding_completed === true;
+        setHasCompletedOnboarding(completed);
+        console.log('[Auth] Onboarding status fetched:', {
+          completed,
+          rawValue: data.onboarding_completed,
+          type: typeof data.onboarding_completed,
+        });
+        return true;
       } else {
-        // If we can't fetch, assume not completed for new users
-        setHasCompletedOnboarding(false);
+        const errorText = await response.text();
+        console.error('[Auth] Failed to fetch onboarding status:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText,
+        });
+        // Only set to false if this is not a retry (to avoid overwriting valid state)
+        if (retryCount === 0) {
+          setHasCompletedOnboarding(false);
+        }
+        return false;
       }
     } catch (error) {
       console.error('[Auth] Failed to fetch onboarding status:', error);
-      setHasCompletedOnboarding(false);
+      // Only set to false if this is not a retry
+      if (retryCount === 0) {
+        setHasCompletedOnboarding(false);
+      }
+      return false;
     } finally {
       setOnboardingLoading(false);
     }
   };
 
-  const refreshOnboardingStatus = async () => {
-    if (session?.access_token) {
-      await fetchOnboardingStatus(session.access_token);
+  const refreshOnboardingStatus = async (): Promise<boolean> => {
+    if (!session?.access_token) {
+      console.warn('[Auth] Cannot refresh onboarding status: no access token');
+      return false;
     }
+
+    // Try fetching with retry logic
+    let success = false;
+    const maxRetries = 2;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      console.log(`[Auth] Refreshing onboarding status (attempt ${attempt + 1}/${maxRetries + 1})...`);
+      success = await fetchOnboardingStatus(session.access_token, attempt);
+      
+      if (success) {
+        // Verify the state was actually updated
+        // We need to check after a brief delay to ensure state has propagated
+        await new Promise(resolve => setTimeout(resolve, 100));
+        console.log('[Auth] Onboarding status refresh successful');
+        return true;
+      }
+      
+      // Wait before retrying (exponential backoff)
+      if (attempt < maxRetries) {
+        const delay = Math.min(500 * Math.pow(2, attempt), 2000);
+        console.log(`[Auth] Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+    
+    console.error('[Auth] Failed to refresh onboarding status after all retries');
+    return false;
   };
 
   useEffect(() => {
