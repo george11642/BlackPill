@@ -3,6 +3,11 @@
   "compilerOptions": {
     "strict": true,
     "skipLibCheck": true,
+    "jsx": "react-native",
+    "lib": ["ES2020"],
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]

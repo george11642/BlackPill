@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import sharp from 'sharp';
 import { supabaseAdmin } from '@/lib/supabase/client';
 

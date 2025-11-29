@@ -239,14 +239,14 @@ export function DailyRoutineScreen() {
   const toggleTask = async (taskId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    const task = tasks.find(t => t.id === taskId);
+    const task = tasks.find((t: RoutineTask) => t.id === taskId);
     if (!task) return;
     
     const newCompleted = !task.completed;
     
     // Optimistic update
-    setTasks(prev =>
-      prev.map(t =>
+    setTasks((prev: RoutineTask[]) =>
+      prev.map((t: RoutineTask) =>
         t.id === taskId ? { ...t, completed: newCompleted } : t
       )
     );
@@ -265,22 +265,22 @@ export function DailyRoutineScreen() {
       
       // Update streak if completing a task
       if (newCompleted) {
-        setStats(prev => ({
+        setStats((prev: UserStats) => ({
           ...prev,
           streak: prev.streak + (prev.streak === 0 ? 1 : 0), // Only increment if starting new streak
         }));
         
         // Move task to completed section after brief delay to show completion animation
         setTimeout(() => {
-          setTasks(prev => prev.filter(t => t.id !== taskId));
-          setCompletedTasks(prev => [...prev, { ...task, completed: true }]);
+          setTasks((prev: RoutineTask[]) => prev.filter((t: RoutineTask) => t.id !== taskId));
+          setCompletedTasks((prev: RoutineTask[]) => [...prev, { ...task, completed: true }]);
         }, 600); // Let animation play
       }
     } catch (error) {
       console.error('Failed to toggle task:', error);
       // Revert on error
-      setTasks(prev =>
-        prev.map(t =>
+      setTasks((prev: RoutineTask[]) =>
+        prev.map((t: RoutineTask) =>
           t.id === taskId ? { ...t, completed: !newCompleted } : t
         )
       );
@@ -290,12 +290,12 @@ export function DailyRoutineScreen() {
   const undoTask = async (taskId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
-    const task = completedTasks.find(t => t.id === taskId);
+    const task = completedTasks.find((t: RoutineTask) => t.id === taskId);
     if (!task) return;
     
     // Optimistic update - move back to active tasks
-    setCompletedTasks(prev => prev.filter(t => t.id !== taskId));
-    setTasks(prev => [...prev, { ...task, completed: false }]);
+    setCompletedTasks((prev: RoutineTask[]) => prev.filter((t: RoutineTask) => t.id !== taskId));
+    setTasks((prev: RoutineTask[]) => [...prev, { ...task, completed: false }]);
 
     try {
       // Sync with API - mark as not completed
@@ -312,8 +312,8 @@ export function DailyRoutineScreen() {
     } catch (error) {
       console.error('Failed to undo task:', error);
       // Revert on error
-      setTasks(prev => prev.filter(t => t.id !== taskId));
-      setCompletedTasks(prev => [...prev, { ...task, completed: true }]);
+      setTasks((prev: RoutineTask[]) => prev.filter((t: RoutineTask) => t.id !== taskId));
+      setCompletedTasks((prev: RoutineTask[]) => [...prev, { ...task, completed: true }]);
     }
   };
 
@@ -502,7 +502,7 @@ export function DailyRoutineScreen() {
               const isActive = taskFilter === filter;
               const count = filter === 'all' 
                 ? tasks.length 
-                : tasks.filter(t => {
+                : tasks.filter((t: RoutineTask) => {
                     if (filter === 'daily') {
                       return !t.frequency || t.frequency === 'daily' || t.frequency === 'every_other_day';
                     }
@@ -583,7 +583,7 @@ export function DailyRoutineScreen() {
         {tasks.length > 0 ? (
           <View style={styles.tasksContainer}>
             {tasks
-              .filter(task => {
+              .filter((task: RoutineTask) => {
                 if (taskFilter === 'all') return true;
                 if (taskFilter === 'daily') {
                   return !task.frequency || task.frequency === 'daily' || task.frequency === 'every_other_day';
@@ -596,7 +596,7 @@ export function DailyRoutineScreen() {
                 }
                 return true;
               })
-              .map((task, index) => (
+              .map((task: RoutineTask, index: number) => (
                 <TaskCard
                   key={task.id}
                   task={task}

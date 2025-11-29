@@ -154,9 +154,9 @@ export function CreateRoutineScreen() {
 
   const toggleFocusArea = (areaId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedFocusAreas(prev => {
+    setSelectedFocusAreas((prev: string[]) => {
       if (prev.includes(areaId)) {
-        return prev.filter(id => id !== areaId);
+        return prev.filter((id: string) => id !== areaId);
       }
       return [...prev, areaId];
     });
@@ -186,11 +186,11 @@ export function CreateRoutineScreen() {
 
   const toggleDay = (dayId: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedDays(prev => {
+    setSelectedDays((prev: number[]) => {
       if (prev.includes(dayId)) {
         // Don't allow removing the last day
         if (prev.length === 1) return prev;
-        return prev.filter(d => d !== dayId);
+        return prev.filter((d: number) => d !== dayId);
       }
       return [...prev, dayId].sort();
     });
@@ -248,9 +248,9 @@ export function CreateRoutineScreen() {
   const getWeakAreas = () => {
     if (!latestAnalysis?.breakdown) return [];
     return Object.entries(latestAnalysis.breakdown)
-      .filter(([, score]) => score < 7.0)
-      .sort((a, b) => a[1] - b[1])
-      .map(([area, score]) => ({ area, score }));
+      .filter(([, score]) => (score as number) < 7.0)
+      .sort((a, b) => (a[1] as number) - (b[1] as number))
+      .map(([area, score]) => ({ area, score: score as number }));
   };
 
   if (loading) {

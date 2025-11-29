@@ -86,7 +86,7 @@ export function SubscriptionScreen() {
     // Map selected tier to RevenueCat package
     // Assuming identifiers like 'pro_monthly', 'pro_yearly', 'elite_monthly', 'elite_yearly'
     const identifier = `${selectedTier}_${billingInterval}`;
-    const pkg = offerings.availablePackages.find(p => 
+    const pkg = offerings.availablePackages.find((p: PurchasesPackage) => 
       p.identifier.toLowerCase().includes(identifier)
     );
 
@@ -145,7 +145,7 @@ export function SubscriptionScreen() {
 
   const getPriceString = (tier: 'pro' | 'elite') => {
     const identifier = `${tier}_${billingInterval}`;
-    const pkg = offerings?.availablePackages.find(p => 
+    const pkg = offerings?.availablePackages.find((p: PurchasesPackage) => 
       p.identifier.toLowerCase().includes(identifier)
     );
     

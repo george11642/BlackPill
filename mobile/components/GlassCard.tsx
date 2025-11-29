@@ -10,7 +10,7 @@ import Animated, {
 import { DarkTheme } from '../lib/theme';
 
 interface GlassCardProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   style?: ViewStyle;
   variant?: 'default' | 'elevated' | 'gold' | 'subtle';
   onPress?: () => void;
