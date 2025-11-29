@@ -356,27 +356,34 @@ export function OnboardingScreen() {
               Please read and acknowledge the following
             </Text>
 
-            <GlassCard style={styles.disclaimerCard}>
-              <Text style={styles.disclaimerTitle}>Medical Disclaimer</Text>
-              <ScrollView style={styles.disclaimerScroll} showsVerticalScrollIndicator={false}>
-                <Text style={styles.disclaimerText}>
-                  Black Pill provides AI-powered attractiveness analysis for
-                  informational and entertainment purposes only.
-                  {'\n\n'}
-                  This app is NOT a substitute for professional medical,
-                  psychological, or cosmetic advice. Results are based on AI
-                  analysis and should not be considered definitive assessments
-                  of attractiveness or self-worth.
-                  {'\n\n'}
-                  Your worth as a person is not determined by any score or
-                  analysis. If you experience negative emotional impacts from
-                  using this app, please seek professional support.
-                  {'\n\n'}
-                  By continuing, you acknowledge that you are 18 years or older
-                  and understand these limitations.
-                </Text>
-              </ScrollView>
-            </GlassCard>
+            <View style={styles.disclaimerCard}>
+              <View style={styles.disclaimerInner}>
+                <Text style={styles.disclaimerTitle}>Medical Disclaimer</Text>
+                <ScrollView 
+                  style={styles.disclaimerScroll} 
+                  contentContainerStyle={styles.disclaimerScrollContent}
+                  showsVerticalScrollIndicator={true}
+                  nestedScrollEnabled={true}
+                >
+                  <Text style={styles.disclaimerText}>
+                    Black Pill provides AI-powered attractiveness analysis for
+                    informational and entertainment purposes only.
+                    {'\n\n'}
+                    This app is NOT a substitute for professional medical,
+                    psychological, or cosmetic advice. Results are based on AI
+                    analysis and should not be considered definitive assessments
+                    of attractiveness or self-worth.
+                    {'\n\n'}
+                    Your worth as a person is not determined by any score or
+                    analysis. If you experience negative emotional impacts from
+                    using this app, please seek professional support.
+                    {'\n\n'}
+                    By continuing, you acknowledge that you are 18 years or older
+                    and understand these limitations.
+                  </Text>
+                </ScrollView>
+              </View>
+            </View>
 
             <TouchableOpacity
               style={styles.checkboxRow}
@@ -672,9 +679,17 @@ const styles = StyleSheet.create({
   },
   // Disclaimer styles
   disclaimerCard: {
-    flex: 1,
-    maxHeight: 300,
+    height: 280,
     marginBottom: DarkTheme.spacing.lg,
+    backgroundColor: DarkTheme.colors.card,
+    borderRadius: DarkTheme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: DarkTheme.colors.borderSubtle,
+    overflow: 'hidden',
+  },
+  disclaimerInner: {
+    flex: 1,
+    padding: DarkTheme.spacing.md,
   },
   disclaimerTitle: {
     fontSize: 18,
@@ -685,6 +700,9 @@ const styles = StyleSheet.create({
   },
   disclaimerScroll: {
     flex: 1,
+  },
+  disclaimerScrollContent: {
+    paddingBottom: DarkTheme.spacing.sm,
   },
   disclaimerText: {
     fontSize: 14,
