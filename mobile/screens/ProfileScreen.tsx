@@ -48,7 +48,7 @@ interface UserStats {
   streak: number;
   weeklyStreak?: number;
   monthlyStreak?: number;
-  scansRemaining: number;
+  scansRemaining: number | undefined;
   tier: string;
   avatarUrl?: string;
   latestAnalysisImage?: string;
@@ -82,7 +82,7 @@ export function ProfileScreen() {
     streak: 0,
     weeklyStreak: 0,
     monthlyStreak: 0,
-    scansRemaining: 0,
+    scansRemaining: undefined,
     tier: 'free',
     avatarUrl: undefined,
     latestAnalysisImage: undefined,
@@ -129,6 +129,8 @@ export function ProfileScreen() {
       startAnimations();
     } catch (error) {
       console.error('Failed to load user stats:', error);
+      // Keep previous stats on error, but ensure scansRemaining is handled
+      // If this is the first load and stats are still undefined, leave it as undefined
       startAnimations();
     } finally {
       setLoading(false);
@@ -356,7 +358,9 @@ export function ProfileScreen() {
           <View style={styles.scansContent}>
             <View>
               <Text style={styles.scansLabel}>Scans Remaining</Text>
-              <Text style={styles.scansValue}>{stats.scansRemaining}</Text>
+              <Text style={styles.scansValue}>
+                {stats.scansRemaining !== undefined ? stats.scansRemaining : '—'}
+              </Text>
             </View>
             {currentTier === 'free' && (
               <PrimaryButton
