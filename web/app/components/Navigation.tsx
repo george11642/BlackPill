@@ -114,6 +114,20 @@ export const Navigation: React.FC = () => {
               Affiliates
             </Link>
             <Link 
+              href="/support" 
+              style={{ 
+                color: '#B8BACC', 
+                textDecoration: 'none', 
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                transition: 'color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#B8BACC'}
+            >
+              Support
+            </Link>
+            <Link 
               href="/dashboard"
               style={{
                 background: 'linear-gradient(135deg, #FF0080 0%, #00D9FF 100%)',
@@ -197,6 +211,13 @@ export const Navigation: React.FC = () => {
                 onClick={() => setIsOpen(false)}
               >
                 Affiliates
+              </Link>
+              <Link 
+                href="/support" 
+                style={{ color: '#B8BACC', textDecoration: 'none', padding: '0.5rem 0' }}
+                onClick={() => setIsOpen(false)}
+              >
+                Support
               </Link>
               <Link 
                 href="/dashboard"
