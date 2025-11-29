@@ -3,7 +3,7 @@
   "framework": "nextjs",
   "buildCommand": "cd mobile && npm install --legacy-peer-deps && cd ../web && npm install --legacy-peer-deps && npm run build",
   "outputDirectory": "web/.next",
-  "installCommand": "echo 'Dependencies installed in buildCommand'",
+  "installCommand": "npm install --legacy-peer-deps",
   "crons": []
 }
 
