@@ -36,6 +36,7 @@ import { BellCurve } from '../components/BellCurve';
 import { BackHeader } from '../components/BackHeader';
 import { RoutineSuggestionCard } from '../components/RoutineSuggestionCard';
 import { BlurredContent } from '../components/BlurredContent';
+import { GuidedTour, hasTourBeenCompleted } from '../components/GuidedTour';
 import { DarkTheme, getScoreColor } from '../lib/theme';
 import { fetchRoutineSuggestion, type RoutineSuggestion } from '../lib/routines/routineSuggestionEngine';
 import { showAlert } from '../lib/utils/alert';
@@ -116,6 +117,10 @@ export function AnalysisResultScreen() {
   // Unblur state
   const [isUnblurred, setIsUnblurred] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
+  
+  // Guided tour state
+  const [showTour, setShowTour] = useState(false);
+  const [isFirstAnalysis, setIsFirstAnalysis] = useState(false);
 
   const confettiRef = useRef<any>(null);
 
@@ -129,7 +134,35 @@ export function AnalysisResultScreen() {
   useEffect(() => {
     loadAnalysis();
     checkUnblurStatus();
+    checkIfFirstAnalysisAndShowTour();
   }, []);
+
+  const checkIfFirstAnalysisAndShowTour = async () => {
+    try {
+      // Check if tour has already been completed
+      const tourCompleted = await hasTourBeenCompleted();
+      if (tourCompleted) {
+        return;
+      }
+
+      // Check if this is the user's first analysis by fetching history count
+      const historyData = await apiGet<{ analyses: any[] }>(
+        '/api/analyses?limit=2',
+        session?.access_token
+      );
+
+      // If there's only 1 analysis (the current one), it's their first
+      if (historyData.analyses && historyData.analyses.length <= 1) {
+        setIsFirstAnalysis(true);
+        // Show tour after a delay to let animations complete
+        setTimeout(() => {
+          setShowTour(true);
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Failed to check first analysis status:', error);
+    }
+  };
 
   const checkUnblurStatus = () => {
     // Logic to determine if this specific analysis is already unblurred
@@ -805,6 +838,12 @@ export function AnalysisResultScreen() {
         visible={showUsernameModal}
         onClose={() => setShowUsernameModal(false)}
         onSubmit={handleSetUsername}
+      />
+
+      {/* Guided Tour - shows after first analysis */}
+      <GuidedTour
+        visible={showTour}
+        onComplete={() => setShowTour(false)}
       />
     </View>
   );

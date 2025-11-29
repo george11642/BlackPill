@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { showAlert } from '../lib/utils/alert';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
@@ -96,10 +96,13 @@ export function ProfileScreen() {
   const headerOpacity = useSharedValue(0);
   const contentOpacity = useSharedValue(0);
 
-  useEffect(() => {
-    loadUserStats();
-    loadAchievements();
-  }, []);
+  // Reload data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadUserStats();
+      loadAchievements();
+    }, [])
+  );
 
   const loadUserStats = async () => {
     try {
@@ -152,10 +155,10 @@ export function ProfileScreen() {
 
   const handleSignOut = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
+    showAlert({
+      title: 'Sign Out',
+      message: 'Are you sure you want to sign out?',
+      buttons: [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Sign Out',
@@ -164,8 +167,8 @@ export function ProfileScreen() {
             await signOut();
           },
         },
-      ]
-    );
+      ],
+    });
   };
 
   const headerAnimatedStyle = useAnimatedStyle(() => ({
@@ -190,6 +193,13 @@ export function ProfileScreen() {
       sublabel: currentTier === 'free' ? 'Upgrade to Pro' : `${getTierDisplayName(currentTier)} Plan`,
       onPress: () => navigation.navigate('Subscription' as never),
       highlight: currentTier === 'free',
+    },
+    {
+      icon: Sparkles,
+      label: 'See Yourself as a 10/10',
+      sublabel: 'Visualize your potential',
+      onPress: () => navigation.navigate('AITransform' as never),
+      highlight: true,
     },
     ...(currentTier !== 'free' ? [{
       icon: DollarSign,

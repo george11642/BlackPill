@@ -36,7 +36,7 @@ const tiers: SubscriptionTier[] = [
   {
     tier: 'pro',
     name: 'Pro',
-    monthlyPrice: '$9.99',
+    monthlyPrice: '$12.99',
     annualPrice: '$119.99',
     monthlyScans: '20 scans/month',
     annualScans: '20 scans/month',

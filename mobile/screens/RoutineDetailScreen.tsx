@@ -8,9 +8,10 @@ import {
   Linking,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { Star, AlertTriangle, ShoppingBag, Users } from 'lucide-react-native';
+import { Star, AlertTriangle, ShoppingBag, Users, Lock } from 'lucide-react-native';
 import { apiGet, apiPost } from '../lib/api/client';
 import { useAuth } from '../lib/auth/context';
+import { useSubscription } from '../lib/subscription/context';
 import { GlassCard } from '../components/GlassCard';
 import { BackHeader } from '../components/BackHeader';
 import { Routine, RoutineTask } from '../lib/types';
@@ -67,10 +68,14 @@ export function RoutineDetailScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const { session } = useAuth();
+  const { tier } = useSubscription();
   const { routineId } = route.params as { routineId?: string };
   const [routine, setRoutine] = useState<Routine | null>(null);
   const [loading, setLoading] = useState(true);
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+  
+  // Free users can only see first task in each group
+  const isFreeUser = tier === 'free';
 
   useEffect(() => {
     if (routineId) {
@@ -147,18 +152,23 @@ export function RoutineDetailScreen() {
   const otcTasks = routine.tasks.filter(t => t.tier === 'OTC');
   const proTasks = routine.tasks.filter(t => t.tier === 'Professional');
 
-  const renderTaskGroup = (title: string, tier: string, tasks: RoutineTask[], description?: string) => {
+  const renderTaskGroup = (title: string, tierType: string, tasks: RoutineTask[], description?: string) => {
     if (tasks.length === 0) return null;
+    
+    // Free users only see first task unblurred
+    const visibleTasks = isFreeUser ? tasks.slice(0, 1) : tasks;
+    const blurredTasks = isFreeUser ? tasks.slice(1) : [];
     
     return (
       <View style={styles.groupContainer}>
         <View style={styles.groupHeader}>
-          <Text style={styles.groupTitle}>{getTierEmoji(tier)} {title}</Text>
-          {tier === 'Professional' && <View style={styles.warningBadge}><Text style={styles.warningBadgeText}>⚠️ Professional</Text></View>}
+          <Text style={styles.groupTitle}>{getTierEmoji(tierType)} {title}</Text>
+          {tierType === 'Professional' && <View style={styles.warningBadge}><Text style={styles.warningBadgeText}>⚠️ Professional</Text></View>}
         </View>
         {description && <Text style={styles.groupDescription}>{description}</Text>}
         <GlassCard style={styles.card}>
-          {tasks.map((task, index) => {
+          {/* Visible tasks */}
+          {visibleTasks.map((task, index) => {
             const isExpanded = expandedTasks.has(task.id);
             return (
               <View key={task.id}>
@@ -214,7 +224,7 @@ export function RoutineDetailScreen() {
                         <Text style={styles.scienceText}>{task.scienceBacking}</Text>
                       </View>
                     )}
-                    {tier === 'OTC' && (
+                    {tierType === 'OTC' && (
                       <TouchableOpacity 
                         style={styles.shopButton}
                         onPress={() => {
@@ -230,13 +240,13 @@ export function RoutineDetailScreen() {
                         <Text style={styles.shopButtonText}>Shop Product</Text>
                       </TouchableOpacity>
                     )}
-                    {task.professionalWarning && tier === 'Professional' && (
+                    {task.professionalWarning && tierType === 'Professional' && (
                       <View style={styles.warningSection}>
                         <AlertTriangle size={16} color={DarkTheme.colors.warning} />
                         <Text style={styles.warningText}>{task.professionalWarning}</Text>
                       </View>
                     )}
-                    {tier === 'Professional' && (
+                    {tierType === 'Professional' && (
                       <TouchableOpacity 
                         style={styles.findProButton}
                         onPress={() => Linking.openURL('https://www.dermatology.org')} // Placeholder link
@@ -250,6 +260,37 @@ export function RoutineDetailScreen() {
               </View>
             );
           })}
+          
+          {/* Blurred tasks for free users */}
+          {blurredTasks.length > 0 && (
+            <View style={styles.blurredSection}>
+              <View style={styles.blurredContent}>
+                {blurredTasks.map((task, index) => (
+                  <View key={task.id} style={[styles.blurredTask, index > 0 && styles.taskBorder]}>
+                    <View style={styles.taskCheckbox}>
+                      <View style={styles.blurredCheckbox} />
+                    </View>
+                    <View style={styles.taskContent}>
+                      <View style={styles.blurredTextLine} />
+                      <View style={[styles.blurredTextLine, styles.blurredTextLineShort]} />
+                    </View>
+                  </View>
+                ))}
+              </View>
+              <View style={styles.blurOverlay}>
+                <View style={styles.upgradePrompt}>
+                  <Lock size={20} color={DarkTheme.colors.primary} />
+                  <Text style={styles.upgradeText}>+{blurredTasks.length} more steps</Text>
+                  <TouchableOpacity 
+                    style={styles.upgradeButton}
+                    onPress={() => navigation.navigate('Subscription' as never)}
+                  >
+                    <Text style={styles.upgradeButtonText}>Upgrade to Unlock</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
         </GlassCard>
       </View>
     );
@@ -495,5 +536,73 @@ const styles = StyleSheet.create({
     fontFamily: DarkTheme.typography.fontFamily,
     textAlign: 'center',
     marginTop: DarkTheme.spacing.xl,
+  },
+  // Blurred section styles
+  blurredSection: {
+    position: 'relative',
+    marginTop: DarkTheme.spacing.sm,
+    paddingTop: DarkTheme.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: DarkTheme.colors.borderSubtle,
+  },
+  blurredContent: {
+    opacity: 0.3,
+  },
+  blurredTask: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: DarkTheme.spacing.sm,
+    paddingRight: 8,
+  },
+  blurredCheckbox: {
+    width: 16,
+    height: 16,
+    borderRadius: 3,
+    backgroundColor: DarkTheme.colors.borderSubtle,
+  },
+  blurredTextLine: {
+    height: 12,
+    backgroundColor: DarkTheme.colors.borderSubtle,
+    borderRadius: 4,
+    marginBottom: 6,
+    width: '100%',
+  },
+  blurredTextLineShort: {
+    width: '60%',
+  },
+  blurOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(10, 10, 10, 0.7)',
+    borderRadius: 8,
+  },
+  upgradePrompt: {
+    alignItems: 'center',
+    padding: DarkTheme.spacing.md,
+  },
+  upgradeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: DarkTheme.colors.text,
+    fontFamily: DarkTheme.typography.fontFamily,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  upgradeButton: {
+    backgroundColor: DarkTheme.colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  upgradeButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: DarkTheme.colors.background,
+    fontFamily: DarkTheme.typography.fontFamily,
   },
 });

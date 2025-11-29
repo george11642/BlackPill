@@ -103,7 +103,7 @@ export default function HomePage() {
     },
     {
       tier: 'Pro',
-      price: '$9.99',
+      price: '$12.99',
       interval: '/month',
       yearlyPrice: '$119.99/year',
       scans: '20 scans/month',

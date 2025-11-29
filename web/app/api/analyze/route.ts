@@ -261,15 +261,21 @@ export const POST = withAuth(async (request: Request, user) => {
       .eq('user_id', user.id);
 
     const isFirstScan = (analysisCount || 0) === 1;
+    console.log(`[Analyze] User ${user.id} - analysisCount: ${analysisCount}, isFirstScan: ${isFirstScan}`);
 
-    // Check and unlock achievements (fire and forget - don't block response)
-    Promise.all([
-      checkAnalysisAchievements(user.id, analysis.score, isFirstScan),
-      checkImprovementAchievements(user.id, analysis.score),
-    ]).catch((error) => {
-      console.error('Error checking achievements:', error);
+    // Check and unlock achievements - await to ensure they complete
+    let unlockedAchievements: Array<{ key: string; name: string; emoji: string; description: string }> = [];
+    try {
+      const [analysisAchievements] = await Promise.all([
+        checkAnalysisAchievements(user.id, analysis.score, isFirstScan),
+        checkImprovementAchievements(user.id, analysis.score),
+      ]);
+      unlockedAchievements = analysisAchievements || [];
+      console.log('[Analyze] Achievement checks completed successfully, unlocked:', unlockedAchievements.length);
+    } catch (error) {
+      console.error('[Analyze] Error checking achievements:', error);
       // Don't throw - achievements are non-critical
-    });
+    }
 
     // Update goals based on analysis (fire and forget - don't block response)
     const goalUpdatePromise = updateGoalsFromAnalysis(
@@ -296,6 +302,7 @@ export const POST = withAuth(async (request: Request, user) => {
         goals_updated: goalUpdateResult.updatedGoals.length > 0,
         completed_milestones: goalUpdateResult.completedMilestones,
         completed_goals: goalUpdateResult.updatedGoals.filter(g => g.goal_completed).map(g => g.id),
+        unlocked_achievements: unlockedAchievements,
       },
       { 
         status: 200,

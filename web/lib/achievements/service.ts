@@ -1,5 +1,11 @@
 import { supabaseServer as supabaseAdmin } from '@/lib/supabase/server';
 
+// Log warning if supabase client may not be properly configured
+if (process.env.NODE_ENV === 'development') {
+  const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+  console.log(`[Achievements] Service role key configured: ${hasServiceKey}`);
+}
+
 /**
  * Achievement definitions with descriptions
  */
@@ -178,20 +184,29 @@ export async function unlockAchievement(
   userId: string,
   achievementKey: AchievementKey
 ): Promise<{ unlocked: boolean; alreadyUnlocked: boolean }> {
+  console.log(`[Achievements] Attempting to unlock ${achievementKey} for user ${userId}`);
+  
   try {
     // Check if already unlocked
-    const { data: existing } = await supabaseAdmin
+    const { data: existing, error: checkError } = await supabaseAdmin
       .from('user_achievements')
       .select('id')
       .eq('user_id', userId)
       .eq('achievement_key', achievementKey)
       .maybeSingle();
 
+    if (checkError) {
+      console.error(`[Achievements] Error checking existing achievement ${achievementKey}:`, checkError);
+      return { unlocked: false, alreadyUnlocked: false };
+    }
+
     if (existing) {
+      console.log(`[Achievements] Achievement ${achievementKey} already unlocked for user ${userId}`);
       return { unlocked: false, alreadyUnlocked: true };
     }
 
     // Unlock achievement
+    console.log(`[Achievements] Inserting new achievement ${achievementKey} for user ${userId}`);
     const { error } = await supabaseAdmin
       .from('user_achievements')
       .insert({
@@ -202,14 +217,14 @@ export async function unlockAchievement(
       });
 
     if (error) {
-      console.error(`Failed to unlock achievement ${achievementKey} for user ${userId}:`, error);
+      console.error(`[Achievements] Failed to insert achievement ${achievementKey} for user ${userId}:`, error);
       return { unlocked: false, alreadyUnlocked: false };
     }
 
-    console.log(`✅ Unlocked achievement: ${achievementKey} for user ${userId}`);
+    console.log(`[Achievements] ✅ Successfully unlocked: ${achievementKey} for user ${userId}`);
     return { unlocked: true, alreadyUnlocked: false };
   } catch (error) {
-    console.error(`Error unlocking achievement ${achievementKey}:`, error);
+    console.error(`[Achievements] Exception unlocking ${achievementKey}:`, error);
     return { unlocked: false, alreadyUnlocked: false };
   }
 }
@@ -217,29 +232,64 @@ export async function unlockAchievement(
 /**
  * Check and unlock analysis-related achievements
  */
+export interface UnlockedAchievement {
+  key: string;
+  name: string;
+  emoji: string;
+  description: string;
+}
+
 export async function checkAnalysisAchievements(
   userId: string,
   score: number,
   isFirstScan: boolean
-): Promise<void> {
+): Promise<UnlockedAchievement[]> {
+  console.log(`[Achievements] Checking analysis achievements for user ${userId}, score: ${score}, isFirstScan: ${isFirstScan}`);
+  
+  const unlocked: UnlockedAchievement[] = [];
+  
   // First scan achievement
   if (isFirstScan) {
-    await unlockAchievement(userId, 'first_scan');
+    console.log(`[Achievements] User ${userId} completed first scan, unlocking first_scan achievement`);
+    const result = await unlockAchievement(userId, 'first_scan');
+    if (result.unlocked) {
+      const def = ACHIEVEMENT_DEFINITIONS.first_scan;
+      unlocked.push({ key: 'first_scan', name: def.name, emoji: def.emoji, description: def.description });
+    }
   }
 
   // Score-based achievements
   if (score >= 7.0) {
-    await unlockAchievement(userId, 'score_7_plus');
+    const result = await unlockAchievement(userId, 'score_7_plus');
+    if (result.unlocked) {
+      const def = ACHIEVEMENT_DEFINITIONS.score_7_plus;
+      unlocked.push({ key: 'score_7_plus', name: def.name, emoji: def.emoji, description: def.description });
+    }
   }
   if (score >= 8.0) {
-    await unlockAchievement(userId, 'score_8_plus');
+    const result = await unlockAchievement(userId, 'score_8_plus');
+    if (result.unlocked) {
+      const def = ACHIEVEMENT_DEFINITIONS.score_8_plus;
+      unlocked.push({ key: 'score_8_plus', name: def.name, emoji: def.emoji, description: def.description });
+    }
   }
   if (score >= 9.0) {
-    await unlockAchievement(userId, 'score_9_plus');
+    const result = await unlockAchievement(userId, 'score_9_plus');
+    if (result.unlocked) {
+      const def = ACHIEVEMENT_DEFINITIONS.score_9_plus;
+      unlocked.push({ key: 'score_9_plus', name: def.name, emoji: def.emoji, description: def.description });
+    }
   }
   if (score >= 10.0) {
-    await unlockAchievement(userId, 'perfect_10');
+    const result = await unlockAchievement(userId, 'perfect_10');
+    if (result.unlocked) {
+      const def = ACHIEVEMENT_DEFINITIONS.perfect_10;
+      unlocked.push({ key: 'perfect_10', name: def.name, emoji: def.emoji, description: def.description });
+    }
   }
+  
+  console.log(`[Achievements] Finished checking analysis achievements for user ${userId}, unlocked: ${unlocked.length}`);
+  return unlocked;
 }
 
 /**

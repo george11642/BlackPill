@@ -98,7 +98,7 @@ export async function POST(request: Request) {
       // Rate limiting based on tier
       const limits: { [key: string]: number } = {
         free: 0,      // No AI generation for free users
-        pro: 10,      // 10 generations per month
+        pro: 0,       // Exclusive to Elite users
         elite: 50,    // 50 generations per month
       };
 

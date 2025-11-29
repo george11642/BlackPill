@@ -23,7 +23,9 @@
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleURLTypes": [
           {
-            "CFBundleURLSchemes": ["blackpill"]
+            "CFBundleURLSchemes": [
+              "blackpill"
+            ]
           }
         ]
       }
@@ -37,7 +39,8 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ],
       "intentFilters": [
         {
@@ -48,7 +51,10 @@
               "scheme": "blackpill"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -84,8 +90,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": ""
+        "projectId": "44e23637-a48c-478e-8017-a7bdbffc2231"
       }
-    }
+    },
+    "owner": "smilescore"
   }
 }

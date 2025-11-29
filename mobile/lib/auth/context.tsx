@@ -12,26 +12,69 @@ type AuthContextType = {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  hasCompletedOnboarding: boolean;
+  onboardingLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  refreshOnboardingStatus: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   loading: true,
+  hasCompletedOnboarding: false,
+  onboardingLoading: true,
   signIn: async () => {},
   signUp: async () => {},
   signInWithGoogle: async () => {},
   signOut: async () => {},
+  refreshOnboardingStatus: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [onboardingLoading, setOnboardingLoading] = useState(true);
+
+  // Fetch onboarding status when session changes
+  const fetchOnboardingStatus = async (accessToken: string) => {
+    try {
+      setOnboardingLoading(true);
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000'}/api/user/onboarding`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setHasCompletedOnboarding(data.onboarding_completed || false);
+        console.log('[Auth] Onboarding status:', data.onboarding_completed);
+      } else {
+        // If we can't fetch, assume not completed for new users
+        setHasCompletedOnboarding(false);
+      }
+    } catch (error) {
+      console.error('[Auth] Failed to fetch onboarding status:', error);
+      setHasCompletedOnboarding(false);
+    } finally {
+      setOnboardingLoading(false);
+    }
+  };
+
+  const refreshOnboardingStatus = async () => {
+    if (session?.access_token) {
+      await fetchOnboardingStatus(session.access_token);
+    }
+  };
 
   useEffect(() => {
     // Get initial session
@@ -48,9 +91,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           supabase.auth.signOut().catch(() => {});
           setSession(null);
           setUser(null);
+          setOnboardingLoading(false);
         } else {
           setSession(session);
           setUser(session?.user ?? null);
+          // Fetch onboarding status if we have a session
+          if (session?.access_token) {
+            fetchOnboardingStatus(session.access_token);
+          } else {
+            setOnboardingLoading(false);
+          }
         }
         setLoading(false);
       })
@@ -60,6 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(null);
         setUser(null);
         setLoading(false);
+        setOnboardingLoading(false);
       });
 
     // Listen for auth changes
@@ -76,16 +127,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(null);
         setUser(null);
         setLoading(false);
+        setHasCompletedOnboarding(false);
+        setOnboardingLoading(false);
       } else if (event === 'SIGNED_OUT') {
         console.log('[Auth] User signed out');
         setSession(null);
         setUser(null);
         setLoading(false);
+        setHasCompletedOnboarding(false);
+        setOnboardingLoading(false);
       } else {
         console.log('[Auth] Session updated');
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        // Fetch onboarding status on session update
+        if (session?.access_token) {
+          fetchOnboardingStatus(session.access_token);
+        }
       }
     });
 
@@ -193,10 +252,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         session,
         loading,
+        hasCompletedOnboarding,
+        onboardingLoading,
         signIn,
         signUp,
         signInWithGoogle,
         signOut,
+        refreshOnboardingStatus,
       }}
     >
       {children}

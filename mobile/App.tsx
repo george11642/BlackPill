@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, ActivityIndicator, StyleSheet, useColorScheme, Platform, LogBox } from 'react-native';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { AchievementToast } from './components/AchievementToast';
 import { AuthProvider, useAuth } from './lib/auth/context';
 import { SubscriptionProvider } from './lib/subscription/context';
 import { DarkTheme } from './lib/theme';
@@ -78,7 +79,7 @@ Sentry.init({
 const Stack = createNativeStackNavigator();
 
 function RootNavigator() {
-  const { user, loading } = useAuth();
+  const { user, loading, hasCompletedOnboarding, onboardingLoading } = useAuth();
 
   // Initialize RevenueCat when user is available
   useEffect(() => {
@@ -87,52 +88,98 @@ function RootNavigator() {
     }
   }, [user?.id, loading]);
 
+  // Show splash while loading auth or onboarding status
+  const isLoading = loading || (user && onboardingLoading);
+
   return (
     <NavigationContainer theme={NavDarkTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {loading ? (
+        {isLoading ? (
           <Stack.Screen name="Splash" component={SplashScreen} />
         ) : user ? (
-          <>
-            <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="Camera" component={CameraScreen} />
-            <Stack.Screen name="AnalysisResult" component={AnalysisResultScreen} />
-            <Stack.Screen name="History" component={HistoryScreen} />
-            <Stack.Screen name="Comparison" component={ComparisonScreen} />
-            <Stack.Screen name="Progress" component={ProgressScreen} />
-            <Stack.Screen name="Routines" component={RoutinesScreen} />
-            <Stack.Screen name="RoutineDetail" component={RoutineDetailScreen} />
-            <Stack.Screen name="Tasks" component={TasksScreen} />
-            <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
-            <Stack.Screen name="Achievements" component={AchievementsScreen} />
-            <Stack.Screen name="Share" component={ShareScreen} />
-            <Stack.Screen name="Challenges" component={ChallengesScreen} />
-            <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
-            <Stack.Screen name="Wellness" component={WellnessScreen} />
-            <Stack.Screen name="Profile" component={ProfileScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
-            <Stack.Screen name="Subscription" component={SubscriptionScreen} />
-            <Stack.Screen name="EthicalSettings" component={EthicalSettingsScreen} />
-            <Stack.Screen name="AICoach" component={AICoachScreen} />
-            <Stack.Screen name="AITransform" component={AITransformScreen} />
-            <Stack.Screen name="DailyRoutine" component={DailyRoutineScreen} />
-            <Stack.Screen name="ProgressPictures" component={ProgressPicturesScreen} />
-            <Stack.Screen name="CreateRoutine" component={CreateRoutineScreen} />
-            <Stack.Screen name="Affiliate" component={AffiliateDashboardScreen} />
-            <Stack.Screen name="Referrals" component={ReferralsScreen} />
-            <Stack.Screen name="Notifications" component={NotificationsScreen} />
-            <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
-            <Stack.Screen name="TimelapseSelection" component={TimelapseSelectionScreen} />
-            <Stack.Screen name="TimelapseGeneration" component={TimelapseGenerationScreen} />
-            <Stack.Screen name="CreateGoal" component={CreateGoalScreen} />
-            <Stack.Screen name="Methodology" component={MethodologyScreen} />
-            <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
-          </>
+          // User is logged in - check onboarding status
+          hasCompletedOnboarding ? (
+            // Onboarding complete - show main app
+            <>
+              <Stack.Screen name="Home" component={HomeScreen} />
+              <Stack.Screen name="Camera" component={CameraScreen} />
+              <Stack.Screen name="AnalysisResult" component={AnalysisResultScreen} />
+              <Stack.Screen name="History" component={HistoryScreen} />
+              <Stack.Screen name="Comparison" component={ComparisonScreen} />
+              <Stack.Screen name="Progress" component={ProgressScreen} />
+              <Stack.Screen name="Routines" component={RoutinesScreen} />
+              <Stack.Screen name="RoutineDetail" component={RoutineDetailScreen} />
+              <Stack.Screen name="Tasks" component={TasksScreen} />
+              <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+              <Stack.Screen name="Achievements" component={AchievementsScreen} />
+              <Stack.Screen name="Share" component={ShareScreen} />
+              <Stack.Screen name="Challenges" component={ChallengesScreen} />
+              <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
+              <Stack.Screen name="Wellness" component={WellnessScreen} />
+              <Stack.Screen name="Profile" component={ProfileScreen} />
+              <Stack.Screen name="Settings" component={SettingsScreen} />
+              <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+              <Stack.Screen name="EthicalSettings" component={EthicalSettingsScreen} />
+              <Stack.Screen name="AICoach" component={AICoachScreen} />
+              <Stack.Screen name="AITransform" component={AITransformScreen} />
+              <Stack.Screen name="DailyRoutine" component={DailyRoutineScreen} />
+              <Stack.Screen name="ProgressPictures" component={ProgressPicturesScreen} />
+              <Stack.Screen name="CreateRoutine" component={CreateRoutineScreen} />
+              <Stack.Screen name="Affiliate" component={AffiliateDashboardScreen} />
+              <Stack.Screen name="Referrals" component={ReferralsScreen} />
+              <Stack.Screen name="Notifications" component={NotificationsScreen} />
+              <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
+              <Stack.Screen name="TimelapseSelection" component={TimelapseSelectionScreen} />
+              <Stack.Screen name="TimelapseGeneration" component={TimelapseGenerationScreen} />
+              <Stack.Screen name="CreateGoal" component={CreateGoalScreen} />
+              <Stack.Screen name="Methodology" component={MethodologyScreen} />
+              <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
+            </>
+          ) : (
+            // Onboarding not complete - show onboarding flow
+            // Include main screens so navigation.reset works after onboarding
+            <>
+              <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+              <Stack.Screen name="Home" component={HomeScreen} />
+              <Stack.Screen name="Camera" component={CameraScreen} />
+              <Stack.Screen name="AnalysisResult" component={AnalysisResultScreen} />
+              <Stack.Screen name="History" component={HistoryScreen} />
+              <Stack.Screen name="Comparison" component={ComparisonScreen} />
+              <Stack.Screen name="Progress" component={ProgressScreen} />
+              <Stack.Screen name="Routines" component={RoutinesScreen} />
+              <Stack.Screen name="RoutineDetail" component={RoutineDetailScreen} />
+              <Stack.Screen name="Tasks" component={TasksScreen} />
+              <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+              <Stack.Screen name="Achievements" component={AchievementsScreen} />
+              <Stack.Screen name="Share" component={ShareScreen} />
+              <Stack.Screen name="Challenges" component={ChallengesScreen} />
+              <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
+              <Stack.Screen name="Wellness" component={WellnessScreen} />
+              <Stack.Screen name="Profile" component={ProfileScreen} />
+              <Stack.Screen name="Settings" component={SettingsScreen} />
+              <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+              <Stack.Screen name="EthicalSettings" component={EthicalSettingsScreen} />
+              <Stack.Screen name="AICoach" component={AICoachScreen} />
+              <Stack.Screen name="AITransform" component={AITransformScreen} />
+              <Stack.Screen name="DailyRoutine" component={DailyRoutineScreen} />
+              <Stack.Screen name="ProgressPictures" component={ProgressPicturesScreen} />
+              <Stack.Screen name="CreateRoutine" component={CreateRoutineScreen} />
+              <Stack.Screen name="Affiliate" component={AffiliateDashboardScreen} />
+              <Stack.Screen name="Referrals" component={ReferralsScreen} />
+              <Stack.Screen name="Notifications" component={NotificationsScreen} />
+              <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
+              <Stack.Screen name="TimelapseSelection" component={TimelapseSelectionScreen} />
+              <Stack.Screen name="TimelapseGeneration" component={TimelapseGenerationScreen} />
+              <Stack.Screen name="CreateGoal" component={CreateGoalScreen} />
+              <Stack.Screen name="Methodology" component={MethodologyScreen} />
+              <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
+            </>
+          )
         ) : (
+          // Not logged in - show auth screens
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Signup" component={SignupScreen} />
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           </>
         )}
       </Stack.Navigator>
@@ -159,6 +206,7 @@ function App() {
           <SubscriptionProvider>
             <StatusBar style="light" />
             <RootNavigator />
+            <AchievementToast />
           </SubscriptionProvider>
         </AuthProvider>
       </SafeAreaProvider>

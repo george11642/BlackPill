@@ -71,13 +71,13 @@ export async function POST(request: Request) {
 
         // Calculate amount (would need to fetch from Stripe)
         const tierPrices: Record<string, number> = {
-          pro: 9.99,
+          pro: 12.99,
           elite: 19.99,
         };
 
         await sendRenewalReminder((sub.users as any).email, {
           tier: sub.tier.charAt(0).toUpperCase() + sub.tier.slice(1),
-          amount: tierPrices[sub.tier] || 9.99,
+          amount: tierPrices[sub.tier] || 12.99,
           renewal_date: new Date(sub.current_period_end).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',

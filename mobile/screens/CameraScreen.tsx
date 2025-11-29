@@ -23,6 +23,7 @@ import { GlassCard } from '../components/GlassCard';
 import { CameraOverlay } from '../components/CameraOverlay';
 import { DarkTheme } from '../lib/theme';
 import { PhotoVerificationResult } from '../lib/types';
+import { notifyAchievementUnlocked } from '../lib/achievements/events';
 
 export function CameraScreen() {
   const navigation = useNavigation();
@@ -290,6 +291,21 @@ export function CameraScreen() {
       }
 
       const analysisData = await analysisResponse.json();
+
+      // Trigger achievement notifications if any were unlocked
+      if (analysisData.unlocked_achievements && analysisData.unlocked_achievements.length > 0) {
+        // Delay slightly so the navigation happens first
+        setTimeout(() => {
+          analysisData.unlocked_achievements.forEach((achievement: any) => {
+            notifyAchievementUnlocked({
+              key: achievement.key,
+              name: achievement.name,
+              emoji: achievement.emoji,
+              description: achievement.description,
+            });
+          });
+        }, 500);
+      }
 
       // Only navigate if not aborted
       if (!abortControllerRef.current.signal.aborted) {

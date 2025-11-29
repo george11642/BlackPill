@@ -54,7 +54,7 @@ This document lists all features specified in the PRD (Product Requirements Docu
 - Subscription tiers:
   - Free: $0, 1 lifetime scan
   - Basic: $4.99/mo, $54.99/yr, 5 scans/month
-  - Pro: $9.99/mo, $109.89/yr, 20 scans/month
+  - Pro: $12.99/mo, $109.89/yr, 20 scans/month
   - Unlimited: $19.99/mo, $209.89/yr, unlimited scans
 - Paywall trigger: Show after 1st free scan used
 - Mobile app checkout flow: Redirects to web pricing page, Stripe Checkout, deep link callback

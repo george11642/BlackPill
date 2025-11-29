@@ -28,7 +28,7 @@ export function RoutinesScreen() {
   const loadRoutines = async () => {
     try {
       const data = await apiGet<{ routines: Routine[] }>(
-        '/api/routines/list',
+        '/api/routines',
         session?.access_token
       );
       setRoutines(data.routines);
@@ -40,8 +40,10 @@ export function RoutinesScreen() {
   };
 
   const renderItem = ({ item }: { item: Routine }) => {
-    const completedTasks = item.tasks.filter((t) => t.completed).length;
-    const totalTasks = item.tasks.length;
+    // API returns routine_tasks, not tasks
+    const tasks = (item as any).routine_tasks || item.tasks || [];
+    const completedTasks = tasks.filter((t: any) => t.completed).length;
+    const totalTasks = tasks.length;
     const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
     return (

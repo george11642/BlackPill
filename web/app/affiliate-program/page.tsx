@@ -80,10 +80,10 @@ export default function AffiliateProgramPage() {
             </h2>
             <Card className="p-2.5 mb-3 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30">
               <p className="text-[10px] sm:text-xs text-gray-700 dark:text-gray-300 mb-1">
-                If you refer 10 people who subscribe to Pro ($9.99/month) at 20% commission:
+                If you refer 10 people who subscribe to Pro ($12.99/month) at 20% commission:
               </p>
               <p className="text-lg font-display font-bold text-blue-600 dark:text-blue-400">
-                $19.98/month recurring
+                $25.98/month recurring
               </p>
               <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400 mt-1">
                 Plus you'll earn more as you reach higher tiers!

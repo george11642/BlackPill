@@ -155,7 +155,7 @@ export function SubscriptionScreen() {
     if (billingInterval === 'yearly') {
       return tier === 'pro' ? '$119.99' : '$219.99';
     }
-    return tier === 'pro' ? '$9.99' : '$19.99';
+    return tier === 'pro' ? '$12.99' : '$19.99';
   };
 
   return (

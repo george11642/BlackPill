@@ -5,7 +5,7 @@
   "installCommand": "echo 'Dependencies installed in buildCommand'",
   "framework": "nextjs",
   "functions": {
-    "web/app/api/**/*.ts": {
+    "web/app/api/**/*.{ts,js}": {
       "memory": 1024,
       "maxDuration": 30
     }

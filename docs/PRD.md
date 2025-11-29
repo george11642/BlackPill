@@ -267,7 +267,7 @@ TEXT:
 
 | Basic | $4.99/mo, $54.99/yr | 5/month | Full breakdown, AI tips, ad-free |
 
-| Pro | $9.99/mo, $109.89/yr | 20/month | Basic + priority analysis, referral bonuses |
+| Pro | $12.99/mo, $109.89/yr | 20/month | Basic + priority analysis, referral bonuses |
 
 | Unlimited | $19.99/mo, $209.89/yr | Unlimited | Pro + AI coach mode, priority support |
 
