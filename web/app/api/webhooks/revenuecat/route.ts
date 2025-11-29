@@ -1,6 +1,10 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
+import {
+  sendSubscriptionConfirmation,
+  sendAffiliateReferralSuccessEmail,
+} from '@/lib/emails/send';
 
 // RevenueCat webhook event types
 type RevenueCatEvent = {
@@ -228,6 +232,18 @@ export async function POST(request: Request) {
           cancel_at_period_end: false,
         });
 
+        // Send subscription confirmation email
+        if (profile.email) {
+          const price = event.event.price_in_purchased_currency
+            ? `$${(event.event.price_in_purchased_currency / 100).toFixed(2)}`
+            : (tier === 'pro' ? '$12.99' : '$19.99');
+          try {
+            await sendSubscriptionConfirmation(profile.email, tier, price);
+          } catch (emailError) {
+            console.error('Failed to send subscription confirmation email:', emailError);
+          }
+        }
+
         // Calculate commission or grant credits for initial purchase
         if (referredByUserId && subscriptionPrice > 0) {
           try {
@@ -406,9 +422,31 @@ async function handleReferralConversion(
       .order('click_timestamp', { ascending: false })
       .limit(1);
 
-    // Auto-create affiliate for new subscriber
-    await createAffiliateIfNeeded(supabase, userId);
+    // Send referral success email to affiliate
+    const { data: affiliateProfile } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', affiliate.user_id)
+      .single();
+
+    if (affiliateProfile?.email && profile?.name) {
+      // Assuming standard 20% commission for legacy referrals
+      const estimatedCommission = 2.60; // 20% of $12.99
+      try {
+        await sendAffiliateReferralSuccessEmail(
+          affiliateProfile.email, 
+          profile.name,
+          estimatedCommission,
+          20
+        );
+      } catch (emailError) {
+        console.error('Failed to send referral success email:', emailError);
+      }
+    }
   }
+
+  // Auto-create affiliate for new subscriber
+  await createAffiliateIfNeeded(supabase, userId);
 }
 
 // Helper function to create affiliate if needed

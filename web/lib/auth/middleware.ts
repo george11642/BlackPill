@@ -1,4 +1,5 @@
-import { supabase, supabaseAdmin } from '../supabase/client';
+import { supabaseAdmin } from '../supabase/client';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
 /**
@@ -31,6 +32,21 @@ export async function getAuthenticatedUser(request: Request): Promise<Authentica
   }
 
   const token = authHeader.substring(7);
+
+  // Create a server-side Supabase client for token verification
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase environment variables');
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
 
   // Verify token with Supabase
   const { data, error } = await supabase.auth.getUser(token);

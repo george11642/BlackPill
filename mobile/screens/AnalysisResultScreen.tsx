@@ -104,7 +104,7 @@ export function AnalysisResultScreen() {
   const navigation = useNavigation();
   const { session } = useAuth();
   const { tier, unblurCredits, spendUnblurCredit, refreshSubscription, analysesUsedThisMonth, features } = useSubscription();
-  const { analysisId } = route.params as { analysisId: string };
+  const { analysisId, isFirstScan } = route.params as { analysisId: string; isFirstScan?: boolean };
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -142,6 +142,16 @@ export function AnalysisResultScreen() {
       // Check if tour has already been completed
       const tourCompleted = await hasTourBeenCompleted();
       if (tourCompleted) {
+        return;
+      }
+
+      // If this is coming from onboarding first scan, always show the tour
+      if (isFirstScan) {
+        setIsFirstAnalysis(true);
+        // Show tour after a delay to let animations complete
+        setTimeout(() => {
+          setShowTour(true);
+        }, 2500);
         return;
       }
 

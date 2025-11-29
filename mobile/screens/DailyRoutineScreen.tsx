@@ -24,6 +24,7 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { Settings, ChevronRight, ChevronDown, Check, Flame, Scan, Sparkles, Clock, Target, RotateCcw, ShoppingBag } from 'lucide-react-native';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiGet, apiPost } from '../lib/api/client';
 import { useAuth } from '../lib/auth/context';
 import { GlassCard } from '../components/GlassCard';

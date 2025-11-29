@@ -1,9 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { NavigationContainer, DarkTheme as NavDarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, ActivityIndicator, StyleSheet, useColorScheme, Platform, LogBox } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AchievementToast } from './components/AchievementToast';
@@ -80,6 +81,8 @@ const Stack = createNativeStackNavigator();
 
 function RootNavigator() {
   const { user, loading, hasCompletedOnboarding, onboardingLoading } = useAuth();
+  const navigationRef = useRef<any>(null);
+  const hasCheckedFirstScan = useRef(false);
 
   // Initialize RevenueCat when user is available
   useEffect(() => {
@@ -88,11 +91,46 @@ function RootNavigator() {
     }
   }, [user?.id, loading]);
 
+  // Check for first scan pending flag when onboarding completes
+  // This handles navigation to Camera before tabs are shown
+  useEffect(() => {
+    // Only check if onboarding is complete and we haven't checked before
+    if (!hasCompletedOnboarding || hasCheckedFirstScan.current || loading || onboardingLoading) {
+      return;
+    }
+
+    const checkFirstScanPending = async () => {
+      try {
+        const pending = await AsyncStorage.getItem('@blackpill_first_scan_pending');
+        if (pending === 'true') {
+          // Mark as checked immediately
+          hasCheckedFirstScan.current = true;
+          // Clear the flag
+          await AsyncStorage.removeItem('@blackpill_first_scan_pending');
+          // Small delay to ensure navigation is ready, then navigate to Camera
+          setTimeout(() => {
+            if (navigationRef.current?.isReady()) {
+              navigationRef.current.navigate('Camera', { firstScan: true });
+            }
+          }, 300);
+        } else {
+          // Mark as checked even if flag doesn't exist
+          hasCheckedFirstScan.current = true;
+        }
+      } catch (error) {
+        console.error('Error checking first scan flag:', error);
+        hasCheckedFirstScan.current = true;
+      }
+    };
+
+    checkFirstScanPending();
+  }, [hasCompletedOnboarding, loading, onboardingLoading]);
+
   // Show splash while loading auth or onboarding status
   const isLoading = loading || (user && onboardingLoading);
 
   return (
-    <NavigationContainer theme={NavDarkTheme}>
+    <NavigationContainer ref={navigationRef} theme={NavDarkTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isLoading ? (
           <Stack.Screen name="Splash" component={SplashScreen} />

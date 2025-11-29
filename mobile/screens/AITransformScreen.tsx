@@ -41,6 +41,16 @@ interface Transformation {
   image_url: string;
 }
 
+interface Analysis {
+  id: string;
+  image_url?: string;
+  photoUrl?: string;
+  score: number;
+  potential_score?: number;
+  created_at?: string;
+  createdAt?: string;
+}
+
 const SCENARIOS = [
   { id: 'formal', name: 'Formal Event', emoji: '🎩' },
   { id: 'casual', name: 'Casual Cool', emoji: '😎' },
@@ -55,12 +65,16 @@ export function AITransformScreen() {
   const { session } = useAuth();
   const { features } = useSubscription();
   const canAccess = features.aiTransform.access;
-  const { analysisId } = route.params as { analysisId: string };
+  const routeParams = route.params as { analysisId?: string } | undefined;
+  const routeAnalysisId = routeParams?.analysisId;
   
+  const [analysisId, setAnalysisId] = useState<string | null>(routeAnalysisId || null);
   const [transformations, setTransformations] = useState<Transformation[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchingAnalysis, setFetchingAnalysis] = useState(!routeAnalysisId);
   const [generating, setGenerating] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [noAnalysesError, setNoAnalysesError] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   // Animation values
@@ -68,8 +82,14 @@ export function AITransformScreen() {
   const imageScale = useSharedValue(0.9);
 
   useEffect(() => {
-    loadTransformations();
     startAnimations();
+    if (routeAnalysisId) {
+      // If analysisId is provided in route params, use it directly
+      loadTransformations(routeAnalysisId);
+    } else {
+      // Otherwise, fetch the latest analysis first
+      fetchLatestAnalysis();
+    }
   }, []);
 
   const startAnimations = () => {
@@ -77,11 +97,35 @@ export function AITransformScreen() {
     imageScale.value = withSpring(1, { damping: 15, stiffness: 100 });
   };
 
-  const loadTransformations = async () => {
+  const fetchLatestAnalysis = async () => {
+    setFetchingAnalysis(true);
+    setNoAnalysesError(false);
+    try {
+      const data = await apiGet<{ analyses: Analysis[] }>(
+        '/api/analyses/history',
+        session?.access_token
+      );
+      
+      if (data.analyses && data.analyses.length > 0) {
+        const latestAnalysisId = data.analyses[0].id;
+        setAnalysisId(latestAnalysisId);
+        await loadTransformations(latestAnalysisId);
+      } else {
+        setNoAnalysesError(true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch latest analysis:', error);
+      setNoAnalysesError(true);
+    } finally {
+      setFetchingAnalysis(false);
+    }
+  };
+
+  const loadTransformations = async (id: string) => {
     setLoading(true);
     try {
       const data = await apiGet<{ transformations: Transformation[] }>(
-        `/api/ai-transform?analysisId=${analysisId}`,
+        `/api/ai-transform?analysisId=${id}`,
         session?.access_token
       );
       setTransformations(data.transformations || []);
@@ -93,6 +137,15 @@ export function AITransformScreen() {
   };
 
   const generateTransformation = async (scenario?: string) => {
+    if (!analysisId) {
+      Alert.alert(
+        'No Analysis Found',
+        'Please take a scan first to generate AI transformations.',
+        [{ text: 'OK', style: 'default' }]
+      );
+      return;
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setGenerating(true);
 
@@ -196,7 +249,29 @@ export function AITransformScreen() {
       </Animated.View>
 
       {/* Main Content */}
-      {loading ? (
+      {fetchingAnalysis ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={DarkTheme.colors.primary} />
+          <Text style={styles.loadingText}>Finding your latest scan...</Text>
+        </View>
+      ) : noAnalysesError ? (
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyIconContainer}>
+            <Sparkles size={48} color={DarkTheme.colors.primary} />
+          </View>
+          <Text style={styles.emptyTitle}>No Scans Found</Text>
+          <Text style={styles.emptySubtitle}>
+            Take a scan first to see AI-enhanced transformations of yourself
+          </Text>
+          <PrimaryButton
+            title="Take a Scan"
+            onPress={() => {
+              navigation.navigate('Camera' as never);
+            }}
+            style={styles.generateButton}
+          />
+        </View>
+      ) : loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={DarkTheme.colors.primary} />
           <Text style={styles.loadingText}>Loading transformations...</Text>

@@ -40,6 +40,62 @@ export async function sendEmail({
 }
 
 /**
+ * Send subscription confirmation email
+ */
+export async function sendSubscriptionConfirmation(
+  userEmail: string,
+  tier: string,
+  amount: string
+): Promise<{ id: string } | null> {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: 'Inter', Arial, sans-serif; background: #0F0F1E; color: #FFFFFF; padding: 40px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { font-size: 28px; font-weight: 700; margin-bottom: 24px; color: #00D9FF; }
+        .content { font-size: 16px; line-height: 1.6; color: #B8BACC; }
+        .highlight { background: rgba(0, 217, 255, 0.1); padding: 24px; border-radius: 12px; border-left: 4px solid #00D9FF; margin: 24px 0; }
+        .cta { background: linear-gradient(135deg, #FF0080 0%, #00D9FF 100%); color: #FFFFFF; padding: 16px 32px; border-radius: 12px; text-decoration: none; display: inline-block; margin-top: 24px; font-weight: 600; }
+        .footer { margin-top: 40px; font-size: 12px; color: #6B6D7F; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">Welcome to the Inner Circle</div>
+        <div class="content">
+          <p>Your subscription to <strong>Black Pill ${tier}</strong> is confirmed.</p>
+          <div class="highlight">
+            <p style="margin: 0;"><strong>Plan Details:</strong></p>
+            <p style="margin: 8px 0 0 0; font-size: 18px; color: #FFFFFF;">${tier} Tier</p>
+            <p style="margin: 4px 0 0 0; font-size: 14px;">${amount}</p>
+          </div>
+          <p>You now have access to:</p>
+          <ul>
+            <li>Advanced facial analysis metrics</li>
+            <li>Priority processing</li>
+            <li>Exclusive improvement guides</li>
+          </ul>
+          <p>It's time to be honest about yourself and start improving.</p>
+          <p><a href="https://black-pill.app/dashboard" class="cta">Go to Dashboard</a></p>
+        </div>
+        <div class="footer">
+          <p>Black Pill - Be Honest About Yourself</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: userEmail,
+    subject: `Welcome to Black Pill ${tier} - Subscription Confirmed`,
+    html,
+  });
+}
+
+/**
  * Send auto-renewal reminder (7 days before renewal)
  */
 export async function sendRenewalReminder(

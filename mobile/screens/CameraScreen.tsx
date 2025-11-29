@@ -8,14 +8,18 @@ import {
   ActivityIndicator,
   Image,
   Platform,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import Constants from 'expo-constants';
-import { Camera } from 'lucide-react-native';
+import { Camera, Sun, User, Smile, X, ChevronRight, Lightbulb } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as FaceDetector from 'expo-face-detector';
+import * as Haptics from 'expo-haptics';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useAuth } from '../lib/auth/context';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { BackHeader } from '../components/BackHeader';
@@ -24,6 +28,28 @@ import { CameraOverlay } from '../components/CameraOverlay';
 import { DarkTheme } from '../lib/theme';
 import { PhotoVerificationResult } from '../lib/types';
 import { notifyAchievementUnlocked } from '../lib/achievements/events';
+
+// First scan tips data
+const FIRST_SCAN_TIPS = [
+  {
+    icon: <Sun size={28} color="#FFB800" />,
+    title: 'Good Lighting',
+    description: 'Natural daylight works best. Avoid harsh shadows or backlighting.',
+    color: '#FFB800',
+  },
+  {
+    icon: <User size={28} color="#00FF94" />,
+    title: 'Face the Camera',
+    description: 'Look directly at the camera with a neutral expression.',
+    color: '#00FF94',
+  },
+  {
+    icon: <Smile size={28} color={DarkTheme.colors.primary} />,
+    title: 'Relax Your Face',
+    description: 'Keep a natural, relaxed expression. No need to smile or pose.',
+    color: DarkTheme.colors.primary,
+  },
+];
 
 export function CameraScreen() {
   const navigation = useNavigation();
@@ -34,6 +60,8 @@ export function CameraScreen() {
   const [loading, setLoading] = useState(false);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [verificationResult, setVerificationResult] = useState<PhotoVerificationResult | null>(null);
+  const [showFirstScanTips, setShowFirstScanTips] = useState(false);
+  const [showGuidanceHints, setShowGuidanceHints] = useState(false);
   const cameraRef = useRef<CameraView>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -43,7 +71,24 @@ export function CameraScreen() {
     challengeId?: string;
     baselinePhotoUrl?: string;
     onCapture?: (uri: string) => void;
+    firstScan?: boolean;
   } || {};
+
+  // Show first scan tips modal when coming from onboarding
+  useEffect(() => {
+    if (params.firstScan) {
+      setShowFirstScanTips(true);
+    }
+  }, [params.firstScan]);
+
+  const handleDismissTips = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowFirstScanTips(false);
+    // Show guidance hints after dismissing tips
+    setShowGuidanceHints(true);
+    // Auto-hide hints after 5 seconds
+    setTimeout(() => setShowGuidanceHints(false), 5000);
+  };
   
   // Enable verification for both challenge check-ins and normal analysis
   const useVerification = true; // Always enable verification for better quality/consistency
@@ -311,6 +356,7 @@ export function CameraScreen() {
       if (!abortControllerRef.current.signal.aborted) {
         (navigation as any).navigate('AnalysisResult', {
           analysisId: analysisData.analysis_id,
+          isFirstScan: params.firstScan || false,
         });
       }
     } catch (error: any) {
@@ -374,7 +420,7 @@ export function CameraScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <BackHeader title="Take Photo" variant="large" onBackPress={handleBack} />
+        <BackHeader title={params.firstScan ? "Your First Scan" : "Take Photo"} variant="large" onBackPress={handleBack} />
       </View>
       <CameraView
         ref={cameraRef}
@@ -389,6 +435,20 @@ export function CameraScreen() {
           onVerificationChange={setVerificationResult}
           baselinePhotoUrl={params.baselinePhotoUrl}
         />
+      )}
+
+      {/* First Scan Guidance Hints */}
+      {showGuidanceHints && (
+        <Animated.View 
+          style={styles.guidanceOverlay}
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(300)}
+        >
+          <View style={styles.guidanceHint}>
+            <Lightbulb size={16} color="#FFB800" />
+            <Text style={styles.guidanceText}>Face the camera directly with good lighting</Text>
+          </View>
+        </Animated.View>
       )}
 
       {/* Controls overlay - positioned absolutely outside CameraView */}
@@ -425,6 +485,47 @@ export function CameraScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* First Scan Tips Modal */}
+      <Modal
+        visible={showFirstScanTips}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.tipsCard}>
+            <TouchableOpacity style={styles.tipsCloseButton} onPress={handleDismissTips}>
+              <X size={20} color={DarkTheme.colors.textTertiary} />
+            </TouchableOpacity>
+
+            <View style={styles.tipsHeader}>
+              <Text style={styles.tipsEmoji}>📸</Text>
+              <Text style={styles.tipsTitle}>Tips for Best Results</Text>
+              <Text style={styles.tipsSubtitle}>Follow these tips for accurate analysis</Text>
+            </View>
+
+            <View style={styles.tipsList}>
+              {FIRST_SCAN_TIPS.map((tip, index) => (
+                <View key={index} style={styles.tipItem}>
+                  <View style={[styles.tipIconContainer, { backgroundColor: `${tip.color}20` }]}>
+                    {tip.icon}
+                  </View>
+                  <View style={styles.tipContent}>
+                    <Text style={styles.tipTitle}>{tip.title}</Text>
+                    <Text style={styles.tipDescription}>{tip.description}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            <TouchableOpacity style={styles.tipsButton} onPress={handleDismissTips}>
+              <Text style={styles.tipsButtonText}>Got it, let's go!</Text>
+              <ChevronRight size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -654,5 +755,127 @@ const styles = StyleSheet.create({
   },
   continueButtonText: {
     color: '#fff',
+  },
+  // First Scan Tips Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: DarkTheme.spacing.lg,
+  },
+  tipsCard: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: DarkTheme.colors.card,
+    borderRadius: DarkTheme.borderRadius.xl,
+    padding: DarkTheme.spacing.xl,
+    borderWidth: 1,
+    borderColor: DarkTheme.colors.border,
+  },
+  tipsCloseButton: {
+    position: 'absolute',
+    top: DarkTheme.spacing.md,
+    right: DarkTheme.spacing.md,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: DarkTheme.colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  tipsHeader: {
+    alignItems: 'center',
+    marginBottom: DarkTheme.spacing.xl,
+  },
+  tipsEmoji: {
+    fontSize: 48,
+    marginBottom: DarkTheme.spacing.md,
+  },
+  tipsTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: DarkTheme.colors.text,
+    fontFamily: DarkTheme.typography.fontFamily,
+    textAlign: 'center',
+    marginBottom: DarkTheme.spacing.xs,
+  },
+  tipsSubtitle: {
+    fontSize: 14,
+    color: DarkTheme.colors.textSecondary,
+    fontFamily: DarkTheme.typography.fontFamily,
+    textAlign: 'center',
+  },
+  tipsList: {
+    gap: DarkTheme.spacing.md,
+    marginBottom: DarkTheme.spacing.xl,
+  },
+  tipItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: DarkTheme.spacing.md,
+  },
+  tipIconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tipContent: {
+    flex: 1,
+  },
+  tipTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: DarkTheme.colors.text,
+    fontFamily: DarkTheme.typography.fontFamily,
+    marginBottom: 2,
+  },
+  tipDescription: {
+    fontSize: 13,
+    color: DarkTheme.colors.textSecondary,
+    fontFamily: DarkTheme.typography.fontFamily,
+    lineHeight: 18,
+  },
+  tipsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: DarkTheme.colors.primary,
+    paddingVertical: DarkTheme.spacing.md,
+    paddingHorizontal: DarkTheme.spacing.xl,
+    borderRadius: DarkTheme.borderRadius.lg,
+    gap: DarkTheme.spacing.sm,
+  },
+  tipsButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    fontFamily: DarkTheme.typography.fontFamily,
+  },
+  // Guidance Hints Overlay
+  guidanceOverlay: {
+    position: 'absolute',
+    top: 100,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 5,
+  },
+  guidanceHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    paddingVertical: DarkTheme.spacing.sm,
+    paddingHorizontal: DarkTheme.spacing.md,
+    borderRadius: DarkTheme.borderRadius.lg,
+    gap: DarkTheme.spacing.sm,
+  },
+  guidanceText: {
+    fontSize: 14,
+    color: DarkTheme.colors.text,
+    fontFamily: DarkTheme.typography.fontFamily,
   },
 });

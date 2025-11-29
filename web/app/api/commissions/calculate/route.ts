@@ -1,6 +1,9 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
-import { sendCommissionTierUpgradeEmail } from '@/lib/emails/send';
+import { 
+  sendCommissionTierUpgradeEmail,
+  sendAffiliateReferralSuccessEmail
+} from '@/lib/emails/send';
 
 /**
  * POST /api/commissions/calculate
@@ -179,6 +182,32 @@ export async function POST(request: Request) {
           period_start: periodStart,
           period_end: periodEnd,
         });
+
+        // Send referral success email to affiliate
+        const { data: affiliateProfile } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', referrerUserId)
+          .single();
+
+        const { data: referredProfile } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', subscription.user_id)
+          .single();
+
+        if (affiliateProfile?.email && referredProfile?.name) {
+          try {
+            await sendAffiliateReferralSuccessEmail(
+              affiliateProfile.email,
+              referredProfile.name,
+              commissionAmount,
+              affiliate.commission_rate
+            );
+          } catch (emailError) {
+            console.error('Failed to send referral success email:', emailError);
+          }
+        }
       }
 
       // Update affiliate commission rate if tier changed

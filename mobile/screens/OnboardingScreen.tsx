@@ -184,6 +184,12 @@ export function OnboardingScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     try {
+      // If user wants to take first scan, set the flag BEFORE refreshing onboarding status
+      // This flag will persist across the navigation state change
+      if (goToCamera) {
+        await AsyncStorage.setItem('@blackpill_first_scan_pending', 'true');
+      }
+
       // Save onboarding data to server
       await apiPost(
         '/api/user/onboarding',
@@ -196,34 +202,22 @@ export function OnboardingScreen() {
       );
 
       // Refresh onboarding status in auth context
-      // This will trigger the navigation to update
+      // This will trigger the navigation to update and go to Home
+      // The DailyRoutineScreen will check for the first_scan_pending flag and redirect to Camera
       await refreshOnboardingStatus();
 
-      // Navigate to appropriate screen
-      if (goToCamera) {
-        (navigation as any).reset({
-          index: 1,
-          routes: [
-            { name: 'Home' },
-            { name: 'Camera' },
-          ],
-        });
-      } else {
-        (navigation as any).reset({
-          index: 0,
-          routes: [{ name: 'Home' }],
-        });
-      }
+      // Don't navigate manually - let the auth context change handle navigation
+      // The first scan flag will ensure we get redirected to Camera if needed
     } catch (error) {
       console.error('Failed to complete onboarding:', error);
+      // Clear the first scan flag if onboarding failed
+      if (goToCamera) {
+        await AsyncStorage.removeItem('@blackpill_first_scan_pending');
+      }
       // Still try to refresh and navigate even if save fails
       try {
         await refreshOnboardingStatus();
       } catch {}
-      (navigation as any).reset({
-        index: 0,
-        routes: [{ name: 'Home' }],
-      });
     } finally {
       setLoading(false);
     }
