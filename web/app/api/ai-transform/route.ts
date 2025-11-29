@@ -102,11 +102,18 @@ export async function POST(request: Request) {
 
       const tier = subscription?.tier || 'free';
       
-      // Rate limiting based on tier
-      const limits: { [key: string]: number } = {
+      // Rate limiting based on tier (monthly limits - advertised)
+      const monthlyLimits: { [key: string]: number } = {
         free: 0,      // No AI generation for free users
         pro: 0,       // Exclusive to Elite users
         elite: 50,    // 50 generations per month
+      };
+
+      // Daily limits (unadvertised - to prevent abuse)
+      const dailyLimits: { [key: string]: number } = {
+        free: 0,
+        pro: 0,
+        elite: 5,     // 5 generations per day max
       };
 
       if (tier === 'free') {
@@ -116,6 +123,25 @@ export async function POST(request: Request) {
             upgrade_required: true,
           },
           { status: 403, headers: { ...corsHeaders, 'X-Request-ID': requestId } }
+        );
+      }
+
+      // Check daily usage (unadvertised limit)
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const { count: dailyUsage } = await supabaseAdmin
+        .from('ai_transformations')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', startOfDay.toISOString());
+
+      if ((dailyUsage || 0) >= dailyLimits[tier]) {
+        return NextResponse.json(
+          { 
+            error: 'You\'ve reached your daily limit. Try again tomorrow!',
+          },
+          { status: 429, headers: { ...corsHeaders, 'X-Request-ID': requestId } }
         );
       }
 
@@ -130,11 +156,11 @@ export async function POST(request: Request) {
         .eq('user_id', user.id)
         .gte('created_at', startOfMonth.toISOString());
 
-      if ((monthlyUsage || 0) >= limits[tier]) {
+      if ((monthlyUsage || 0) >= monthlyLimits[tier]) {
         return NextResponse.json(
           { 
             error: 'Monthly AI transformation limit reached',
-            limit: limits[tier],
+            limit: monthlyLimits[tier],
             used: monthlyUsage,
           },
           { status: 429, headers: { ...corsHeaders, 'X-Request-ID': requestId } }
@@ -206,7 +232,7 @@ export async function POST(request: Request) {
         {
           success: true,
           transformations,
-          remaining_this_month: limits[tier] - (monthlyUsage || 0) - transformations.length,
+          remaining_this_month: monthlyLimits[tier] - (monthlyUsage || 0) - transformations.length,
         },
         { status: 200, headers: { ...corsHeaders, 'X-Request-ID': requestId } }
       );
