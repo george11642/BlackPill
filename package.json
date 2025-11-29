@@ -2,7 +2,7 @@
   "name": "blackpill-monorepo",
   "version": "1.0.0",
   "private": true,
-  "devDependencies": {
+  "dependencies": {
     "next": "^16.0.3"
   },
   "scripts": {
