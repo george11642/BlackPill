@@ -3,7 +3,6 @@
   "buildCommand": "cd web && npm run build",
   "outputDirectory": "web/.next",
   "installCommand": "cd mobile && npm install --legacy-peer-deps && cd ../web && npm install --legacy-peer-deps",
-  "framework": "nextjs",
-  "nodeVersion": "20.x"
+  "framework": "nextjs"
 }
 
