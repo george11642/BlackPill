@@ -1,5 +1,5 @@
 import { apiGet, apiPost } from './client';
-import { Product } from '../types';
+import { Product, RecommendedProduct } from '../types';
 
 interface GetProductsParams {
   category?: string;
@@ -41,5 +41,21 @@ export const trackProductClick = async (
   token?: string
 ): Promise<void> => {
   await apiPost(`/api/products/click`, { productId }, token);
+};
+
+interface GetRecommendationsResponse {
+  recommendations: RecommendedProduct[];
+}
+
+export const getPersonalizedRecommendations = async (
+  analysisId: string,
+  token?: string
+): Promise<RecommendedProduct[]> => {
+  const response = await apiPost<GetRecommendationsResponse>(
+    '/api/products/recommend',
+    { analysisId },
+    token
+  );
+  return response.recommendations;
 };
 

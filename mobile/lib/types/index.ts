@@ -131,3 +131,10 @@ export interface Product {
   recommended_for?: string[];
   is_featured: boolean;
 }
+
+export interface RecommendedProduct extends Product {
+  recommendation: {
+    relevance_score: number;
+    reason: string;
+  };
+}
