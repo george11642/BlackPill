@@ -6,13 +6,25 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "node": "20.19.4",
+      "env": {
+        "NPM_CONFIG_PACKAGE_MANAGER": "npm"
+      }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "node": "20.19.4",
+      "env": {
+        "NPM_CONFIG_PACKAGE_MANAGER": "npm"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "node": "20.19.4",
+      "env": {
+        "NPM_CONFIG_PACKAGE_MANAGER": "npm"
+      }
     }
   },
   "submit": {

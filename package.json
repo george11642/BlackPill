@@ -2,10 +2,6 @@
   "name": "blackpill-monorepo",
   "version": "1.0.0",
   "private": true,
-  "workspaces": [
-    "web",
-    "mobile"
-  ],
   "scripts": {
     "install:all": "npm install && cd mobile && npm install && cd ../web && npm install",
     "build": "cd mobile && npm install && cd ../web && npm install && npm run build",
