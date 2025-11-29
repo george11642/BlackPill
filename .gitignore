@@ -18,8 +18,8 @@ web/.vercel
 
 # Lock files (use package managers to regenerate)
 yarn.lock
-package-lock.json
 pnpm-lock.yaml
+# Note: package-lock.json is NOT ignored - needed for Vercel deployment
 
 # Credentials and secrets
 *.pem
