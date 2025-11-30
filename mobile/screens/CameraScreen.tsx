@@ -17,7 +17,13 @@ import * as ImagePicker from 'expo-image-picker';
 import Constants from 'expo-constants';
 import { Camera, Sun, User, Smile, X, ChevronRight, Lightbulb } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as FaceDetector from 'expo-face-detector';
+// FaceDetector is optional - not available in Expo Go
+let FaceDetector: any = null;
+try {
+  FaceDetector = require('expo-face-detector');
+} catch (e) {
+  console.log('[Camera] FaceDetector not available (Expo Go)');
+}
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useAuth } from '../lib/auth/context';
@@ -170,8 +176,8 @@ export function CameraScreen() {
       });
 
       if (photo) {
-        // Perform client-side face detection checks (skip on web - FaceDetector not supported)
-        if (useVerification && Platform.OS !== 'web') {
+        // Perform client-side face detection checks (skip on web or if FaceDetector not available)
+        if (useVerification && Platform.OS !== 'web' && FaceDetector) {
           try {
             const faces = await FaceDetector.detectFacesAsync(photo.uri, {
               mode: FaceDetector.FaceDetectorMode.accurate,
