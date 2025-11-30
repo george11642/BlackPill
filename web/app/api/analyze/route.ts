@@ -43,6 +43,7 @@ export async function OPTIONS(request: Request) {
  */
 export async function POST(request: Request) {
   const requestId = getRequestId(request);
+  let userId: string | undefined;
 
   try {
     // Authentication - try multiple methods to get Authorization header (like SmileScore)
@@ -156,6 +157,7 @@ export async function POST(request: Request) {
     }
 
     console.log('[Analyze] SUCCESS: User authenticated:', user.id);
+    userId = user.id;
 
     // Now process the analysis for the authenticated user
 
@@ -433,7 +435,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Analysis error:', {
       error: error instanceof Error ? error.message : String(error),
-      user_id: user?.id,
+      user_id: userId,
       request_id: requestId,
     });
 
