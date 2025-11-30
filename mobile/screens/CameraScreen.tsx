@@ -97,8 +97,9 @@ export function CameraScreen() {
     setTimeout(() => setShowGuidanceHints(false), 5000);
   };
   
-  // Enable verification for both challenge check-ins and normal analysis
-  const useVerification = true; // Always enable verification for better quality/consistency
+  // Disable client-side face detection - it's unreliable and SmileScore doesn't use it
+  // Server-side OpenAI will handle face detection properly
+  const useVerification = false;
 
   if (!permission) {
     return <View style={styles.container} />;
