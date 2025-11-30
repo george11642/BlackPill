@@ -91,6 +91,7 @@ export function OnboardingScreen() {
   const navigation = useNavigation();
   const { session, user, refreshOnboardingStatus } = useAuth();
   const scrollRef = useRef<ScrollView>(null);
+  const isCompletingRef = useRef(false); // Track if onboarding completion is in progress
   
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [profileData, setProfileData] = useState<ProfileSetupData>({
@@ -113,6 +114,12 @@ export function OnboardingScreen() {
   }));
 
   const goToStep = (index: number) => {
+    // Prevent navigation during onboarding completion
+    if (isCompletingRef.current || loading) {
+      console.log('[Onboarding] Blocked step navigation - completion in progress');
+      return;
+    }
+    
     if (index < 0 || index >= STEPS.length) return;
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -134,6 +141,11 @@ export function OnboardingScreen() {
   };
 
   const handleNext = async () => {
+    // Prevent navigation during onboarding completion
+    if (isCompletingRef.current || loading) {
+      return;
+    }
+    
     if (!canProceed()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return;
@@ -151,6 +163,11 @@ export function OnboardingScreen() {
   };
 
   const handleBack = () => {
+    // Prevent navigation during onboarding completion
+    if (isCompletingRef.current || loading) {
+      return;
+    }
+    
     if (currentStepIndex > 0) {
       goToStep(currentStepIndex - 1);
     }
@@ -183,6 +200,8 @@ export function OnboardingScreen() {
   };
 
   const completeOnboarding = async (goToCamera: boolean) => {
+    // Set completion flag immediately to prevent any state resets
+    isCompletingRef.current = true;
     setLoading(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
@@ -234,8 +253,14 @@ export function OnboardingScreen() {
 
       // Don't navigate manually - let the auth context change handle navigation
       // The first scan flag will ensure we get redirected to Camera if needed
+      // Keep loading state true and completion flag set until navigation happens
+      // The component will unmount when navigation occurs, so we don't need to clear these
     } catch (error) {
       console.error('[Onboarding] Failed to complete onboarding:', error);
+      
+      // Clear the completion flag on error so user can try again
+      isCompletingRef.current = false;
+      
       // Clear the first scan flag if onboarding failed
       if (goToCamera) {
         await AsyncStorage.removeItem('@blackpill_first_scan_pending');
@@ -256,7 +281,11 @@ export function OnboardingScreen() {
         console.error('[Onboarding] Final refresh also failed:', refreshError);
       }
     } finally {
-      setLoading(false);
+      // Only clear loading if there was an error (completion flag will be false)
+      // If successful, keep loading true until navigation unmounts the component
+      if (!isCompletingRef.current) {
+        setLoading(false);
+      }
     }
   };
 
