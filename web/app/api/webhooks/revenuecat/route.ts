@@ -183,18 +183,25 @@ export async function POST(request: Request) {
     }
 
     // Find user by RevenueCat app_user_id (should match Supabase user_id)
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, email, name')
+    // Note: BlackPill uses 'users' table, not 'profiles'
+    const { data: userData } = await supabase
+      .from('users')
+      .select('id, email, username')
       .eq('id', appUserId)
       .single();
 
-    if (!profile) {
+    if (!userData) {
       console.error('User not found for app_user_id:', appUserId);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const userId = profile.id;
+    const userId = userData.id;
+    // Create a profile-like object for compatibility with helper functions
+    const profile = {
+      id: userData.id,
+      email: userData.email,
+      name: userData.username,
+    };
 
     // Get user's referred_by if they have one
     const { data: user } = await supabase
