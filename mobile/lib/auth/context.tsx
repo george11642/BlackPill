@@ -4,6 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { supabase } from '../supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
+import { getApiUrl } from '../utils/apiUrl';
 
 // Required for iOS OAuth to work properly
 WebBrowser.maybeCompleteAuthSession();
@@ -47,8 +48,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setOnboardingLoading(true);
       // Add cache-busting query parameter to ensure fresh data
       const cacheBuster = `?t=${Date.now()}`;
+      const apiUrl = getApiUrl();
       const response = await fetch(
-        `${process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000'}/api/user/onboarding${cacheBuster}`,
+        `${apiUrl}/api/user/onboarding${cacheBuster}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,

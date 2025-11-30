@@ -33,6 +33,14 @@ import {
   syncSubscriptionToBackend,
   restorePurchases,
 } from '../lib/revenuecat/client';
+import {
+  PRO_MONTHLY_PRODUCT_ID,
+  PRO_YEARLY_PRODUCT_ID,
+  ELITE_MONTHLY_PRODUCT_ID,
+  ELITE_YEARLY_PRODUCT_ID,
+  getProductId,
+  ALL_PRODUCT_IDS,
+} from '../lib/subscription/constants';
 import type { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -63,6 +71,18 @@ export function SubscriptionScreen() {
   useEffect(() => {
     loadOfferings();
     
+    // Reference product IDs to ensure they're included in the binary
+    // This helps Apple App Store Connect detect subscriptions during submission
+    if (__DEV__) {
+      console.log('Subscription Product IDs:', {
+        PRO_MONTHLY_PRODUCT_ID,
+        PRO_YEARLY_PRODUCT_ID,
+        ELITE_MONTHLY_PRODUCT_ID,
+        ELITE_YEARLY_PRODUCT_ID,
+        ALL_PRODUCT_IDS,
+      });
+    }
+    
     // Animations
     headerOpacity.value = withTiming(1, { duration: 800 });
     contentTranslateY.value = withSpring(0, { damping: 15 });
@@ -84,10 +104,12 @@ export function SubscriptionScreen() {
     if (!offerings) return;
 
     // Map selected tier to RevenueCat package
-    // Assuming identifiers like 'pro_monthly', 'pro_yearly', 'elite_monthly', 'elite_yearly'
+    // Use product ID constants to ensure they're included in the binary
+    const productId = getProductId(selectedTier, billingInterval);
     const identifier = `${selectedTier}_${billingInterval}`;
     const pkg = offerings.availablePackages.find((p: PurchasesPackage) => 
-      p.identifier.toLowerCase().includes(identifier)
+      p.identifier.toLowerCase().includes(identifier) ||
+      p.product.identifier === productId
     );
 
     if (!pkg) {
@@ -144,9 +166,12 @@ export function SubscriptionScreen() {
   }
 
   const getPriceString = (tier: 'pro' | 'elite') => {
+    // Use product ID constants to ensure they're included in the binary
+    const productId = getProductId(tier, billingInterval);
     const identifier = `${tier}_${billingInterval}`;
     const pkg = offerings?.availablePackages.find((p: PurchasesPackage) => 
-      p.identifier.toLowerCase().includes(identifier)
+      p.identifier.toLowerCase().includes(identifier) ||
+      p.product.identifier === productId
     );
     
     if (pkg) return pkg.product.priceString;

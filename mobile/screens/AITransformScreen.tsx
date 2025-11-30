@@ -235,35 +235,35 @@ export function AITransformScreen() {
     const hasError = imageErrors[item.id];
     
     return (
-      <Animated.View style={[styles.imageContainer, imageAnimatedStyle]}>
+    <Animated.View style={[styles.imageContainer, imageAnimatedStyle]}>
         {hasError ? (
           <View style={[styles.transformedImage, styles.imageErrorContainer]}>
             <Sparkles size={48} color={DarkTheme.colors.textSecondary} />
             <Text style={styles.imageErrorText}>Image unavailable</Text>
           </View>
         ) : (
-          <Image
+      <Image
             source={{ 
               uri: item.image_url,
               cache: 'force-cache', // Force caching
             }}
-            style={styles.transformedImage}
-            resizeMode="cover"
+        style={styles.transformedImage}
+        resizeMode="cover"
             onError={() => {
               console.log(`Image failed to load: ${item.image_url}`);
               setImageErrors(prev => ({ ...prev, [item.id]: true }));
             }}
-          />
+      />
         )}
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.8)']}
-          style={styles.imageGradient}
-        />
-        <View style={styles.scenarioLabel}>
-          <Text style={styles.scenarioText}>{item.scenario_name}</Text>
-        </View>
-      </Animated.View>
-    );
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.8)']}
+        style={styles.imageGradient}
+      />
+      <View style={styles.scenarioLabel}>
+        <Text style={styles.scenarioText}>{item.scenario_name}</Text>
+      </View>
+    </Animated.View>
+  );
   };
 
   return (

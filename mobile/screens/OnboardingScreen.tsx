@@ -32,6 +32,7 @@ import { GlassCard } from '../components/GlassCard';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { useAuth } from '../lib/auth/context';
 import { apiPost } from '../lib/api/client';
+import { supabase } from '../supabase/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme } from '../lib/theme';
 import { showAlert } from '../lib/utils/alert';
@@ -40,9 +41,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Onboarding steps
 type OnboardingStep = 
-  | 'welcome1'
-  | 'welcome2'
-  | 'welcome3'
   | 'profile'
   | 'goals'
   | 'permissions'
@@ -50,41 +48,11 @@ type OnboardingStep =
   | 'firstScan';
 
 const STEPS: OnboardingStep[] = [
-  'welcome1',
-  'welcome2',
-  'welcome3',
   'profile',
   'goals',
   'permissions',
   'disclaimer',
   'firstScan',
-];
-
-const WELCOME_SLIDES = [
-  {
-    title: 'Black Pill',
-    subtitle: 'Welcome',
-    emoji: '💊',
-    description: 'Your AI-powered companion for facial analysis and self-improvement tracking.',
-    accentColor: DarkTheme.colors.primary,
-    useCustomIcon: true,
-  },
-  {
-    title: 'AI Analysis',
-    subtitle: 'Powered by Science',
-    emoji: '🔬',
-    description: 'Get detailed facial analysis using advanced AI that evaluates symmetry, proportions, and features.',
-    accentColor: '#00FF94',
-    useCustomIcon: false,
-  },
-  {
-    title: 'Track Progress',
-    subtitle: 'See Your Journey',
-    emoji: '📈',
-    description: 'Monitor changes over time, build healthy habits, and achieve your personal goals.',
-    accentColor: '#FFB800',
-    useCustomIcon: false,
-  },
 ];
 
 export function OnboardingScreen() {
@@ -104,8 +72,6 @@ export function OnboardingScreen() {
   const [loading, setLoading] = useState(false);
 
   const currentStep = STEPS[currentStepIndex];
-  const isWelcomeSlide = currentStep.startsWith('welcome');
-  const welcomeSlideIndex = isWelcomeSlide ? parseInt(currentStep.replace('welcome', '')) - 1 : -1;
 
   const progressWidth = useSharedValue((currentStepIndex + 1) / STEPS.length);
 
@@ -291,16 +257,6 @@ export function OnboardingScreen() {
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case 'welcome1':
-      case 'welcome2':
-      case 'welcome3':
-        return (
-          <OnboardingSlide
-            {...WELCOME_SLIDES[welcomeSlideIndex]}
-            isActive={true}
-          />
-        );
-
       case 'profile':
         return (
           <ProfileSetupStep
@@ -410,8 +366,7 @@ export function OnboardingScreen() {
                     analysis. If you experience negative emotional impacts from
                     using this app, please seek professional support.
                     {'\n\n'}
-                    By continuing, you acknowledge that you are 18 years or older
-                    and understand these limitations.
+                    By continuing, you acknowledge that you understand these limitations.
                   </Text>
                 </ScrollView>
               </View>

@@ -2,10 +2,42 @@ import Purchases, { CustomerInfo, PurchasesOffering, PurchasesPackage } from 're
 import { Platform } from 'react-native';
 import { getApiUrl } from '../utils/apiUrl';
 import { supabase } from '../supabase/client';
+import {
+  PRO_MONTHLY_PRODUCT_ID,
+  PRO_YEARLY_PRODUCT_ID,
+  ELITE_MONTHLY_PRODUCT_ID,
+  ELITE_YEARLY_PRODUCT_ID,
+  ALL_PRODUCT_IDS,
+} from '../subscription/constants';
+
+/**
+ * Expected Subscription Product IDs (iOS App Store)
+ * These must match exactly with:
+ * - App Store Connect subscription product IDs
+ * - RevenueCat product store identifiers
+ * 
+ * Product IDs:
+ * - pro_monthly: Pro Monthly subscription
+ * - pro_yearly: Pro Yearly subscription
+ * - elite_monthly: Elite Monthly subscription
+ * - elite_yearly: Elite Yearly subscription
+ */
 
 // Initialize RevenueCat SDK
 export const initializeRevenueCat = async (userId?: string): Promise<void> => {
   try {
+    // Reference product IDs to ensure they're included in the binary
+    // This helps Apple App Store Connect detect subscriptions during submission
+    if (__DEV__) {
+      console.log('Initializing RevenueCat with product IDs:', {
+        PRO_MONTHLY_PRODUCT_ID,
+        PRO_YEARLY_PRODUCT_ID,
+        ELITE_MONTHLY_PRODUCT_ID,
+        ELITE_YEARLY_PRODUCT_ID,
+        ALL_PRODUCT_IDS,
+      });
+    }
+    
     const apiKey = Platform.OS === 'ios' 
       ? process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS
       : process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID;
@@ -164,6 +196,7 @@ export const getSubscriptionTier = (customerInfo: CustomerInfo | null): 'pro' | 
 
 // Get package by identifier (for pricing screen)
 // Searches by both package identifier and product identifier for flexibility
+// Expected product identifiers: pro_monthly, pro_yearly, elite_monthly, elite_yearly
 export const getPackageByIdentifier = async (
   identifier: string
 ): Promise<PurchasesPackage | null> => {
@@ -176,6 +209,7 @@ export const getPackageByIdentifier = async (
     if (byPackage) return byPackage;
     
     // Fallback: try product identifier (for cases where identifier is a product ID)
+    // Product IDs: pro_monthly, pro_yearly, elite_monthly, elite_yearly
     const byProduct = offering.availablePackages.find(pkg => pkg.product.identifier === identifier);
     return byProduct || null;
   } catch (error) {

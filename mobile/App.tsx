@@ -19,6 +19,7 @@ LogBox.ignoreLogs([
 
 // Screens
 import { SplashScreen } from './screens/SplashScreen';
+import { WelcomeScreen } from './screens/WelcomeScreen';
 import { LoginScreen } from './screens/LoginScreen';
 import { SignupScreen } from './screens/SignupScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
@@ -220,6 +221,7 @@ function RootNavigator() {
         ) : (
           // Not logged in - show auth screens
           <>
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Signup" component={SignupScreen} />
           </>
