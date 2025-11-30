@@ -21,6 +21,27 @@ export interface AuthenticatedRequest extends Request {
 }
 
 /**
+ * Extract Authorization header from Vercel's x-vercel-sc-headers
+ * Vercel's edge/caching layer sometimes wraps headers in this JSON field
+ */
+function extractAuthFromVercelHeaders(request: Request): string | null {
+  const scHeaders = request.headers.get('x-vercel-sc-headers');
+  if (scHeaders) {
+    try {
+      const parsed = JSON.parse(scHeaders);
+      if (parsed.Authorization) {
+        console.log('[Auth] Found Authorization in x-vercel-sc-headers');
+        return parsed.Authorization;
+      }
+    } catch (e) {
+      // Invalid JSON, ignore
+      console.log('[Auth] Failed to parse x-vercel-sc-headers:', e);
+    }
+  }
+  return null;
+}
+
+/**
  * Verify JWT token from Supabase Auth
  * Returns the authenticated user or throws an error
  */
@@ -28,7 +49,13 @@ export async function getAuthenticatedUser(request: Request): Promise<Authentica
   const url = new URL(request.url);
   console.log('[Auth] Verifying token for:', request.method, url.pathname);
   
-  const authHeader = request.headers.get('authorization');
+  // Try direct Authorization header first
+  let authHeader = request.headers.get('authorization');
+  
+  // Fallback: Check Vercel's x-vercel-sc-headers (edge caching wraps headers here)
+  if (!authHeader) {
+    authHeader = extractAuthFromVercelHeaders(request);
+  }
   
   console.log('[Auth] Authorization header present:', !!authHeader);
   console.log('[Auth] Authorization header starts with Bearer:', authHeader?.startsWith('Bearer '));

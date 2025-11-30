@@ -338,7 +338,7 @@ export function AnalysisResultScreen() {
 
   const handleShare = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const appUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://black-pill.app';
+    const appUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://www.black-pill.app';
     try {
       await Share.share({
         message: `I just got a ${analysis?.score.toFixed(1)}/10 on BlackPill! Check out your score: ${appUrl}`,

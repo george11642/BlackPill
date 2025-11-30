@@ -88,7 +88,7 @@ export function HelpAndSupportScreen() {
 
   const handleOpenWebsite = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const appUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://black-pill.app';
+    const appUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://www.black-pill.app';
     Linking.openURL(`${appUrl}/help`);
   };
 

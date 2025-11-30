@@ -164,7 +164,7 @@ export function ShareScreen() {
 
   const potentialScore = analysis.potential_score || Math.min(10, analysis.score + 1.5);
   const referralCode = analysis.referral_code || user?.referral_code || 'BLACKPILL';
-  const appUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://black-pill.app';
+  const appUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://www.black-pill.app';
   const shareUrl = `${appUrl}/ref/${referralCode}`;
 
   return (

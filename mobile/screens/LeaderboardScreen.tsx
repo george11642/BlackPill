@@ -211,7 +211,7 @@ export function LeaderboardScreen() {
   const handleShareRank = async () => {
     if (!userRank) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const appUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://black-pill.app';
+    const appUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://www.black-pill.app';
     try {
       await Share.share({
         message: `I'm ranked #${userRank} globally on BlackPill! 🏆 Can you beat my face score? ${appUrl}`,

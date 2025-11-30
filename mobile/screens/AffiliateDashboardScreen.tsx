@@ -214,7 +214,7 @@ export default function AffiliateDashboardScreen() {
       setMonthlyEarnings(monthly);
 
       // Generate referral URL
-      const appUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://black-pill.app';
+      const appUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://www.black-pill.app';
       setReferralUrl(`${appUrl}?ref=${affiliate.referral_code}`);
     } catch (error) {
       console.error('Error loading affiliate data:', error);
