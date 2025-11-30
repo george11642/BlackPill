@@ -4,6 +4,15 @@
   "buildCommand": "cd mobile && npm install --legacy-peer-deps && cd ../web && npm install --legacy-peer-deps && npm run build",
   "outputDirectory": "web/.next",
   "installCommand": "npm install --legacy-peer-deps",
-  "crons": []
+  "crons": [],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" },
+        { "key": "x-vercel-skip-sc", "value": "1" }
+      ]
+    }
+  ]
 }
 
