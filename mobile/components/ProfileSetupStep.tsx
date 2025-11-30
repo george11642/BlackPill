@@ -51,6 +51,7 @@ export function ProfileSetupStep({ data, onUpdate }: ProfileSetupStepProps) {
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
+      exif: false, // Strip EXIF to fix orientation issues
     });
 
     if (!result.canceled && result.assets[0]) {
@@ -71,6 +72,7 @@ export function ProfileSetupStep({ data, onUpdate }: ProfileSetupStepProps) {
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
+      exif: false, // Strip EXIF to fix orientation issues
     });
 
     if (!result.canceled && result.assets[0]) {
