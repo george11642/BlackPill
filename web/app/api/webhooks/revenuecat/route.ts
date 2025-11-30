@@ -237,7 +237,7 @@ export async function POST(request: Request) {
           current_period_start: purchaseDate,
           current_period_end: expirationDate,
           cancel_at_period_end: false,
-        });
+        }, { onConflict: 'user_id,payment_provider' });
 
         // Send subscription confirmation email
         if (profile.email) {
