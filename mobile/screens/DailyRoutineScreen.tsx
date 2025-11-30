@@ -22,15 +22,17 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { Settings, ChevronRight, ChevronDown, Check, Flame, Scan, Sparkles, Clock, Target, RotateCcw, ShoppingBag } from 'lucide-react-native';
+import { Settings, ChevronRight, ChevronDown, Check, Flame, Scan, Sparkles, Clock, Target, RotateCcw, ShoppingBag, Lock } from 'lucide-react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiGet, apiPost } from '../lib/api/client';
 import { useAuth } from '../lib/auth/context';
+import { useSubscription } from '../lib/subscription/context';
 import { GlassCard } from '../components/GlassCard';
 import { ProfileAvatar } from '../components/ProfileAvatar';
 import { PrimaryButton, IconButton } from '../components/PrimaryButton';
 import { GradientText } from '../components/GradientText';
+import { BlurredContent } from '../components/BlurredContent';
 import { DarkTheme, getScoreColor } from '../lib/theme';
 import { deduplicateTasks } from '../lib/routines/taskNormalization';
 
@@ -142,6 +144,10 @@ export function DailyRoutineScreen() {
     latest_analysis_image: undefined,
   });
   const [primaryGoal, setPrimaryGoal] = useState<Goal | null>(null);
+
+  // Get subscription tier
+  const { tier } = useSubscription();
+  const isFree = tier === 'free';
 
   // Animation values
   const headerOpacity = useSharedValue(0);
@@ -582,30 +588,54 @@ export function DailyRoutineScreen() {
 
         {/* Tasks List or Empty State */}
         {tasks.length > 0 ? (
-          <View style={styles.tasksContainer}>
-            {tasks
-              .filter((task: RoutineTask) => {
-                if (taskFilter === 'all') return true;
-                if (taskFilter === 'daily') {
-                  return !task.frequency || task.frequency === 'daily' || task.frequency === 'every_other_day';
-                }
-                if (taskFilter === 'weekly') {
-                  return task.frequency === 'weekly';
-                }
-                if (taskFilter === 'monthly') {
-                  return task.frequency === 'monthly';
-                }
-                return true;
-              })
-              .map((task: RoutineTask, index: number) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  index={index}
-                  onToggle={() => toggleTask(task.id)}
-                />
-              ))}
-          </View>
+          <BlurredContent 
+            isBlurred={isFree}
+            overlay={isFree ? (
+              <View style={styles.blurOverlay}>
+                <Lock size={32} color={DarkTheme.colors.primary} />
+                <Text style={styles.blurOverlayTitle}>Subscribe to unlock</Text>
+                <Text style={styles.blurOverlayText}>Your personalized routine</Text>
+                <TouchableOpacity 
+                  style={styles.blurOverlayButton}
+                  onPress={() => (navigation as any).navigate('Subscription')}
+                >
+                  <LinearGradient
+                    colors={[DarkTheme.colors.primary, DarkTheme.colors.primaryDark]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.blurOverlayButtonGradient}
+                  >
+                    <Text style={styles.blurOverlayButtonText}>Upgrade Now</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            ) : undefined}
+          >
+            <View style={styles.tasksContainer}>
+              {tasks
+                .filter((task: RoutineTask) => {
+                  if (taskFilter === 'all') return true;
+                  if (taskFilter === 'daily') {
+                    return !task.frequency || task.frequency === 'daily' || task.frequency === 'every_other_day';
+                  }
+                  if (taskFilter === 'weekly') {
+                    return task.frequency === 'weekly';
+                  }
+                  if (taskFilter === 'monthly') {
+                    return task.frequency === 'monthly';
+                  }
+                  return true;
+                })
+                .map((task: RoutineTask, index: number) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    index={index}
+                    onToggle={() => toggleTask(task.id)}
+                  />
+                ))}
+            </View>
+          </BlurredContent>
         ) : !loading && completedTasks.length === 0 && (
           <View style={styles.emptyStateContainer}>
             <GlassCard variant="elevated" style={styles.emptyStateCard}>
@@ -1534,6 +1564,41 @@ const styles = StyleSheet.create({
     color: DarkTheme.colors.textSecondary,
     fontFamily: DarkTheme.typography.fontFamily,
     textAlign: 'center',
+  },
+  blurOverlay: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: DarkTheme.spacing.md,
+  },
+  blurOverlayTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: DarkTheme.colors.text,
+    fontFamily: DarkTheme.typography.fontFamily,
+    textAlign: 'center',
+  },
+  blurOverlayText: {
+    fontSize: 14,
+    color: DarkTheme.colors.textSecondary,
+    fontFamily: DarkTheme.typography.fontFamily,
+    textAlign: 'center',
+  },
+  blurOverlayButton: {
+    marginTop: DarkTheme.spacing.md,
+    borderRadius: DarkTheme.borderRadius.md,
+    overflow: 'hidden',
+  },
+  blurOverlayButtonGradient: {
+    paddingHorizontal: DarkTheme.spacing.lg,
+    paddingVertical: DarkTheme.spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  blurOverlayButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    fontFamily: DarkTheme.typography.fontFamily,
   },
 });
 

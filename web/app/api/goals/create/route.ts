@@ -105,9 +105,16 @@ function generateSimpleMilestones(
 function mapGoalType(frontendType: string): string {
   const mapping: Record<string, string> = {
     'score': 'score_improvement',
+    'routine': 'routine_consistency',
+    // All category goals map to category_improvement
     'skin': 'category_improvement',
     'jawline': 'category_improvement',
-    'routine': 'routine_consistency',
+    'masculinity': 'category_improvement',
+    'cheekbones': 'category_improvement',
+    'eyes': 'category_improvement',
+    'symmetry': 'category_improvement',
+    'lips': 'category_improvement',
+    'hair': 'category_improvement',
   };
   
   return mapping[frontendType] || 'custom';
@@ -148,6 +155,7 @@ export const POST = withAuth(async (request: Request, user) => {
         current_value: current_value ? parseFloat(current_value) : null,
         deadline,
         status: 'active',
+        category: category || null, // Store the frontend goal_type as category for reference
       })
       .select()
       .single();

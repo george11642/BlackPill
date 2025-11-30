@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,35 +8,87 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Target, Calendar, Activity, ArrowRight } from 'lucide-react-native';
+import { Target, Calendar, Activity, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useAuth } from '../lib/auth/context';
-import { apiPost } from '../lib/api/client';
+import { apiPost, apiGet } from '../lib/api/client';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { TextInput } from '../components/TextInput';
 import { BackHeader } from '../components/BackHeader';
 import { GlassCard } from '../components/GlassCard';
+import { GradientText } from '../components/GradientText';
 import { DarkTheme } from '../lib/theme';
 
-const GOAL_TYPES = [
+const DEFAULT_GOAL_TYPES = [
   { id: 'score', label: 'Overall Score', icon: Activity, unit: 'pts' },
-  { id: 'skin', label: 'Skin Quality', icon: Activity, unit: 'pts' },
-  { id: 'jawline', label: 'Jawline', icon: Activity, unit: 'pts' },
   { id: 'routine', label: 'Routine Consistency', icon: Target, unit: '%' },
 ];
+
+interface GoalType {
+  id: string;
+  label: string;
+  icon: string;
+  unit: string;
+  currentScore?: number | null;
+}
 
 export function CreateGoalScreen() {
   const navigation = useNavigation();
   const { session } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [loadingTypes, setLoadingTypes] = useState(true);
+  const [allGoalTypes, setAllGoalTypes] = useState<GoalType[]>(DEFAULT_GOAL_TYPES);
+  const [displayedTypes, setDisplayedTypes] = useState<GoalType[]>(DEFAULT_GOAL_TYPES);
+  const [showAllTypes, setShowAllTypes] = useState(false);
   
-  const [selectedType, setSelectedType] = useState(GOAL_TYPES[0]);
+  const [selectedType, setSelectedType] = useState<GoalType>(DEFAULT_GOAL_TYPES[0]);
   const [targetValue, setTargetValue] = useState('');
   const [currentValue, setCurrentValue] = useState('');
   const [deadline, setDeadline] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)); // Default 30 days
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  useEffect(() => {
+    loadGoalTypes();
+  }, []);
+
+  const loadGoalTypes = async () => {
+    try {
+      setLoadingTypes(true);
+      const data = await apiGet<{ goal_types: GoalType[] }>(
+        '/api/goals/types',
+        session?.access_token
+      );
+      
+      if (data.goal_types && data.goal_types.length > 0) {
+        setAllGoalTypes(data.goal_types);
+        // Show first 4 types by default (or 6 if small screen)
+        const maxDisplay = 4;
+        setDisplayedTypes(data.goal_types.slice(0, maxDisplay));
+        setSelectedType(data.goal_types[0]);
+      }
+    } catch (error) {
+      console.error('Failed to load goal types:', error);
+      // Fallback to default types
+      setAllGoalTypes(DEFAULT_GOAL_TYPES);
+      setDisplayedTypes(DEFAULT_GOAL_TYPES);
+      setSelectedType(DEFAULT_GOAL_TYPES[0]);
+    } finally {
+      setLoadingTypes(false);
+    }
+  };
+
+  const toggleShowAll = () => {
+    if (showAllTypes) {
+      setDisplayedTypes(allGoalTypes.slice(0, 4));
+      setShowAllTypes(false);
+    } else {
+      setDisplayedTypes(allGoalTypes);
+      setShowAllTypes(true);
+    }
+  };
 
   const handleCreateGoal = async () => {
     if (!targetValue) {
@@ -53,7 +105,7 @@ export function CreateGoalScreen() {
           target_value: parseFloat(targetValue),
           current_value: currentValue ? parseFloat(currentValue) : null,
           deadline: deadline.toISOString(),
-          category: selectedType.id === 'routine' ? 'habit' : 'analysis',
+          category: selectedType.id, // Send the frontend goal_type ID as category
         },
         session?.access_token
       );
@@ -77,30 +129,68 @@ export function CreateGoalScreen() {
         style={styles.keyboardView}
       >
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <Text style={styles.sectionTitle}>Goal Type</Text>
-          <View style={styles.typesContainer}>
-            {GOAL_TYPES.map((type) => (
-              <TouchableOpacity
-                key={type.id}
-                style={[
-                  styles.typeCard,
-                  selectedType.id === type.id && styles.selectedTypeCard
-                ]}
-                onPress={() => setSelectedType(type)}
-              >
-                <type.icon 
-                  size={24} 
-                  color={selectedType.id === type.id ? DarkTheme.colors.primary : DarkTheme.colors.textSecondary} 
-                />
-                <Text style={[
-                  styles.typeLabel,
-                  selectedType.id === type.id && styles.selectedTypeLabel
-                ]}>
-                  {type.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <GradientText 
+            text="Goal Type"
+            fontSize={18}
+            fontWeight="700"
+            colors={[DarkTheme.colors.primary, DarkTheme.colors.accent]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.sectionTitleGradient}
+          />
+          
+          {loadingTypes ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={DarkTheme.colors.primary} />
+            </View>
+          ) : (
+            <>
+              <View style={styles.typesContainer}>
+                {displayedTypes.map((type) => (
+                  <TouchableOpacity
+                    key={type.id}
+                    style={[
+                      styles.typeCard,
+                      selectedType.id === type.id && styles.selectedTypeCard
+                    ]}
+                    onPress={() => setSelectedType(type)}
+                  >
+                    <Activity 
+                      size={24} 
+                      color={selectedType.id === type.id ? DarkTheme.colors.primary : DarkTheme.colors.textSecondary} 
+                    />
+                    <Text style={[
+                      styles.typeLabel,
+                      selectedType.id === type.id && styles.selectedTypeLabel
+                    ]}>
+                      {type.label}
+                    </Text>
+                    {type.currentScore !== null && type.currentScore !== undefined && (
+                      <Text style={styles.scoreLabel}>
+                        {type.currentScore.toFixed(1)}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {allGoalTypes.length > 4 && (
+                <TouchableOpacity
+                  style={styles.showMoreButton}
+                  onPress={toggleShowAll}
+                >
+                  <Text style={styles.showMoreText}>
+                    {showAllTypes ? 'Show Less' : `Show All (${allGoalTypes.length})`}
+                  </Text>
+                  {showAllTypes ? (
+                    <ChevronUp size={16} color={DarkTheme.colors.primary} />
+                  ) : (
+                    <ChevronDown size={16} color={DarkTheme.colors.primary} />
+                  )}
+                </TouchableOpacity>
+              )}
+            </>
+          )}
 
           <View style={styles.formSection}>
             <GlassCard style={styles.inputCard}>
@@ -189,11 +279,20 @@ const styles = StyleSheet.create({
     marginBottom: DarkTheme.spacing.md,
     fontFamily: DarkTheme.typography.fontFamily,
   },
+  sectionTitleGradient: {
+    marginBottom: DarkTheme.spacing.md,
+  },
+  loadingContainer: {
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: DarkTheme.spacing.xl,
+  },
   typesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: DarkTheme.spacing.sm,
-    marginBottom: DarkTheme.spacing.xl,
+    marginBottom: DarkTheme.spacing.md,
   },
   typeCard: {
     width: '48%',
@@ -217,6 +316,26 @@ const styles = StyleSheet.create({
   },
   selectedTypeLabel: {
     color: DarkTheme.colors.primary,
+  },
+  scoreLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: DarkTheme.colors.textTertiary,
+    fontFamily: DarkTheme.typography.fontFamily,
+  },
+  showMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: DarkTheme.spacing.sm,
+    paddingVertical: DarkTheme.spacing.sm,
+    marginBottom: DarkTheme.spacing.xl,
+  },
+  showMoreText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: DarkTheme.colors.primary,
+    fontFamily: DarkTheme.typography.fontFamily,
   },
   formSection: {
     gap: DarkTheme.spacing.md,

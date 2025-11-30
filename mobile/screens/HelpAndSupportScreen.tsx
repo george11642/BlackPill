@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Linking,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -17,6 +18,7 @@ import { MessageCircle, Mail, Globe, HelpCircle, ChevronRight } from 'lucide-rea
 
 import { GlassCard } from '../components/GlassCard';
 import { BackHeader } from '../components/BackHeader';
+import { GradientText } from '../components/GradientText';
 import { DarkTheme } from '../lib/theme';
 
 interface FAQItem {
@@ -134,7 +136,15 @@ export function HelpAndSupportScreen() {
 
       {/* Support Channels */}
       <Animated.View style={contentAnimatedStyle}>
-        <Text style={styles.sectionTitle}>Contact Us</Text>
+        <GradientText 
+          text="Contact Us"
+          fontSize={18}
+          fontWeight="700"
+          colors={[DarkTheme.colors.primary, DarkTheme.colors.accent]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.sectionTitleGradient}
+        />
         <View style={styles.channelsContainer}>
           {supportChannels.map((channel) => {
             const Icon = channel.icon;
@@ -168,7 +178,15 @@ export function HelpAndSupportScreen() {
 
       {/* FAQs */}
       <Animated.View style={[styles.faqSection, contentAnimatedStyle]}>
-        <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+        <GradientText 
+          text="Frequently Asked Questions"
+          fontSize={18}
+          fontWeight="700"
+          colors={[DarkTheme.colors.primary, DarkTheme.colors.accent]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.sectionTitleGradient}
+        />
 
         <View style={styles.faqContainer}>
           {faqs.map((faq) => (
@@ -229,6 +247,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: DarkTheme.colors.text,
     fontFamily: DarkTheme.typography.fontFamily,
+    marginBottom: DarkTheme.spacing.md,
+  },
+  sectionTitleGradient: {
     marginBottom: DarkTheme.spacing.md,
   },
   channelsContainer: {

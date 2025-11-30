@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Image, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { User } from 'lucide-react-native';
 import { DarkTheme } from '../lib/theme';

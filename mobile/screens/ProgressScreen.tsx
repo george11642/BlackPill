@@ -28,6 +28,7 @@ import { TrendingUp, Flame, Target, CheckCircle, Award, ChevronRight, Clock, Plu
 import { apiGet } from '../lib/api/client';
 import { useAuth } from '../lib/auth/context';
 import { GlassCard } from '../components/GlassCard';
+import { GradientText } from '../components/GradientText';
 import { DarkTheme, getScoreColor } from '../lib/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -413,7 +414,13 @@ export function ProgressScreen() {
     >
       {/* Header */}
       <Animated.View style={[styles.header, headerAnimatedStyle]}>
-        <Text style={styles.title}>Your Progress</Text>
+        <GradientText
+          text="Your Progress"
+          colors={[DarkTheme.colors.primary, DarkTheme.colors.accent]}
+          fontSize={28}
+          fontWeight="700"
+          style={styles.title}
+        />
         <View style={styles.headerRight}>
           {stats?.improvement && stats.improvement > 0 && (
             <View style={styles.improvementBadge}>
@@ -675,7 +682,14 @@ export function ProgressScreen() {
       {activeGoals.length > 0 && (
         <Animated.View style={[styles.goalsSection, statsAnimatedStyle]}>
           <View style={styles.goalsHeader}>
-            <Text style={styles.goalsTitle}>Active Goals</Text>
+            <GradientText 
+              text="Active Goals"
+              fontSize={18}
+              fontWeight="600"
+              colors={[DarkTheme.colors.primary, DarkTheme.colors.accent]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            />
             <TouchableOpacity
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -833,7 +847,14 @@ export function ProgressScreen() {
       {recentAnalyses.length > 0 && (
         <Animated.View style={[styles.recentScansSection, statsAnimatedStyle]}>
           <View style={styles.recentScansHeader}>
-            <Text style={styles.recentScansTitle}>Recent Scans</Text>
+            <GradientText 
+              text="Recent Scans"
+              fontSize={18}
+              fontWeight="600"
+              colors={[DarkTheme.colors.primary, DarkTheme.colors.accent]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            />
             <TouchableOpacity
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

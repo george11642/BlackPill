@@ -155,12 +155,26 @@ export function MarketplaceScreen() {
           <View style={styles.recommendationHeader}>
             <View style={styles.recommendationTitleRow}>
               <Sparkles size={20} color={DarkTheme.colors.primary} />
-              <Text style={styles.recommendationTitle}>Recommended for You</Text>
+              <GradientText 
+                text="Recommended for You"
+                fontSize={18}
+                fontWeight="700"
+                colors={[DarkTheme.colors.primary, DarkTheme.colors.accent]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              />
             </View>
           </View>
           
           <GlassCard variant="subtle" style={styles.ctaCard}>
-            <Text style={styles.ctaTitle}>Get Personalized Picks</Text>
+            <GradientText 
+              text="Get Personalized Picks"
+              fontSize={18}
+              fontWeight="700"
+              colors={[DarkTheme.colors.primary, DarkTheme.colors.accent]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            />
             <Text style={styles.ctaText}>
               Analyze your face to get AI-powered product recommendations tailored to your needs.
             </Text>
@@ -184,12 +198,19 @@ export function MarketplaceScreen() {
           colors={[DarkTheme.colors.primary + '20', 'transparent']}
           style={styles.recommendationGradient}
         />
-        <View style={styles.recommendationHeader}>
-          <View style={styles.recommendationTitleRow}>
-            <Sparkles size={20} color={DarkTheme.colors.primary} />
-            <Text style={styles.recommendationTitle}>Recommended for You</Text>
+          <View style={styles.recommendationHeader}>
+            <View style={styles.recommendationTitleRow}>
+              <Sparkles size={20} color={DarkTheme.colors.primary} />
+              <GradientText 
+                text="Recommended for You"
+                fontSize={18}
+                fontWeight="700"
+                colors={[DarkTheme.colors.primary, DarkTheme.colors.accent]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              />
+            </View>
           </View>
-        </View>
 
         <FlatList
           data={recommendations}
@@ -372,6 +393,8 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     textAlign: 'center',
+    flex: 1,
+    maxWidth: '80%',
   },
   headerContainer: {
     paddingBottom: DarkTheme.spacing.md,
@@ -507,6 +530,8 @@ const styles = StyleSheet.create({
   recommendationContainer: {
     marginBottom: DarkTheme.spacing.lg,
     position: 'relative',
+    marginHorizontal: 0,
+    overflow: 'visible',
   },
   recommendationGradient: {
     position: 'absolute',
@@ -521,7 +546,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: DarkTheme.spacing.sm,
-    paddingHorizontal: 4,
+    paddingHorizontal: DarkTheme.spacing.md,
   },
   recommendationTitleRow: {
     flexDirection: 'row',
@@ -541,6 +566,7 @@ const styles = StyleSheet.create({
   },
   recommendationsList: {
     gap: DarkTheme.spacing.md,
+    paddingLeft: DarkTheme.spacing.md,
     paddingRight: DarkTheme.spacing.md,
   },
   recommendationCardWrapper: {

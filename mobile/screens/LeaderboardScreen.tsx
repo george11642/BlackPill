@@ -20,6 +20,7 @@ import { useAuth } from '../lib/auth/context';
 import { GlassCard } from '../components/GlassCard';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { BackHeader } from '../components/BackHeader';
+import { GradientText } from '../components/GradientText';
 import { LeaderboardEntry } from '../lib/types';
 import { DarkTheme, getScoreColor } from '../lib/theme';
 import { showAlert } from '../lib/utils/alert';
@@ -456,7 +457,14 @@ export function LeaderboardScreen() {
               <Crown size={24} color={DarkTheme.colors.primary} />
             </View>
             <View style={styles.statusInfo}>
-              <Text style={styles.statusTitle}>You're ranked #{userRank}</Text>
+              <GradientText 
+                text={`You're ranked #${userRank}`}
+                fontSize={24}
+                fontWeight="700"
+                colors={[DarkTheme.colors.primary, DarkTheme.colors.accent]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              />
               <View style={styles.statusActions}>
                 <TouchableOpacity onPress={handleShareRank} style={styles.shareButton}>
                   <Share2 size={14} color={DarkTheme.colors.primary} />
@@ -481,7 +489,14 @@ export function LeaderboardScreen() {
               <Upload size={24} color={DarkTheme.colors.textSecondary} />
             </View>
             <View style={styles.statusInfo}>
-              <Text style={styles.statusTitle}>Join the Competition</Text>
+              <GradientText 
+                text="Join the Competition"
+                fontSize={24}
+                fontWeight="700"
+                colors={[DarkTheme.colors.primary, DarkTheme.colors.accent]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              />
               <Text style={styles.statusSubtitle}>
                 Share your best score: {bestAnalysis.score.toFixed(1)}
               </Text>
@@ -502,7 +517,14 @@ export function LeaderboardScreen() {
               <Trophy size={24} color={DarkTheme.colors.textSecondary} />
             </View>
             <View style={styles.statusInfo}>
-              <Text style={styles.statusTitle}>Get Your Score</Text>
+              <GradientText 
+                text="Get Your Score"
+                fontSize={24}
+                fontWeight="700"
+                colors={[DarkTheme.colors.primary, DarkTheme.colors.accent]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              />
               <Text style={styles.statusSubtitle}>
                 Take a scan to compete
               </Text>
@@ -777,8 +799,6 @@ const styles = StyleSheet.create({
   subFiltersContainer: {
     paddingTop: DarkTheme.spacing.xs,
     paddingBottom: DarkTheme.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: DarkTheme.colors.borderSubtle,
     marginTop: DarkTheme.spacing.xs,
   },
   subFilters: {

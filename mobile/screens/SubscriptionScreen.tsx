@@ -25,7 +25,7 @@ import { useAuth } from '../lib/auth/context';
 import { useSubscription } from '../lib/subscription/context';
 import { GlassCard } from '../components/GlassCard';
 import { PrimaryButton } from '../components/PrimaryButton';
-import { BackHeader } from '../components/BackHeader';
+import { GradientText } from '../components/GradientText';
 import { DarkTheme } from '../lib/theme';
 import {
   getOfferings,
@@ -189,15 +189,20 @@ export function SubscriptionScreen() {
         colors={['#000000', '#1a1a1a', '#000000']}
         style={styles.background}
       />
-      
-      <BackHeader title="" variant="large" />
 
       <ScrollView 
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={[styles.header, headerStyle]}>
-          <Text style={styles.title}>Unlock Your{'\n'}Full Potential</Text>
+          <GradientText 
+            text="Unlock Your Full Potential"
+            fontSize={36}
+            fontWeight="800"
+            colors={[DarkTheme.colors.primary, DarkTheme.colors.accent]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          />
           <Text style={styles.subtitle}>Choose the plan that fits your goals</Text>
         </Animated.View>
 
@@ -348,11 +353,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   title: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: '#fff',
     marginBottom: 8,
-    lineHeight: 42,
   },
   subtitle: {
     fontSize: 16,
