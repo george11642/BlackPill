@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
 import {
-  withAuth,
   checkScansRemaining,
   analyzeRateLimiter,
   supabaseAdmin,
@@ -16,6 +15,11 @@ import {
   checkImprovementAchievements,
 } from '@/lib/achievements/service';
 import { updateGoalsFromAnalysis } from '@/lib/goals/service';
+import { createClient } from '@supabase/supabase-js';
+
+// Configure runtime - force dynamic and no revalidation to avoid Vercel SC issues
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // CORS headers - allow all origins for mobile app
 const corsHeaders = {
@@ -37,10 +41,124 @@ export async function OPTIONS(request: Request) {
  * POST /api/analyze
  * Analyze a facial photo
  */
-export const POST = withAuth(async (request: Request, user) => {
+export async function POST(request: Request) {
   const requestId = getRequestId(request);
 
   try {
+    // Authentication - try multiple methods to get Authorization header (like SmileScore)
+    let authHeader: string | null = null;
+    const allHeaders: Record<string, string> = {};
+    
+    try {
+      // Method 1: Try iteration
+      request.headers.forEach((value, key) => {
+        const lowerKey = key.toLowerCase();
+        allHeaders[key] = lowerKey === 'authorization' ? `${value.substring(0, 20)}...` : value;
+        if (lowerKey === 'authorization') {
+          authHeader = value;
+        }
+      });
+      
+      // Method 2: Try Array.from if iteration didn't work
+      if (!authHeader) {
+        const headerEntries = Array.from(request.headers.entries());
+        for (const [key, value] of headerEntries) {
+          if (key.toLowerCase() === 'authorization') {
+            authHeader = value;
+            break;
+          }
+        }
+      }
+      
+      // Method 3: Try direct get with multiple case variations
+      if (!authHeader) {
+        authHeader = request.headers.get('authorization') 
+          || request.headers.get('Authorization') 
+          || request.headers.get('AUTHORIZATION')
+          || null;
+      }
+      
+      console.log('[Analyze] Auth header found via iteration:', !!authHeader);
+      if (authHeader) {
+        console.log('[Analyze] Auth header value (first 30 chars):', authHeader.substring(0, 30));
+      } else {
+        console.log('[Analyze] No Authorization header found in any method');
+        console.log('[Analyze] All header names:', Array.from(request.headers.keys()));
+      }
+    } catch (headerError: any) {
+      console.error('[Analyze] Error reading headers:', headerError.message);
+      authHeader = request.headers.get('authorization') || request.headers.get('Authorization') || null;
+    }
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('[Analyze] REJECTED: Missing or invalid authorization header');
+      return NextResponse.json(
+        {
+          error: 'Unauthorized',
+          message: 'Missing or invalid authorization header',
+        },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    const token = authHeader.substring(7).trim();
+    
+    if (!token || token === 'undefined' || token === 'null' || token.length === 0) {
+      console.error('[Analyze] Invalid token detected');
+      return NextResponse.json(
+        {
+          error: 'Unauthorized',
+          message: 'Invalid or missing authentication token',
+        },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    console.log('[Analyze] Bearer token authentication - token length:', token.length);
+    
+    // Verify token with Supabase
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('[Analyze] SUPABASE_SERVICE_ROLE_KEY is not set');
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+    
+    const supabaseForAuth = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    
+    console.log('[Analyze] Verifying token with service role key...');
+    const { data: { user }, error: tokenError } = await supabaseForAuth.auth.getUser(token);
+    
+    if (tokenError) {
+      console.error('[Analyze] Token verification error:', tokenError.message);
+      return NextResponse.json(
+        {
+          error: 'Unauthorized',
+          message: tokenError.message,
+        },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    if (!user) {
+      console.error('[Analyze] No user returned from token verification');
+      return NextResponse.json(
+        {
+          error: 'Unauthorized',
+          message: 'Invalid token',
+        },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    console.log('[Analyze] SUCCESS: User authenticated:', user.id);
+
+    // Now process the analysis for the authenticated user
+
     // Initialize Redis for rate limiting
     await initRedis();
 
@@ -315,7 +433,7 @@ export const POST = withAuth(async (request: Request, user) => {
   } catch (error) {
     console.error('Analysis error:', {
       error: error instanceof Error ? error.message : String(error),
-      user_id: user.id,
+      user_id: user?.id,
       request_id: requestId,
     });
 
