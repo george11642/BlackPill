@@ -762,7 +762,6 @@ function TaskCard({ task, index, onToggle }: TaskCardProps) {
   return (
     <Animated.View style={containerAnimatedStyle}>
       <Animated.View style={cardAnimatedStyle}>
-        <Pressable onPress={handlePress}>
         <LinearGradient
           colors={
             task.completed
@@ -790,7 +789,6 @@ function TaskCard({ task, index, onToggle }: TaskCardProps) {
                     styles.taskDescription,
                     task.completed && styles.taskDescriptionCompleted,
                   ]}
-                  numberOfLines={2}
                 >
                   {task.description}
                 </Text>
@@ -815,18 +813,19 @@ function TaskCard({ task, index, onToggle }: TaskCardProps) {
               )}
             </View>
           </View>
-          <View
-            style={[
-              styles.checkbox,
-              task.completed && styles.checkboxCompleted,
-            ]}
-          >
-            <Animated.View style={checkAnimatedStyle}>
-              <Check size={16} color={DarkTheme.colors.background} strokeWidth={3} />
-            </Animated.View>
-          </View>
+          <Pressable onPress={handlePress}>
+            <View
+              style={[
+                styles.checkbox,
+                task.completed && styles.checkboxCompleted,
+              ]}
+            >
+              <Animated.View style={checkAnimatedStyle}>
+                <Check size={16} color={DarkTheme.colors.background} strokeWidth={3} />
+              </Animated.View>
+            </View>
+          </Pressable>
         </LinearGradient>
-      </Pressable>
         </Animated.View>
     </Animated.View>
   );

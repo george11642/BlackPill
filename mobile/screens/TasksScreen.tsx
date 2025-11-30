@@ -17,6 +17,19 @@ export function TasksScreen() {
   const { session } = useAuth();
   const [tasks, setTasks] = useState<RoutineTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+
+  const toggleTaskExpanded = (taskId: string) => {
+    setExpandedTasks((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     loadTodayTasks();
@@ -51,28 +64,45 @@ export function TasksScreen() {
     }
   };
 
-  const renderItem = ({ item }: { item: RoutineTask }) => (
-    <GlassCard style={styles.card}>
-      <TouchableOpacity
-        style={styles.task}
-        onPress={() => toggleTask(item.id)}
-      >
-        <View style={styles.taskCheckbox}>
-          {item.completed && <Text style={styles.checkmark}>✓</Text>}
-        </View>
-        <View style={styles.taskContent}>
-          <Text
-            style={[styles.taskName, item.completed && styles.taskCompleted]}
+  const renderItem = ({ item }: { item: RoutineTask }) => {
+    const isExpanded = expandedTasks.has(item.id);
+    return (
+      <GlassCard style={styles.card}>
+        <View style={styles.task}>
+          <TouchableOpacity
+            style={styles.taskCheckbox}
+            onPress={() => toggleTask(item.id)}
           >
-            {item.name}
-          </Text>
-          {item.description && (
-            <Text style={styles.taskDescription}>{item.description}</Text>
-          )}
+            {item.completed && <Text style={styles.checkmark}>✓</Text>}
+          </TouchableOpacity>
+          <View style={styles.taskContent}>
+            <Text
+              style={[styles.taskName, item.completed && styles.taskCompleted]}
+              numberOfLines={isExpanded ? undefined : 2}
+            >
+              {item.name}
+            </Text>
+            {item.description && (
+              <Text
+                style={styles.taskDescription}
+                numberOfLines={isExpanded ? undefined : 3}
+              >
+                {item.description}
+              </Text>
+            )}
+            <TouchableOpacity
+              onPress={() => toggleTaskExpanded(item.id)}
+              style={styles.expandButton}
+            >
+              <Text style={styles.expandButtonText}>
+                {isExpanded ? 'Show less' : 'Show more'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </TouchableOpacity>
-    </GlassCard>
-  );
+      </GlassCard>
+    );
+  };
 
   if (loading) {
     return (
@@ -144,6 +174,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: DarkTheme.colors.textSecondary,
     fontFamily: DarkTheme.typography.fontFamily,
+  },
+  expandButton: {
+    marginTop: DarkTheme.spacing.xs,
+    paddingVertical: DarkTheme.spacing.xs,
+  },
+  expandButtonText: {
+    fontSize: 13,
+    color: DarkTheme.colors.primary,
+    fontFamily: DarkTheme.typography.fontFamily,
+    fontWeight: '600',
   },
   loading: {
     color: DarkTheme.colors.text,

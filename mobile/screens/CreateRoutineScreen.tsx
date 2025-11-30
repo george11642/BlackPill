@@ -230,8 +230,8 @@ export function CreateRoutineScreen() {
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
-      // Navigate to Routines screen to see the new routine
-      navigation.navigate('Routines' as never);
+      // Go back to the Routines screen
+      navigation.goBack();
     } catch (err: any) {
       console.error('Failed to generate routine:', err);
       setError(err.message || 'Failed to generate routine. Please try again.');
@@ -315,31 +315,6 @@ export function CreateRoutineScreen() {
               >
                 <Text style={styles.scanButtonText}>Scan Now</Text>
               </TouchableOpacity>
-            </GlassCard>
-          </Animated.View>
-        )}
-
-        {/* Analysis Summary */}
-        {latestAnalysis && (
-          <Animated.View style={headerAnimatedStyle}>
-            <GlassCard variant="gold" style={styles.analysisCard}>
-              <View style={styles.analysisHeader}>
-                <Text style={styles.analysisTitle}>Based on Your Analysis</Text>
-              </View>
-              {getWeakAreas().length > 0 && (
-                <View style={styles.weakAreasContainer}>
-                  <Text style={styles.weakAreasLabel}>Areas to improve:</Text>
-                  <View style={styles.weakAreasList}>
-                    {getWeakAreas().map(({ area, score }) => (
-                      <View key={area} style={styles.weakAreaBadge}>
-                        <Text style={styles.weakAreaText}>
-                          {area} ({score.toFixed(1)})
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              )}
             </GlassCard>
           </Animated.View>
         )}
@@ -694,43 +669,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: DarkTheme.colors.background,
     fontFamily: DarkTheme.typography.fontFamily,
-  },
-  analysisCard: {
-    marginBottom: DarkTheme.spacing.xl,
-  },
-  analysisHeader: {
-    marginBottom: DarkTheme.spacing.md,
-  },
-  analysisTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: DarkTheme.colors.text,
-    fontFamily: DarkTheme.typography.fontFamily,
-  },
-  weakAreasContainer: {
-    gap: DarkTheme.spacing.sm,
-  },
-  weakAreasLabel: {
-    fontSize: 13,
-    color: DarkTheme.colors.textSecondary,
-    fontFamily: DarkTheme.typography.fontFamily,
-  },
-  weakAreasList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: DarkTheme.spacing.xs,
-  },
-  weakAreaBadge: {
-    backgroundColor: `${DarkTheme.colors.error}30`,
-    paddingHorizontal: DarkTheme.spacing.sm,
-    paddingVertical: DarkTheme.spacing.xs,
-    borderRadius: DarkTheme.borderRadius.sm,
-  },
-  weakAreaText: {
-    fontSize: 12,
-    color: DarkTheme.colors.error,
-    fontFamily: DarkTheme.typography.fontFamily,
-    textTransform: 'capitalize',
   },
   sectionTitle: {
     fontSize: 18,

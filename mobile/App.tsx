@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { NavigationContainer, DarkTheme as NavDarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, ActivityIndicator, StyleSheet, useColorScheme, Platform, LogBox } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
@@ -244,17 +245,19 @@ function App() {
   }
 
   return (
-    <ErrorBoundary>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <SubscriptionProvider>
-            <StatusBar style="light" />
-            <RootNavigator />
-            <AchievementToast />
-          </SubscriptionProvider>
-        </AuthProvider>
-      </SafeAreaProvider>
-    </ErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ErrorBoundary>
+        <SafeAreaProvider>
+          <AuthProvider>
+            <SubscriptionProvider>
+              <StatusBar style="light" />
+              <RootNavigator />
+              <AchievementToast />
+            </SubscriptionProvider>
+          </AuthProvider>
+        </SafeAreaProvider>
+      </ErrorBoundary>
+    </GestureHandlerRootView>
   );
 }
 
