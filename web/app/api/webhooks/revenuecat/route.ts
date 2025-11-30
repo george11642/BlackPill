@@ -226,18 +226,43 @@ export async function POST(request: Request) {
           : (tier === 'pro' ? 12.99 : 19.99); // Fallback to default prices
 
         // Create or update subscription record
-        await supabase.from('subscriptions').upsert({
-          user_id: userId,
-          tier: tier,
-          status: 'active',
-          revenuecat_subscription_id: event.event.transaction_id,
-          revenuecat_customer_id: appUserId,
-          payment_provider: 'revenuecat',
-          referred_by_user_id: referredByUserId,
-          current_period_start: purchaseDate,
-          current_period_end: expirationDate,
-          cancel_at_period_end: false,
-        }, { onConflict: 'user_id,payment_provider' });
+        // First check if subscription exists
+        const { data: existingSub } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('payment_provider', 'revenuecat')
+          .single();
+
+        if (existingSub) {
+          // Update existing subscription
+          await supabase
+            .from('subscriptions')
+            .update({
+              tier: tier,
+              status: 'active',
+              revenuecat_subscription_id: event.event.transaction_id,
+              revenuecat_customer_id: appUserId,
+              current_period_start: purchaseDate,
+              current_period_end: expirationDate,
+              cancel_at_period_end: false,
+            })
+            .eq('id', existingSub.id);
+        } else {
+          // Insert new subscription
+          await supabase.from('subscriptions').insert({
+            user_id: userId,
+            tier: tier,
+            status: 'active',
+            revenuecat_subscription_id: event.event.transaction_id,
+            revenuecat_customer_id: appUserId,
+            payment_provider: 'revenuecat',
+            referred_by_user_id: referredByUserId,
+            current_period_start: purchaseDate,
+            current_period_end: expirationDate,
+            cancel_at_period_end: false,
+          });
+        }
 
         // Send subscription confirmation email
         if (profile.email) {
