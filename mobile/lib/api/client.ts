@@ -19,7 +19,7 @@ async function request<T>(
   const url = `${apiUrl}${endpoint}`;
   
   // Debug logging for API URL resolution
-  console.log('[API] Request:', endpoint, '-> Full URL:', url);
+  console.log('[API] Request:', options.method || 'GET', endpoint, '-> Full URL:', url);
   
   // Don't set Content-Type for FormData - let the browser set it with boundary
   const isFormData = options.body instanceof FormData;
@@ -29,6 +29,14 @@ async function request<T>(
         'Content-Type': 'application/json',
         ...options.headers,
       };
+  
+  // Log Authorization header presence (not the actual token for security)
+  const authHeader = (options.headers as Record<string, string>)?.Authorization;
+  console.log('[API] Authorization header:', {
+    present: !!authHeader,
+    startsWithBearer: authHeader?.startsWith('Bearer ') || false,
+    tokenLength: authHeader ? authHeader.length - 7 : 0, // Subtract "Bearer " length
+  });
   
   const response = await fetch(url, {
     ...options,

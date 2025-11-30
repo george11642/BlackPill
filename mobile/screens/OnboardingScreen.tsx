@@ -184,18 +184,45 @@ export function OnboardingScreen() {
 
       // Ensure we have a valid session token before making the API call
       let accessToken = session?.access_token;
+      console.log('[Onboarding] Session from context:', {
+        hasSession: !!session,
+        hasAccessToken: !!accessToken,
+        tokenLength: accessToken?.length || 0,
+        tokenPrefix: accessToken?.substring(0, 20) || 'none',
+      });
+      
       if (!accessToken) {
         console.warn('[Onboarding] No session token in context, attempting to fetch fresh session...');
         const { data, error } = await supabase.auth.getSession();
-        if (error || !data.session?.access_token) {
+        console.log('[Onboarding] Fresh session fetch result:', {
+          hasData: !!data,
+          hasSession: !!data?.session,
+          hasAccessToken: !!data?.session?.access_token,
+          error: error?.message || 'none',
+        });
+        
+        if (error) {
+          throw new Error(`Failed to get session: ${error.message}`);
+        }
+        
+        if (!data.session?.access_token) {
           throw new Error('No active session. Please log in again.');
         }
+        
         accessToken = data.session.access_token;
-        console.log('[Onboarding] Fresh session token obtained');
+        console.log('[Onboarding] Fresh session token obtained, length:', accessToken.length);
       }
 
+      // Final validation - ensure we definitely have a token
+      if (!accessToken || accessToken.length === 0) {
+        console.error('[Onboarding] CRITICAL: accessToken is still empty/undefined after all checks!');
+        throw new Error('Unable to obtain authentication token. Please log in again.');
+      }
+      
+      console.log('[Onboarding] Token validation passed, token length:', accessToken.length);
+
       // Save onboarding data to server
-      console.log('[Onboarding] Saving onboarding data to server...');
+      console.log('[Onboarding] Saving onboarding data to server with token...');
       await apiPost(
         '/api/user/onboarding',
         {
