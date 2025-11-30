@@ -32,7 +32,7 @@ import { GlassCard } from '../components/GlassCard';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { useAuth } from '../lib/auth/context';
 import { apiPost } from '../lib/api/client';
-import { supabase } from '../supabase/client';
+import { supabase } from '../lib/supabase/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme } from '../lib/theme';
 import { showAlert } from '../lib/utils/alert';
@@ -60,6 +60,7 @@ export function OnboardingScreen() {
   const { session, user, refreshOnboardingStatus } = useAuth();
   const scrollRef = useRef<ScrollView>(null);
   const isCompletingRef = useRef(false); // Track if onboarding completion is in progress
+  const lastValidStepIndexRef = useRef(0); // Track the last valid step index
   
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [profileData, setProfileData] = useState<ProfileSetupData>({
@@ -87,6 +88,9 @@ export function OnboardingScreen() {
     }
     
     if (index < 0 || index >= STEPS.length) return;
+    
+    // Update the last valid step index
+    lastValidStepIndexRef.current = index;
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCurrentStepIndex(index);
@@ -178,6 +182,18 @@ export function OnboardingScreen() {
         await AsyncStorage.setItem('@blackpill_first_scan_pending', 'true');
       }
 
+      // Ensure we have a valid session token before making the API call
+      let accessToken = session?.access_token;
+      if (!accessToken) {
+        console.warn('[Onboarding] No session token in context, attempting to fetch fresh session...');
+        const { data, error } = await supabase.auth.getSession();
+        if (error || !data.session?.access_token) {
+          throw new Error('No active session. Please log in again.');
+        }
+        accessToken = data.session.access_token;
+        console.log('[Onboarding] Fresh session token obtained');
+      }
+
       // Save onboarding data to server
       console.log('[Onboarding] Saving onboarding data to server...');
       await apiPost(
@@ -187,7 +203,7 @@ export function OnboardingScreen() {
           avatarUri: profileData.avatarUri || null,
           goals: selectedGoals,
         },
-        session?.access_token
+        accessToken
       );
       console.log('[Onboarding] Onboarding data saved successfully');
 
@@ -221,8 +237,74 @@ export function OnboardingScreen() {
       // The first scan flag will ensure we get redirected to Camera if needed
       // Keep loading state true and completion flag set until navigation happens
       // The component will unmount when navigation occurs, so we don't need to clear these
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Onboarding] Failed to complete onboarding:', error);
+      
+      // Handle 401 Unauthorized specifically - attempt session refresh and retry
+      if (error.status === 401 || (error.message && error.message.includes('Invalid or expired'))) {
+        console.warn('[Onboarding] 401 Unauthorized detected. Attempting session refresh and retry...');
+        try {
+          // Refresh the session
+          const { data, error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError) {
+            throw new Error(`Session refresh failed: ${refreshError.message}`);
+          }
+          
+          if (!data.session?.access_token) {
+            throw new Error('Session refresh successful but no new token obtained');
+          }
+
+          console.log('[Onboarding] Session refreshed successfully, retrying API call...');
+          
+          // Retry the API call with the new token
+          await apiPost(
+            '/api/user/onboarding',
+            {
+              username: profileData.username || null,
+              avatarUri: profileData.avatarUri || null,
+              goals: selectedGoals,
+            },
+            data.session.access_token
+          );
+          console.log('[Onboarding] Onboarding data saved successfully after token refresh');
+
+          // Refresh onboarding status after successful retry
+          console.log('[Onboarding] Refreshing onboarding status...');
+          const refreshSuccess = await refreshOnboardingStatus();
+          if (!refreshSuccess) {
+            console.warn('[Onboarding] Refresh status failed after successful save, retrying...');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await refreshOnboardingStatus();
+          }
+
+          console.log('[Onboarding] Onboarding completion verified after retry');
+          return; // Success - exit without showing error alert
+        } catch (retryError: any) {
+          console.error('[Onboarding] Failed to refresh session or retry API call:', retryError);
+          
+          // Clear the completion flag on error
+          isCompletingRef.current = false;
+          
+          // Clear the first scan flag if onboarding failed
+          if (goToCamera) {
+            await AsyncStorage.removeItem('@blackpill_first_scan_pending');
+          }
+
+          showAlert({
+            title: 'Session Expired',
+            message: 'Your session has expired. Please log in again.',
+            buttons: [{ text: 'OK' }],
+          });
+
+          // Sign out the user since the session is invalid
+          try {
+            await supabase.auth.signOut();
+          } catch (signOutError) {
+            console.error('[Onboarding] Error signing out:', signOutError);
+          }
+          return;
+        }
+      }
       
       // Clear the completion flag on error so user can try again
       isCompletingRef.current = false;
@@ -232,10 +314,16 @@ export function OnboardingScreen() {
         await AsyncStorage.removeItem('@blackpill_first_scan_pending');
       }
       
+      // Restore the step index if it was reset (safety check)
+      if (currentStepIndex !== lastValidStepIndexRef.current) {
+        console.warn('[Onboarding] Step index was reset, restoring to last valid step:', lastValidStepIndexRef.current);
+        setCurrentStepIndex(lastValidStepIndexRef.current);
+      }
+      
       // Show error to user
       showAlert({
         title: 'Onboarding Error',
-        message: 'Failed to complete onboarding. Please try again.',
+        message: error.message || 'Failed to complete onboarding. Please try again.',
         buttons: [{ text: 'OK' }],
       });
       

@@ -7,7 +7,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Switch,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../lib/auth/context';
@@ -21,13 +20,11 @@ export function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [ageVerified, setAgeVerified] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{
     email?: string;
     password?: string;
     confirmPassword?: string;
-    age?: string;
   }>({});
 
   const validate = () => {
@@ -44,9 +41,6 @@ export function SignupScreen() {
     }
     if (password !== confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
-    }
-    if (!ageVerified) {
-      newErrors.age = 'You must be 18+ to use this app';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -125,22 +119,6 @@ export function SignupScreen() {
             error={errors.confirmPassword}
           />
 
-          <View style={styles.ageVerification}>
-            <View style={styles.ageRow}>
-              <Text style={styles.ageText}>I am 18 years or older</Text>
-              <Switch
-                value={ageVerified}
-                onValueChange={setAgeVerified}
-                trackColor={{
-                  false: DarkTheme.colors.card,
-                  true: DarkTheme.colors.primary,
-                }}
-                thumbColor={DarkTheme.colors.text}
-              />
-            </View>
-            {errors.age && <Text style={styles.error}>{errors.age}</Text>}
-          </View>
-
           <PrimaryButton
             title="Create Account"
             onPress={handleSignup}
@@ -205,19 +183,6 @@ const styles = StyleSheet.create({
   },
   form: {
     width: '100%',
-  },
-  ageVerification: {
-    marginVertical: DarkTheme.spacing.md,
-  },
-  ageRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  ageText: {
-    color: DarkTheme.colors.text,
-    fontSize: 14,
-    fontFamily: DarkTheme.typography.fontFamily,
   },
   error: {
     color: DarkTheme.colors.warning,

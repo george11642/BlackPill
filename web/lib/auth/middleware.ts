@@ -25,19 +25,33 @@ export interface AuthenticatedRequest extends Request {
  * Returns the authenticated user or throws an error
  */
 export async function getAuthenticatedUser(request: Request): Promise<AuthenticatedUser> {
+  const url = new URL(request.url);
+  console.log('[Auth] Verifying token for:', request.method, url.pathname);
+  
   const authHeader = request.headers.get('authorization');
   
+  console.log('[Auth] Authorization header present:', !!authHeader);
+  console.log('[Auth] Authorization header starts with Bearer:', authHeader?.startsWith('Bearer '));
+  
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.error('[Auth] REJECTED: Missing or invalid authorization header');
+    console.error('[Auth] Headers received:', Object.fromEntries(request.headers.entries()));
     throw new Error('Missing or invalid authorization header');
   }
 
   const token = authHeader.substring(7);
+  console.log('[Auth] Token length:', token.length);
+  console.log('[Auth] Token preview:', token.substring(0, 20) + '...' + token.substring(token.length - 10));
 
   // Create a server-side Supabase client for token verification
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+  console.log('[Auth] Supabase URL configured:', !!supabaseUrl);
+  console.log('[Auth] Supabase Anon Key configured:', !!supabaseAnonKey);
+
   if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('[Auth] REJECTED: Missing Supabase environment variables');
     throw new Error('Missing Supabase environment variables');
   }
 
@@ -49,12 +63,22 @@ export async function getAuthenticatedUser(request: Request): Promise<Authentica
   });
 
   // Verify token with Supabase
+  console.log('[Auth] Calling supabase.auth.getUser()...');
   const { data, error } = await supabase.auth.getUser(token);
 
-  if (error || !data.user) {
+  if (error) {
+    console.error('[Auth] REJECTED: Supabase getUser error:', error.message);
+    console.error('[Auth] Error details:', JSON.stringify(error));
+    throw new Error('Invalid or expired token');
+  }
+  
+  if (!data.user) {
+    console.error('[Auth] REJECTED: No user returned from Supabase');
     throw new Error('Invalid or expired token');
   }
 
+  console.log('[Auth] SUCCESS: User authenticated:', data.user.id, data.user.email);
+  
   return {
     id: data.user.id,
     email: data.user.email,
@@ -110,15 +134,21 @@ export function withAuth<T = unknown>(
   return async (request: Request): Promise<Response> => {
     // Note: CORS preflight is handled by global middleware.ts
     // This wrapper only handles authentication
+    const url = new URL(request.url);
+    console.log('[withAuth] Processing request:', request.method, url.pathname);
 
     try {
       const user = await getAuthenticatedUser(request);
+      console.log('[withAuth] Authentication successful, calling handler...');
       const response = await handler(request, user);
+      console.log('[withAuth] Handler completed, returning response');
       return response;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Authentication failed';
+      console.error('[withAuth] Authentication failed:', message);
       
       if (message.includes('Missing') || message.includes('Invalid') || message.includes('expired')) {
+        console.error('[withAuth] Returning 401 Unauthorized');
         return NextResponse.json(
           {
             error: 'Unauthorized',
@@ -127,7 +157,7 @@ export function withAuth<T = unknown>(
           { status: 401 }
         );
       } else {
-        console.error('Auth middleware error:', error);
+        console.error('[withAuth] Returning 500 Internal Server Error:', error);
         return NextResponse.json(
           {
             error: 'Internal Server Error',

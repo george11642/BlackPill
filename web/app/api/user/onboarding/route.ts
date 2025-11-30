@@ -7,6 +7,7 @@ import { withAuth, supabaseAdmin, handleApiError, getRequestId, createResponseWi
  */
 export const POST = withAuth(async (request: Request, user) => {
   const requestId = getRequestId(request);
+  console.log('[Onboarding POST] Handler reached - user:', user.id, 'requestId:', requestId);
 
   try {
     const body = await request.json();
@@ -103,6 +104,7 @@ export const POST = withAuth(async (request: Request, user) => {
  */
 export const GET = withAuth(async (request: Request, user) => {
   const requestId = getRequestId(request);
+  console.log('[Onboarding GET] Handler reached - user:', user.id, 'requestId:', requestId);
 
   try {
     const { data: userData, error } = await supabaseAdmin
