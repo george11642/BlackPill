@@ -154,11 +154,7 @@ export function AICoachScreen() {
       );
       
       setConversations(data.conversations || []);
-      
-      // Load most recent conversation if exists
-      if (data.conversations && data.conversations.length > 0) {
-        await selectConversation(data.conversations[0]);
-      }
+      // Don't auto-load last conversation - always start fresh with the welcome screen
     } catch (error) {
       console.error('Failed to load conversations:', error);
     } finally {
