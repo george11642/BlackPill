@@ -119,20 +119,45 @@ export async function POST(request: Request) {
     // Use admin client for database operations (bypasses RLS)
     const adminClient = createAdminClient();
     
-    // Upsert subscription record (user_id has unique constraint)
-    const { error } = await adminClient.from('subscriptions').upsert({
-      user_id: user.id,
-      tier: tier,
-      status: 'active',
-      revenuecat_subscription_id: transactionId,
-      revenuecat_customer_id: customerInfo.originalAppUserId,
-      payment_provider: 'revenuecat',
-      current_period_start: purchaseDate,
-      current_period_end: expirationDate,
-      cancel_at_period_end: false,
-    }, {
-      onConflict: 'user_id',
-    });
+    // Check if subscription exists, then insert or update
+    const { data: existingSub } = await adminClient
+      .from('subscriptions')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('payment_provider', 'revenuecat')
+      .single();
+
+    let error;
+    if (existingSub) {
+      // Update existing subscription
+      const result = await adminClient
+        .from('subscriptions')
+        .update({
+          tier: tier,
+          status: 'active',
+          revenuecat_subscription_id: transactionId,
+          revenuecat_customer_id: customerInfo.originalAppUserId,
+          current_period_start: purchaseDate,
+          current_period_end: expirationDate,
+          cancel_at_period_end: false,
+        })
+        .eq('id', existingSub.id);
+      error = result.error;
+    } else {
+      // Insert new subscription
+      const result = await adminClient.from('subscriptions').insert({
+        user_id: user.id,
+        tier: tier,
+        status: 'active',
+        revenuecat_subscription_id: transactionId,
+        revenuecat_customer_id: customerInfo.originalAppUserId,
+        payment_provider: 'revenuecat',
+        current_period_start: purchaseDate,
+        current_period_end: expirationDate,
+        cancel_at_period_end: false,
+      });
+      error = result.error;
+    }
 
     if (error) {
       console.error('[RevenueCat Sync] Error syncing subscription:', error);
