@@ -302,28 +302,45 @@ export function CameraScreen() {
     try {
       console.log('[CameraScreen] Starting analysis for URI:', uri);
       
-      // Validate and refresh session if needed
-      let accessToken = session?.access_token;
-      console.log('[CameraScreen] Current session token present:', !!accessToken);
+      // Get fresh session token for authentication (like SmileScore does)
+      console.log('[CameraScreen] Getting session token...');
+      const { data: { session: freshSession }, error: sessionError } = await supabase.auth.getSession();
       
-      if (!accessToken) {
-        console.log('[CameraScreen] No access token, attempting to refresh session...');
-        const { data: { session: freshSession }, error } = await supabase.auth.getSession();
-        
-        if (error || !freshSession?.access_token) {
-          console.error('[CameraScreen] Failed to get session:', error);
-          Alert.alert(
-            'Session Expired',
-            'Please sign in again to continue.',
-            [{ text: 'OK', onPress: () => (navigation as any).navigate('Auth') }]
-          );
-          setLoading(false);
-          return;
-        }
-        
-        accessToken = freshSession.access_token;
-        console.log('[CameraScreen] Session refreshed successfully');
+      if (sessionError) {
+        console.error('[CameraScreen] Session error:', sessionError);
+        Alert.alert(
+          'Authentication Error',
+          'Please sign in again to continue.',
+          [{ text: 'OK', onPress: () => (navigation as any).navigate('Auth') }]
+        );
+        setLoading(false);
+        return;
       }
+      
+      if (!freshSession) {
+        console.error('[CameraScreen] No session found');
+        Alert.alert(
+          'Not Authenticated',
+          'Please log in again.',
+          [{ text: 'OK', onPress: () => (navigation as any).navigate('Auth') }]
+        );
+        setLoading(false);
+        return;
+      }
+      
+      if (!freshSession.access_token) {
+        console.error('[CameraScreen] Session token missing');
+        Alert.alert(
+          'Session Token Missing',
+          'Please log in again.',
+          [{ text: 'OK', onPress: () => (navigation as any).navigate('Auth') }]
+        );
+        setLoading(false);
+        return;
+      }
+      
+      const accessToken = freshSession.access_token;
+      console.log('[CameraScreen] Session token obtained, length:', accessToken.length);
       
       const formData = new FormData();
       
