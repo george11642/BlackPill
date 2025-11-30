@@ -27,6 +27,7 @@ try {
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useAuth } from '../lib/auth/context';
+import { supabase } from '../lib/supabase/client';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { BackHeader } from '../components/BackHeader';
 import { GlassCard } from '../components/GlassCard';
@@ -301,6 +302,29 @@ export function CameraScreen() {
     try {
       console.log('[CameraScreen] Starting analysis for URI:', uri);
       
+      // Validate and refresh session if needed
+      let accessToken = session?.access_token;
+      console.log('[CameraScreen] Current session token present:', !!accessToken);
+      
+      if (!accessToken) {
+        console.log('[CameraScreen] No access token, attempting to refresh session...');
+        const { data: { session: freshSession }, error } = await supabase.auth.getSession();
+        
+        if (error || !freshSession?.access_token) {
+          console.error('[CameraScreen] Failed to get session:', error);
+          Alert.alert(
+            'Session Expired',
+            'Please sign in again to continue.',
+            [{ text: 'OK', onPress: () => (navigation as any).navigate('Auth') }]
+          );
+          setLoading(false);
+          return;
+        }
+        
+        accessToken = freshSession.access_token;
+        console.log('[CameraScreen] Session refreshed successfully');
+      }
+      
       const formData = new FormData();
       
       if (Platform.OS === 'web') {
@@ -325,12 +349,13 @@ export function CameraScreen() {
       // Use fetch directly to support abort signal
       const APP_URL = Constants.expoConfig?.extra?.appUrl || process.env.EXPO_PUBLIC_APP_URL || 'https://www.black-pill.app';
       console.log('[CameraScreen] Sending to:', `${APP_URL}/api/analyze`);
+      console.log('[CameraScreen] Authorization header will be sent:', !!accessToken);
       
       const analysisResponse = await fetch(`${APP_URL}/api/analyze`, {
         method: 'POST',
         body: formData,
         headers: {
-          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          Authorization: `Bearer ${accessToken}`,
           // Don't set Content-Type - let fetch set it automatically with boundary
         },
         signal: abortControllerRef.current.signal,
