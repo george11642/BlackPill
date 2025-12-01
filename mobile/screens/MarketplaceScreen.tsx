@@ -393,8 +393,6 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     textAlign: 'center',
-    flex: 1,
-    maxWidth: '80%',
   },
   headerContainer: {
     paddingBottom: DarkTheme.spacing.md,

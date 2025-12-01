@@ -52,6 +52,10 @@ const FOCUS_AREAS = [
   { id: 'jawline', label: 'Jawline', emoji: '💪', description: 'More defined jaw' },
   { id: 'symmetry', label: 'Symmetry', emoji: '⚖️', description: 'Facial balance' },
   { id: 'eyes', label: 'Eyes', emoji: '👁️', description: 'Brighter, healthier eyes' },
+  { id: 'cheekbones', label: 'Cheekbones', emoji: '💎', description: 'Enhanced bone structure' },
+  { id: 'lips', label: 'Lips', emoji: '👄', description: 'Fuller, healthier lips' },
+  { id: 'hair', label: 'Hair', emoji: '💇', description: 'Better hair health' },
+  { id: 'masculinity', label: 'Masculinity', emoji: '🔥', description: 'Masculine features' },
   { id: 'overall', label: 'Overall', emoji: '🎯', description: 'General improvement' },
 ];
 
@@ -105,6 +109,7 @@ export function CreateRoutineScreen() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLimitReached, setIsLimitReached] = useState(false);
+  const [showAllFocusAreas, setShowAllFocusAreas] = useState(false);
 
   const headerOpacity = useSharedValue(0);
 
@@ -326,7 +331,7 @@ export function CreateRoutineScreen() {
             Choose what you want to improve (we've pre-selected your weak areas)
           </Text>
           <View style={styles.focusGrid}>
-            {FOCUS_AREAS.map((area, index) => {
+            {(showAllFocusAreas ? FOCUS_AREAS : FOCUS_AREAS.slice(0, 4)).map((area, index) => {
               const isSelected = selectedFocusAreas.includes(area.id);
               const isWeak = (latestAnalysis?.breakdown?.[area.id] ?? 10) < 7.0;
               
@@ -360,6 +365,17 @@ export function CreateRoutineScreen() {
               );
             })}
           </View>
+          <TouchableOpacity
+            style={styles.showMoreButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowAllFocusAreas(!showAllFocusAreas);
+            }}
+          >
+            <Text style={styles.showMoreText}>
+              {showAllFocusAreas ? '▲ Show Less' : `▼ Show More (${FOCUS_AREAS.length - 4} more)`}
+            </Text>
+          </TouchableOpacity>
         </Animated.View>
 
         {/* Step 2: Time Commitment */}
@@ -741,6 +757,17 @@ const styles = StyleSheet.create({
     backgroundColor: DarkTheme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  showMoreButton: {
+    alignItems: 'center',
+    paddingVertical: DarkTheme.spacing.sm,
+    marginBottom: DarkTheme.spacing.md,
+  },
+  showMoreText: {
+    fontSize: 14,
+    color: DarkTheme.colors.primary,
+    fontFamily: DarkTheme.typography.fontFamily,
+    fontWeight: '600',
   },
   timeOptions: {
     gap: DarkTheme.spacing.sm,
