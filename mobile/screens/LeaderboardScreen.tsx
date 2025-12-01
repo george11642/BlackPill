@@ -4,13 +4,13 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  Image,
   ActivityIndicator,
   TouchableOpacity,
   RefreshControl,
   Share,
   ScrollView,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Trophy, Users, Upload, Crown, Medal, ChevronRight, Share2, Globe, MapPin, Calendar, Building2, Map } from 'lucide-react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -413,7 +413,7 @@ export function LeaderboardScreen() {
             <Image 
               source={{ uri: item.avatarUrl }} 
               style={styles.avatar}
-              resizeMode="cover"
+              contentFit="cover"
             />
           ) : (
             <View style={[styles.avatar, styles.avatarPlaceholder]}>
