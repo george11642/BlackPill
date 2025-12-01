@@ -49,6 +49,7 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = parseInt(searchParams.get('offset') || '0');
     const filter = searchParams.get('filter') || 'this_week'; // this_week, all_time, by_location
+    const refresh = searchParams.get('refresh') === 'true'; // Allow cache bypass
 
     // Create cache key
     const cacheKey = createCacheKey('/api/leaderboard', {
@@ -57,11 +58,15 @@ export async function GET(request: Request) {
       filter,
     });
 
-    // Check cache (15 minutes = 900 seconds)
-    const cached = await getCache(cacheKey);
-    if (cached) {
-      console.log(`Cache hit: ${cacheKey}`);
-      return createResponseWithId(cached as { entries: unknown[] }, { status: 200 }, requestId);
+    // Check cache (15 minutes = 900 seconds) - skip if refresh is requested
+    if (!refresh) {
+      const cached = await getCache(cacheKey);
+      if (cached) {
+        console.log(`Cache hit: ${cacheKey}`);
+        return createResponseWithId(cached as { entries: unknown[] }, { status: 200 }, requestId);
+      }
+    } else {
+      console.log(`Cache bypass requested for: ${cacheKey}`);
     }
 
     let query = supabaseAdmin

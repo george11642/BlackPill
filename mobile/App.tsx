@@ -85,6 +85,7 @@ function RootNavigator() {
   const { user, loading, hasCompletedOnboarding, onboardingLoading } = useAuth();
   const navigationRef = useRef<any>(null);
   const hasCheckedFirstScan = useRef(false);
+  const [isFirstScanPending, setIsFirstScanPending] = useState(false);
 
   // Initialize RevenueCat when user is available
   useEffect(() => {
@@ -93,12 +94,8 @@ function RootNavigator() {
     }
   }, [user?.id, loading]);
 
-  // Safety check is removed - it was causing the onboarding screen to reload
-  // The initial fetch in auth context is sufficient for determining onboarding status
-  // If a user gets stuck, they can restart the app or re-login
-
   // Check for first scan pending flag when onboarding completes
-  // This handles navigation to Camera before tabs are shown
+  // This handles navigation to Camera before the main app is shown
   useEffect(() => {
     // Only check if onboarding is complete and we haven't checked before
     if (!hasCompletedOnboarding || hasCheckedFirstScan.current || loading || onboardingLoading) {
@@ -109,16 +106,13 @@ function RootNavigator() {
       try {
         const pending = await AsyncStorage.getItem('@blackpill_first_scan_pending');
         if (pending === 'true') {
+          console.log('[App] First scan pending flag detected');
           // Mark as checked immediately
           hasCheckedFirstScan.current = true;
           // Clear the flag
           await AsyncStorage.removeItem('@blackpill_first_scan_pending');
-          // Small delay to ensure navigation is ready, then navigate to Camera
-          setTimeout(() => {
-            if (navigationRef.current?.isReady()) {
-              navigationRef.current.navigate('Camera', { firstScan: true });
-            }
-          }, 300);
+          // Set state to trigger camera screen navigation
+          setIsFirstScanPending(true);
         } else {
           // Mark as checked even if flag doesn't exist
           hasCheckedFirstScan.current = true;
@@ -143,9 +137,48 @@ function RootNavigator() {
         ) : user ? (
           // User is logged in - check onboarding status
           hasCompletedOnboarding ? (
-            // Onboarding complete - show main app
-            <>
-              <Stack.Screen name="Home" component={HomeScreen} />
+            // Onboarding complete - check if first scan is pending
+            isFirstScanPending ? (
+              // First scan pending - show Camera directly
+              <>
+                <Stack.Screen name="Camera" component={CameraScreen} initialParams={{ firstScan: true }} />
+                <Stack.Screen name="AnalysisResult" component={AnalysisResultScreen} />
+                <Stack.Screen name="Home" component={HomeScreen} />
+                <Stack.Screen name="History" component={HistoryScreen} />
+                <Stack.Screen name="Comparison" component={ComparisonScreen} />
+                <Stack.Screen name="Progress" component={ProgressScreen} />
+                <Stack.Screen name="Routines" component={RoutinesScreen} />
+                <Stack.Screen name="RoutineDetail" component={RoutineDetailScreen} />
+                <Stack.Screen name="Tasks" component={TasksScreen} />
+                <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+                <Stack.Screen name="Achievements" component={AchievementsScreen} />
+                <Stack.Screen name="Share" component={ShareScreen} />
+                <Stack.Screen name="Challenges" component={ChallengesScreen} />
+                <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
+                <Stack.Screen name="Wellness" component={WellnessScreen} />
+                <Stack.Screen name="Profile" component={ProfileScreen} />
+                <Stack.Screen name="Settings" component={SettingsScreen} />
+                <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+                <Stack.Screen name="EthicalSettings" component={EthicalSettingsScreen} />
+                <Stack.Screen name="AICoach" component={AICoachScreen} />
+                <Stack.Screen name="AITransform" component={AITransformScreen} />
+                <Stack.Screen name="DailyRoutine" component={DailyRoutineScreen} />
+                <Stack.Screen name="ProgressPictures" component={ProgressPicturesScreen} />
+                <Stack.Screen name="CreateRoutine" component={CreateRoutineScreen} />
+                <Stack.Screen name="Affiliate" component={AffiliateDashboardScreen} />
+                <Stack.Screen name="Referrals" component={ReferralsScreen} />
+                <Stack.Screen name="Notifications" component={NotificationsScreen} />
+                <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
+                <Stack.Screen name="TimelapseSelection" component={TimelapseSelectionScreen} />
+                <Stack.Screen name="TimelapseGeneration" component={TimelapseGenerationScreen} />
+                <Stack.Screen name="CreateGoal" component={CreateGoalScreen} />
+                <Stack.Screen name="Methodology" component={MethodologyScreen} />
+                <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
+              </>
+            ) : (
+              // Normal flow - show main app starting with Home
+              <>
+                <Stack.Screen name="Home" component={HomeScreen} />
               <Stack.Screen name="Camera" component={CameraScreen} />
               <Stack.Screen name="AnalysisResult" component={AnalysisResultScreen} />
               <Stack.Screen name="History" component={HistoryScreen} />
@@ -178,7 +211,8 @@ function RootNavigator() {
               <Stack.Screen name="CreateGoal" component={CreateGoalScreen} />
               <Stack.Screen name="Methodology" component={MethodologyScreen} />
               <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
-            </>
+              </>
+            )
           ) : (
             // Onboarding not complete - show onboarding flow
             // Include main screens so navigation.reset works after onboarding

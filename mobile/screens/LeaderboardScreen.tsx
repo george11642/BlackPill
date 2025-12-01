@@ -77,7 +77,7 @@ export function LeaderboardScreen() {
     }
   }, [bestAnalysis, currentPublicAnalysis, sharingToLeaderboard]);
 
-  const loadLeaderboard = async () => {
+  const loadLeaderboard = async (forceRefresh = false) => {
     try {
       let endpoint =
         filter === 'referrals'
@@ -87,6 +87,7 @@ export function LeaderboardScreen() {
       const params = new URLSearchParams();
       if (timeFrame !== 'all') params.append('timeframe', timeFrame);
       if (region !== 'global') params.append('scope', region);
+      if (forceRefresh) params.append('refresh', 'true');
       
       if (params.toString()) {
         endpoint += `?${params.toString()}`;
@@ -194,7 +195,7 @@ export function LeaderboardScreen() {
         );
         setCurrentPublicAnalysis({ ...bestAnalysis, is_public: true });
         setUserAnalysis({ ...bestAnalysis, is_public: true });
-        loadLeaderboard();
+        loadLeaderboard(true); // Force refresh to bypass cache
         loadUserAnalysis();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         showAlert({
@@ -308,7 +309,7 @@ export function LeaderboardScreen() {
                 );
                 setCurrentPublicAnalysis({ ...bestAnalysis, is_public: true });
                 setUserAnalysis({ ...bestAnalysis, is_public: true });
-                loadLeaderboard();
+                loadLeaderboard(true); // Force refresh to bypass cache
                 loadUserAnalysis();
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 showAlert({
@@ -355,7 +356,7 @@ export function LeaderboardScreen() {
                 console.log('API result:', result);
                 setCurrentPublicAnalysis({ ...bestAnalysis, is_public: true });
                 setUserAnalysis({ ...bestAnalysis, is_public: true });
-                loadLeaderboard();
+                loadLeaderboard(true); // Force refresh to bypass cache
                 loadUserAnalysis();
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 showAlert({
@@ -700,6 +701,7 @@ const styles = StyleSheet.create({
   },
   statusCard: {
     marginBottom: DarkTheme.spacing.sm,
+    minHeight: 100, // Prevent card collapse
   },
   statusContent: {
     flexDirection: 'row',
