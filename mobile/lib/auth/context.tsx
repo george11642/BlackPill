@@ -49,41 +49,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Add cache-busting query parameter to ensure fresh data
       const cacheBuster = `?t=${Date.now()}`;
       const apiUrl = getApiUrl();
-      const response = await fetch(
-        `${apiUrl}/api/user/onboarding${cacheBuster}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
       
-      if (response.ok) {
-        const data = await response.json();
-        const completed = data.onboarding_completed === true;
-        setHasCompletedOnboarding(completed);
-        console.log('[Auth] Onboarding status fetched:', {
-          completed,
-          rawValue: data.onboarding_completed,
-          type: typeof data.onboarding_completed,
-        });
-        return true;
-      } else {
-        const errorText = await response.text();
-        console.error('[Auth] Failed to fetch onboarding status:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorText,
-        });
-        // Only set to false if this is not a retry (to avoid overwriting valid state)
+      // Create abort controller with 10 second timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
+      try {
+        const response = await fetch(
+          `${apiUrl}/api/user/onboarding${cacheBuster}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            signal: controller.signal,
+          }
+        );
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          const data = await response.json();
+          const completed = data.onboarding_completed === true;
+          setHasCompletedOnboarding(completed);
+          console.log('[Auth] Onboarding status fetched:', {
+            completed,
+            rawValue: data.onboarding_completed,
+            type: typeof data.onboarding_completed,
+          });
+          return true;
+        } else {
+          const errorText = await response.text();
+          console.error('[Auth] Failed to fetch onboarding status:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorText,
+          });
+          // Only set to false if this is not a retry (to avoid overwriting valid state)
+          if (retryCount === 0) {
+            setHasCompletedOnboarding(false);
+          }
+          return false;
+        }
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        
+        // Check if it's a timeout error
+        if (fetchError.name === 'AbortError') {
+          console.error('[Auth] Onboarding status fetch timed out after 10 seconds');
+        } else {
+          console.error('[Auth] Failed to fetch onboarding status:', fetchError);
+        }
+        
+        // Only set to false if this is not a retry
         if (retryCount === 0) {
           setHasCompletedOnboarding(false);
         }
         return false;
       }
     } catch (error) {
-      console.error('[Auth] Failed to fetch onboarding status:', error);
-      // Only set to false if this is not a retry
+      console.error('[Auth] Unexpected error in fetchOnboardingStatus:', error);
+      // Ensure we default to incomplete if something goes wrong
       if (retryCount === 0) {
         setHasCompletedOnboarding(false);
       }
@@ -123,7 +148,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
     
-    console.error('[Auth] Failed to refresh onboarding status after all retries');
+    console.error('[Auth] Failed to refresh onboarding status after all retries - defaulting to false');
+    // Ensure loading is cleared and user defaults to incomplete onboarding
+    // This prevents the user from being stuck on splash screen
+    setOnboardingLoading(false);
+    setHasCompletedOnboarding(false);
     return false;
   };
 
