@@ -261,6 +261,7 @@ export async function POST(request: Request) {
 
     // Process image
     const processedImage = await sharp(imageBuffer)
+      .rotate() // Auto-orient based on EXIF metadata
       .resize(1920, 1920, {
         fit: 'inside',
         withoutEnlargement: true,
