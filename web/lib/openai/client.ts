@@ -249,11 +249,9 @@ function validateAnalysisResult(result: AnalysisResult): void {
   }
 
   // Check for banned terms (incel/blackpill terminology)
-  // These are terms that are ALWAYS inappropriate regardless of context
-  const bannedTerms = [
+  // Single-word terms that are ALWAYS inappropriate regardless of context
+  const bannedSingleWordTerms = [
     'subhuman',
-    "it's over",
-    'its over',
     'incel',
     'blackpill',
     'looksmaxing',
@@ -263,11 +261,16 @@ function validateAnalysisResult(result: AnalysisResult): void {
     'becky',
   ];
   
-  // Terms that need word boundary matching to avoid false positives
-  // (e.g., "jump rope" is fine, "rope" alone is not; "microscope" is fine)
+  // Multi-word phrases that need complete phrase matching
+  const bannedPhrases = [
+    /\b(it'?s\s+over)\b/i,      // "it's over" or "its over" - complete phrase only
+    /\bbeta\s+male\b/i,         // "beta male"
+    /\balpha\s+male\b/i,        // "alpha male"
+  ];
+  
+  // Single-word terms that need word boundary matching to avoid false positives
+  // (e.g., "microscope" is fine, "cope" alone is not; "jump rope" is fine, "rope" alone is not)
   const wordBoundaryTerms = [
-    'beta male',
-    'alpha male',
     'chad',
     'cope',   // Allow "microscope", "horoscope", etc.
     'rope',   // Allow "jump rope", "tightrope", etc.
@@ -276,9 +279,19 @@ function validateAnalysisResult(result: AnalysisResult): void {
   
   const fullText = JSON.stringify(result).toLowerCase();
   
-  for (const term of bannedTerms) {
-    if (fullText.includes(term)) {
+  // Check single-word banned terms with word boundaries
+  for (const term of bannedSingleWordTerms) {
+    const regex = new RegExp(`\\b${term}\\b`, 'i');
+    if (regex.test(fullText)) {
       console.warn(`Banned term detected: "${term}" in AI response`);
+      throw new Error('AI response contains inappropriate terminology');
+    }
+  }
+  
+  // Check multi-word phrase bans
+  for (const phraseRegex of bannedPhrases) {
+    if (phraseRegex.test(fullText)) {
+      console.warn(`Banned phrase detected in AI response`);
       throw new Error('AI response contains inappropriate terminology');
     }
   }
