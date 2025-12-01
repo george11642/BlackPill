@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
@@ -26,6 +27,7 @@ import { useSubscription } from '../lib/subscription/context';
 import { GlassCard } from '../components/GlassCard';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { GradientText } from '../components/GradientText';
+import { BackHeader } from '../components/BackHeader';
 import { DarkTheme } from '../lib/theme';
 import {
   getOfferings,
@@ -56,6 +58,7 @@ const FEATURES = [
 ];
 
 export function SubscriptionScreen() {
+  const navigation = useNavigation();
   const { user } = useAuth();
   const { refreshSubscription } = useSubscription();
   const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
@@ -189,6 +192,8 @@ export function SubscriptionScreen() {
         colors={['#000000', '#1a1a1a', '#000000']}
         style={styles.background}
       />
+
+      <BackHeader title="Plans" variant="large" onBackPress={() => navigation.goBack()} />
 
       <ScrollView 
         contentContainerStyle={styles.content}
@@ -349,8 +354,8 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 24,
-    marginBottom: 24,
-    marginTop: 10,
+    marginBottom: 16,
+    marginTop: 0,
   },
   title: {
     marginBottom: 8,
