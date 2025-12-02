@@ -16,14 +16,19 @@ const stripe = new Stripe(config.stripe.secretKey);
  * POST /api/webhooks/stripe
  * Handle Stripe webhook events
  */
-// Disable body parsing for webhook route
+// Configure runtime - force dynamic and no revalidation to avoid Next.js routing issues
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   const requestId = getRequestId(request);
+  console.log(`[Stripe Webhook] Received webhook request - Request ID: ${requestId}`);
+  
   const sig = request.headers.get('stripe-signature');
 
   if (!sig) {
+    console.error('[Stripe Webhook] Missing stripe-signature header');
     return createResponseWithId(
       { error: 'Missing stripe-signature header' },
       { status: 400 },
@@ -44,7 +49,7 @@ export async function POST(request: Request) {
       config.stripe.webhookSecret
     );
   } catch (err) {
-    console.error('Webhook signature verification failed:', err);
+    console.error(`[Stripe Webhook] Signature verification failed for request ${requestId}:`, err);
     return createResponseWithId(
       { error: `Webhook Error: ${err instanceof Error ? err.message : 'Unknown error'}` },
       { status: 400 },
@@ -54,6 +59,8 @@ export async function POST(request: Request) {
 
   // Handle the event
   try {
+    console.log(`[Stripe Webhook] Processing event type: ${event.type}, Event ID: ${event.id}`);
+    
     switch (event.type) {
       case 'checkout.session.completed':
         await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
@@ -77,13 +84,18 @@ export async function POST(request: Request) {
         break;
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
     }
 
+    console.log(`[Stripe Webhook] Successfully processed event ${event.id} of type ${event.type}`);
     return createResponseWithId({ received: true }, { status: 200 }, requestId);
   } catch (error) {
-    console.error('Webhook handler error:', error);
-    return handleApiError(error, request);
+    console.error(`[Stripe Webhook] Error processing event ${event.id}:`, error);
+    // Ensure we return a proper error response (handleApiError should return 500 for server errors)
+    const errorResponse = handleApiError(error, request);
+    // Log the status code being returned
+    console.error(`[Stripe Webhook] Returning error response with status: ${errorResponse.status}`);
+    return errorResponse;
   }
 }
 

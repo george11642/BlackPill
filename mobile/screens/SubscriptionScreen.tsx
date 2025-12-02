@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Dimensions,
+  Platform,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -60,12 +62,16 @@ const FEATURES = [
 export function SubscriptionScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
-  const { refreshSubscription } = useSubscription();
+  const { tier, refreshSubscription } = useSubscription();
   const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
+  const [managingSubscription, setManagingSubscription] = useState(false);
   const [selectedTier, setSelectedTier] = useState<'pro' | 'elite'>('elite');
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('monthly');
+  
+  // Check if user has an active subscription
+  const hasActiveSubscription = tier !== 'free';
 
   const headerOpacity = useSharedValue(0);
   const contentTranslateY = useSharedValue(50);
@@ -104,6 +110,16 @@ export function SubscriptionScreen() {
   };
 
   const handlePurchase = async () => {
+    // Prevent purchase if user already has an active subscription
+    if (hasActiveSubscription) {
+      Alert.alert(
+        'Already Subscribed',
+        'You already have an active subscription. Use "Manage Subscription" to change or cancel your plan.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     if (!offerings) return;
 
     // Map selected tier to RevenueCat package
@@ -134,6 +150,69 @@ export function SubscriptionScreen() {
       }
     } finally {
       setPurchasing(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    try {
+      setManagingSubscription(true);
+      
+      // For iOS, open App Store subscription management
+      if (Platform.OS === 'ios') {
+        const url = 'https://apps.apple.com/account/subscriptions';
+        const canOpen = await Linking.canOpenURL(url);
+        if (canOpen) {
+          await Linking.openURL(url);
+        } else {
+          // Fallback: Show instructions
+          Alert.alert(
+            'Manage Subscription',
+            'To manage your subscription:\n\n1. Open Settings\n2. Tap your name at the top\n3. Tap Subscriptions\n4. Find BlackPill and manage your subscription',
+            [{ text: 'OK' }]
+          );
+        }
+      } else {
+        // Android: Open Google Play Store subscription management
+        // Try to open Play Store subscriptions page
+        const packageName = 'com.blackpill.app'; // Update with actual package name if different
+        const playStoreUrl = `https://play.google.com/store/account/subscriptions?package=${packageName}&sku=${packageName}`;
+        
+        try {
+          const canOpen = await Linking.canOpenURL(playStoreUrl);
+          if (canOpen) {
+            await Linking.openURL(playStoreUrl);
+          } else {
+            // Fallback: Open Play Store app
+            const playStoreAppUrl = `market://details?id=${packageName}`;
+            const canOpenApp = await Linking.canOpenURL(playStoreAppUrl);
+            if (canOpenApp) {
+              await Linking.openURL(playStoreAppUrl);
+            } else {
+              // Final fallback: Show instructions
+              Alert.alert(
+                'Manage Subscription',
+                'To manage your subscription:\n\n1. Open Google Play Store\n2. Tap Menu (☰)\n3. Tap Subscriptions\n4. Find BlackPill and manage your subscription',
+                [{ text: 'OK' }]
+              );
+            }
+          }
+        } catch (linkError) {
+          // Fallback: Show instructions
+          Alert.alert(
+            'Manage Subscription',
+            'To manage your subscription:\n\n1. Open Google Play Store\n2. Tap Menu (☰)\n3. Tap Subscriptions\n4. Find BlackPill and manage your subscription',
+            [{ text: 'OK' }]
+          );
+        }
+      }
+    } catch (error: any) {
+      console.error('Error opening subscription management:', error);
+      Alert.alert(
+        'Error',
+        'Failed to open subscription management. Please use your device\'s App Store or Google Play Store settings to manage your subscription.'
+      );
+    } finally {
+      setManagingSubscription(false);
     }
   };
 
@@ -320,17 +399,35 @@ export function SubscriptionScreen() {
         </Animated.View>
 
         <Animated.View style={[styles.footer, contentStyle]}>
-          <PrimaryButton
-            title={purchasing ? 'Processing...' : `Subscribe to ${selectedTier.toUpperCase()}`}
-            onPress={handlePurchase}
-            disabled={purchasing}
-            style={styles.subscribeButton}
-            icon={<Zap size={20} color="#000" fill="#000" />}
-          />
-          
-          <TouchableOpacity onPress={handleRestore} disabled={purchasing}>
-            <Text style={styles.restoreText}>Restore Purchases</Text>
-          </TouchableOpacity>
+          {hasActiveSubscription ? (
+            <>
+              <View style={styles.currentSubscriptionInfo}>
+                <Text style={styles.currentSubscriptionText}>
+                  You're currently subscribed to <Text style={styles.tierNameText}>{tier.toUpperCase()}</Text>
+                </Text>
+              </View>
+              <PrimaryButton
+                title={managingSubscription ? 'Opening...' : 'Manage Subscription'}
+                onPress={handleManageSubscription}
+                disabled={managingSubscription}
+                style={styles.subscribeButton}
+                icon={<Shield size={20} color="#000" fill="#000" />}
+              />
+            </>
+          ) : (
+            <>
+              <PrimaryButton
+                title={purchasing ? 'Processing...' : `Subscribe to ${selectedTier.toUpperCase()}`}
+                onPress={handlePurchase}
+                disabled={purchasing}
+                style={styles.subscribeButton}
+                icon={<Zap size={20} color="#000" fill="#000" />}
+              />
+              <TouchableOpacity onPress={handleRestore} disabled={purchasing}>
+                <Text style={styles.restoreText}>Restore Purchases</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </Animated.View>
       </ScrollView>
     </View>
@@ -514,5 +611,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 24,
     textDecorationLine: 'underline',
+  },
+  currentSubscriptionInfo: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  currentSubscriptionText: {
+    color: DarkTheme.colors.textSecondary,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  tierNameText: {
+    color: DarkTheme.colors.primary,
+    fontWeight: '700',
   },
 });
