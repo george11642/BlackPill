@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -236,6 +237,14 @@ export function AnalysisResultScreen() {
       setAnalysis(data);
       setIsOnLeaderboard(data.is_public || false);
       startAnimations(data.score);
+      
+      // Clear first scan pending flag since analysis is successfully loaded
+      try {
+        await AsyncStorage.removeItem('@blackpill_first_scan_pending');
+        console.log('[AnalysisResult] Cleared first scan pending flag');
+      } catch (storageError) {
+        console.error('[AnalysisResult] Error clearing first scan flag:', storageError);
+      }
       
       // Load routine suggestion
       const suggestion = await fetchRoutineSuggestion(

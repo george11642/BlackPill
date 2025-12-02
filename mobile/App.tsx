@@ -12,6 +12,7 @@ import { AchievementToast } from './components/AchievementToast';
 import { AuthProvider, useAuth } from './lib/auth/context';
 import { SubscriptionProvider } from './lib/subscription/context';
 import { DarkTheme } from './lib/theme';
+import { apiGet } from './lib/api/client';
 
 // Ignore warnings from third-party libraries
 LogBox.ignoreLogs([
@@ -82,7 +83,7 @@ Sentry.init({
 const Stack = createNativeStackNavigator();
 
 function RootNavigator() {
-  const { user, loading, hasCompletedOnboarding, onboardingLoading } = useAuth();
+  const { user, session, loading, hasCompletedOnboarding, onboardingLoading } = useAuth();
   const navigationRef = useRef<any>(null);
   const hasCheckedFirstScan = useRef(false);
   const [isFirstScanPending, setIsFirstScanPending] = useState(false);
@@ -107,6 +108,27 @@ function RootNavigator() {
         const pending = await AsyncStorage.getItem('@blackpill_first_scan_pending');
         if (pending === 'true') {
           console.log('[App] First scan pending flag detected');
+          
+          // Check if user already has analyses - if so, clear flag and don't show first scan screen
+          if (session?.access_token) {
+            try {
+              const historyData = await apiGet<{ analyses: any[] }>(
+                '/api/analyses/history?limit=1',
+                session.access_token
+              );
+              
+              if (historyData.analyses && historyData.analyses.length > 0) {
+                console.log('[App] User already has analyses, clearing first scan flag');
+                await AsyncStorage.removeItem('@blackpill_first_scan_pending');
+                hasCheckedFirstScan.current = true;
+                return; // Don't show first scan screen
+              }
+            } catch (apiError) {
+              console.error('[App] Error checking for existing analyses:', apiError);
+              // If API call fails, proceed with showing first scan screen as fallback
+            }
+          }
+          
           // Mark as checked immediately
           hasCheckedFirstScan.current = true;
           // Clear the flag
@@ -124,7 +146,7 @@ function RootNavigator() {
     };
 
     checkFirstScanPending();
-  }, [hasCompletedOnboarding, loading, onboardingLoading]);
+  }, [hasCompletedOnboarding, loading, onboardingLoading, session?.access_token]);
 
   // Show splash while loading auth or onboarding status
   const isLoading = loading || (user && onboardingLoading);
