@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from '../supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 import { getApiUrl } from '../utils/apiUrl';
@@ -18,6 +19,7 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshOnboardingStatus: () => Promise<boolean>;
 };
@@ -31,6 +33,7 @@ const AuthContext = createContext<AuthContextType>({
   signIn: async () => {},
   signUp: async () => {},
   signInWithGoogle: async () => {},
+  signInWithApple: async () => {},
   signOut: async () => {},
   refreshOnboardingStatus: async () => false,
 });
@@ -321,6 +324,89 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithApple = async () => {
+    // Get the redirect URL based on platform
+    const redirectUrl = Platform.OS === 'web'
+      ? `${process.env.EXPO_PUBLIC_APP_URL || window.location.origin}/auth/callback`
+      : Linking.createURL('auth/callback');
+
+    console.log('Apple Sign-In redirect URL:', redirectUrl);
+
+    if (Platform.OS === 'web') {
+      // Web: Use Supabase OAuth flow
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: redirectUrl,
+        },
+      });
+      if (error) throw error;
+    } else {
+      // Native (iOS/Android): Use expo-apple-authentication
+      try {
+        // Check if Apple authentication is available
+        const isAvailable = await AppleAuthentication.isAvailableAsync();
+        if (!isAvailable) {
+          throw new Error('Apple Sign In is not available on this device');
+        }
+
+        // Request Apple authentication
+        const credential = await AppleAuthentication.signInAsync({
+          requestedScopes: [
+            AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+            AppleAuthentication.AppleAuthenticationScope.EMAIL,
+          ],
+        });
+
+        console.log('Apple authentication credential received:', {
+          user: credential.user,
+          email: credential.email,
+          fullName: credential.fullName,
+        });
+
+        // Exchange the Apple identity token with Supabase
+        if (!credential.identityToken) {
+          throw new Error('No identity token received from Apple');
+        }
+
+        // Sign in with Supabase using the Apple identity token
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: 'apple',
+          token: credential.identityToken,
+          nonce: credential.nonce || undefined,
+        });
+
+        if (error) throw error;
+
+        // If this is the first time signing in, we might need to update the user metadata
+        // with the name if it was provided
+        if (credential.fullName && data.user) {
+          const fullName = credential.fullName;
+          const displayName = fullName.givenName && fullName.familyName
+            ? `${fullName.givenName} ${fullName.familyName}`
+            : fullName.givenName || fullName.familyName || undefined;
+
+          if (displayName) {
+            const { error: updateError } = await supabase.auth.updateUser({
+              data: {
+                full_name: displayName,
+              },
+            });
+            if (updateError) {
+              console.warn('[Auth] Failed to update user name:', updateError);
+            }
+          }
+        }
+      } catch (error: any) {
+        // Handle user cancellation gracefully
+        if (error.code === 'ERR_REQUEST_CANCELED') {
+          throw new Error('Sign in was cancelled');
+        }
+        throw error;
+      }
+    }
+  };
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
@@ -337,6 +423,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signIn,
         signUp,
         signInWithGoogle,
+        signInWithApple,
         signOut,
         refreshOnboardingStatus,
       }}

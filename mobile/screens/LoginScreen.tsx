@@ -16,7 +16,7 @@ import { DarkTheme } from '../lib/theme';
 
 export function LoginScreen() {
   const navigation = useNavigation();
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, signInWithApple } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,6 +59,22 @@ export function LoginScreen() {
       // Navigation will happen automatically when user state updates
     } catch (error: any) {
       Alert.alert('Google Sign-In Failed', error.message || 'Please try again');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    setLoading(true);
+    try {
+      await signInWithApple();
+      // Navigation will happen automatically when user state updates
+    } catch (error: any) {
+      if (error.message?.includes('cancelled')) {
+        // User cancelled - don't show error
+        return;
+      }
+      Alert.alert('Apple Sign-In Failed', error.message || 'Please try again');
     } finally {
       setLoading(false);
     }
@@ -114,6 +130,14 @@ export function LoginScreen() {
           <PrimaryButton
             title="Continue with Google"
             onPress={handleGoogleLogin}
+            loading={loading}
+            variant="secondary"
+            style={styles.button}
+          />
+
+          <PrimaryButton
+            title="Continue with Apple"
+            onPress={handleAppleLogin}
             loading={loading}
             variant="secondary"
             style={styles.button}

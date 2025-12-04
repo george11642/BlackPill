@@ -16,7 +16,7 @@ import { DarkTheme } from '../lib/theme';
 
 export function SignupScreen() {
   const navigation = useNavigation();
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp, signInWithGoogle, signInWithApple } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -71,6 +71,22 @@ export function SignupScreen() {
       // Navigation will happen automatically when user state updates
     } catch (error: any) {
       Alert.alert('Google Sign-Up Failed', error.message || 'Please try again');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAppleSignup = async () => {
+    setLoading(true);
+    try {
+      await signInWithApple();
+      // Navigation will happen automatically when user state updates
+    } catch (error: any) {
+      if (error.message?.includes('cancelled')) {
+        // User cancelled - don't show error
+        return;
+      }
+      Alert.alert('Apple Sign-Up Failed', error.message || 'Please try again');
     } finally {
       setLoading(false);
     }
@@ -135,6 +151,14 @@ export function SignupScreen() {
           <PrimaryButton
             title="Continue with Google"
             onPress={handleGoogleSignup}
+            loading={loading}
+            variant="secondary"
+            style={styles.button}
+          />
+
+          <PrimaryButton
+            title="Continue with Apple"
+            onPress={handleAppleSignup}
             loading={loading}
             variant="secondary"
             style={styles.button}
