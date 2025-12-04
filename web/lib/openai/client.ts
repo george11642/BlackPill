@@ -180,28 +180,70 @@ IMPORTANT: Provide 5-7 comprehensive, actionable tips in the tips array. Focus o
       max_tokens: 5000,
     });
 
-    const result = JSON.parse(response.choices[0].message.content || '{}') as AnalysisResult;
+    // Log raw response for debugging
+    const rawContent = response.choices[0]?.message?.content;
+    if (!rawContent) {
+      console.error('[OpenAI] No content in response:', JSON.stringify(response, null, 2));
+      throw new Error('OpenAI returned empty response');
+    }
+
+    console.log('[OpenAI] Raw response length:', rawContent.length);
+    console.log('[OpenAI] Raw response preview (first 500 chars):', rawContent.substring(0, 500));
+
+    // Parse JSON with better error handling
+    let result: AnalysisResult;
+    try {
+      result = JSON.parse(rawContent) as AnalysisResult;
+      console.log('[OpenAI] Successfully parsed JSON response');
+      console.log('[OpenAI] Parsed result structure:', {
+        hasScore: typeof result.score !== 'undefined',
+        scoreValue: result.score,
+        hasBreakdown: typeof result.breakdown !== 'undefined',
+        breakdownKeys: result.breakdown ? Object.keys(result.breakdown) : [],
+        hasTips: Array.isArray(result.tips),
+        tipsLength: result.tips?.length || 0,
+      });
+    } catch (parseError) {
+      console.error('[OpenAI] JSON parse error:', parseError);
+      console.error('[OpenAI] Raw content that failed to parse:', rawContent);
+      throw new Error(`Failed to parse OpenAI response as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+    }
     
     // Validate and sanitize the response
-    validateAnalysisResult(result);
+    try {
+      validateAnalysisResult(result);
+      console.log('[OpenAI] Validation passed successfully');
+    } catch (validationError) {
+      console.error('[OpenAI] Validation failed:', validationError);
+      console.error('[OpenAI] Result that failed validation:', JSON.stringify(result, null, 2));
+      // Re-throw with more context
+      throw new Error(`OpenAI response validation failed: ${validationError instanceof Error ? validationError.message : String(validationError)}. Response: ${JSON.stringify(result, null, 2).substring(0, 1000)}`);
+    }
     
     return result;
   } catch (error) {
-    console.error('OpenAI API error:', error);
+    console.error('[OpenAI] API error:', error);
     
-    // Fallback to rule-based scoring if OpenAI is down
+    // Fallback to rule-based scoring if OpenAI is down or has network issues
     if (
       error instanceof Error &&
       (error.message.includes('timeout') ||
         error.message.includes('unavailable') ||
         error.message.includes('ECONNREFUSED') ||
-        error.message.includes('ETIMEDOUT'))
+        error.message.includes('ETIMEDOUT') ||
+        error.message.includes('network') ||
+        error.message.includes('connection'))
     ) {
-      console.warn('OpenAI API unavailable, using fallback scoring');
+      console.warn('[OpenAI] API unavailable, using fallback scoring');
       return calculateFallbackScore(faceMetrics);
     }
     
-    throw new Error('Failed to analyze image with AI');
+    // Re-throw validation/parsing errors with full context
+    if (error instanceof Error) {
+      throw error;
+    }
+    
+    throw new Error(`Failed to analyze image with AI: ${String(error)}`);
   }
 }
 
@@ -209,42 +251,77 @@ IMPORTANT: Provide 5-7 comprehensive, actionable tips in the tips array. Focus o
  * Validate analysis result structure
  */
 function validateAnalysisResult(result: AnalysisResult): void {
-  if (!result.score || result.score < 1 || result.score > 10) {
-    throw new Error('Invalid score in AI response');
+  // Check if result exists
+  if (!result || typeof result !== 'object') {
+    throw new Error(`Invalid AI response: result is not an object. Received: ${typeof result}`);
+  }
+
+  // Validate overall score with detailed error message
+  if (typeof result.score === 'undefined' || result.score === null) {
+    throw new Error(`Invalid score in AI response: score is missing or null. Result: ${JSON.stringify(result, null, 2).substring(0, 500)}`);
+  }
+  
+  const scoreValue = typeof result.score === 'number' ? result.score : parseFloat(String(result.score));
+  if (isNaN(scoreValue) || scoreValue < 1 || scoreValue > 10) {
+    throw new Error(`Invalid score in AI response: score must be between 1 and 10, but got ${result.score} (type: ${typeof result.score})`);
+  }
+
+  // Validate breakdown exists
+  if (!result.breakdown || typeof result.breakdown !== 'object') {
+    throw new Error(`Invalid breakdown in AI response: breakdown is missing or not an object. Received: ${typeof result.breakdown}`);
   }
 
   const requiredCategories = ['masculinity', 'skin', 'jawline', 'cheekbones', 'eyes', 'symmetry', 'lips', 'hair'];
   for (const category of requiredCategories) {
     const feature = result.breakdown[category as keyof typeof result.breakdown];
     if (!feature || typeof feature !== 'object') {
-      throw new Error(`Missing ${category} in AI response`);
+      throw new Error(`Missing ${category} in AI response breakdown. Available keys: ${Object.keys(result.breakdown).join(', ')}`);
     }
-    if (!feature.score || feature.score < 1 || feature.score > 10) {
-      throw new Error(`Invalid ${category} score in AI response`);
+    
+    const featureScore = typeof feature.score === 'number' ? feature.score : parseFloat(String(feature.score));
+    if (isNaN(featureScore) || featureScore < 1 || featureScore > 10) {
+      throw new Error(`Invalid ${category} score in AI response: score must be between 1 and 10, but got ${feature.score} (type: ${typeof feature.score})`);
     }
+    
     if (!feature.description || typeof feature.description !== 'string' || feature.description.length < 10) {
-      throw new Error(`Invalid ${category} description in AI response`);
+      throw new Error(`Invalid ${category} description in AI response: description is missing, not a string, or too short (${feature.description?.length || 0} chars). Received: ${typeof feature.description}`);
     }
+    
     if (!feature.improvement || typeof feature.improvement !== 'string' || feature.improvement.length < 20) {
-      throw new Error(`Invalid ${category} improvement tip in AI response`);
+      throw new Error(`Invalid ${category} improvement tip in AI response: improvement is missing, not a string, or too short (${feature.improvement?.length || 0} chars). Received: ${typeof feature.improvement}`);
     }
   }
 
-  if (!Array.isArray(result.tips) || result.tips.length < 5) {
-    throw new Error('Insufficient tips in AI response - need at least 5 comprehensive tips');
+  // Validate tips array
+  if (!result.tips) {
+    throw new Error('Missing tips array in AI response');
+  }
+  
+  if (!Array.isArray(result.tips)) {
+    throw new Error(`Invalid tips in AI response: tips must be an array, but got ${typeof result.tips}`);
+  }
+  
+  if (result.tips.length < 5) {
+    throw new Error(`Insufficient tips in AI response: need at least 5 comprehensive tips, but got ${result.tips.length}`);
   }
   
   // Validate each tip has required fields
   for (let i = 0; i < result.tips.length; i++) {
     const tip = result.tips[i];
+    if (!tip || typeof tip !== 'object') {
+      throw new Error(`Invalid tip at index ${i} in AI response: tip is not an object. Received: ${typeof tip}`);
+    }
+    
     if (!tip.title || typeof tip.title !== 'string' || tip.title.length < 5) {
-      throw new Error(`Invalid tip title at index ${i} in AI response`);
+      throw new Error(`Invalid tip title at index ${i} in AI response: title is missing, not a string, or too short (${tip.title?.length || 0} chars). Received: ${typeof tip.title}`);
     }
+    
     if (!tip.description || typeof tip.description !== 'string' || tip.description.length < 30) {
-      throw new Error(`Invalid tip description at index ${i} in AI response`);
+      throw new Error(`Invalid tip description at index ${i} in AI response: description is missing, not a string, or too short (${tip.description?.length || 0} chars). Received: ${typeof tip.description}`);
     }
+    
     if (!tip.timeframe || typeof tip.timeframe !== 'string' || tip.timeframe.length < 5) {
-      throw new Error(`Invalid tip timeframe at index ${i} in AI response`);
+      throw new Error(`Invalid tip timeframe at index ${i} in AI response: timeframe is missing, not a string, or too short (${tip.timeframe?.length || 0} chars). Received: ${typeof tip.timeframe}`);
     }
   }
 
@@ -305,4 +382,5 @@ function validateAnalysisResult(result: AnalysisResult): void {
     }
   }
 }
+
 
