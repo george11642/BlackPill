@@ -6,6 +6,8 @@ import {
   ScrollView,
   Switch,
   TouchableOpacity,
+  Linking,
+  Alert,
 } from 'react-native';
 import { GlassCard } from '../components/GlassCard';
 import { BackHeader } from '../components/BackHeader';
@@ -14,6 +16,20 @@ import { DarkTheme } from '../lib/theme';
 export function SettingsScreen() {
   const [notifications, setNotifications] = useState(true);
   const [analytics, setAnalytics] = useState(true);
+  const privacyPolicyUrl = 'https://www.black-pill.app/privacy';
+  const appleEulaUrl =
+    'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+
+  const handleOpenLink = async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      Alert.alert('Unable to open link', 'Please try again later.');
+    }
+  };
+
+  // Use Apple's default EULA (requested for iOS review) instead of any custom terms.
+  const termsUrl = appleEulaUrl;
 
   return (
     <View style={styles.container}>
@@ -51,10 +67,13 @@ export function SettingsScreen() {
       <GlassCard style={styles.card}>
         <Text style={styles.cardTitle}>About</Text>
         <Text style={styles.version}>Version 1.0.0</Text>
-        <TouchableOpacity style={styles.link}>
+        <TouchableOpacity
+          style={styles.link}
+          onPress={() => handleOpenLink(privacyPolicyUrl)}
+        >
           <Text style={styles.linkText}>Privacy Policy</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.link}>
+        <TouchableOpacity style={styles.link} onPress={() => handleOpenLink(termsUrl)}>
           <Text style={styles.linkText}>Terms of Service</Text>
         </TouchableOpacity>
       </GlassCard>
