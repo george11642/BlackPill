@@ -256,12 +256,14 @@ export function SubscriptionScreen() {
       p.product.identifier === productId
     );
     
+    // Always use StoreKit's localized price if available
     if (pkg) return pkg.product.priceString;
     
-    // Fallback prices
+    // Fallback prices (should match App Store Connect)
     if (billingInterval === 'yearly') {
       return tier === 'pro' ? '$119.99' : '$219.99';
     }
+    // Monthly prices: Pro = $12.99, Elite = $19.99
     return tier === 'pro' ? '$12.99' : '$19.99';
   };
 
@@ -416,6 +418,46 @@ export function SubscriptionScreen() {
             </>
           ) : (
             <>
+              {/* Apple Required Subscription Disclosures */}
+              <View style={styles.disclosureContainer}>
+                <Text style={styles.disclosureTitle}>
+                  {selectedTier.toUpperCase()} Subscription
+                </Text>
+                <View style={styles.disclosureRow}>
+                  <Text style={styles.disclosureLabel}>Duration:</Text>
+                  <Text style={styles.disclosureValue}>
+                    {billingInterval === 'monthly' ? 'Monthly' : 'Yearly'}
+                  </Text>
+                </View>
+                <View style={styles.disclosureRow}>
+                  <Text style={styles.disclosureLabel}>Price:</Text>
+                  <Text style={styles.disclosureValue}>
+                    {getPriceString(selectedTier)}/{billingInterval === 'monthly' ? 'month' : 'year'}
+                  </Text>
+                </View>
+                <View style={styles.disclosureRow}>
+                  <Text style={styles.disclosureLabel}>Auto-renew:</Text>
+                  <Text style={styles.disclosureValue}>
+                    Auto-renews until canceled
+                  </Text>
+                </View>
+                <View style={styles.disclosureLinks}>
+                  <TouchableOpacity
+                    onPress={() => Linking.openURL('https://www.black-pill.app/privacy')}
+                    style={styles.disclosureLink}
+                  >
+                    <Text style={styles.disclosureLinkText}>Privacy Policy</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.disclosureSeparator}> • </Text>
+                  <TouchableOpacity
+                    onPress={() => Linking.openURL('https://www.black-pill.app/terms')}
+                    style={styles.disclosureLink}
+                  >
+                    <Text style={styles.disclosureLinkText}>Terms of Use</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
               <PrimaryButton
                 title={purchasing ? 'Processing...' : `Subscribe to ${selectedTier.toUpperCase()}`}
                 onPress={handlePurchase}
@@ -627,5 +669,57 @@ const styles = StyleSheet.create({
   tierNameText: {
     color: DarkTheme.colors.primary,
     fontWeight: '700',
+  },
+  disclosureContainer: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  disclosureTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  disclosureRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  disclosureLabel: {
+    fontSize: 13,
+    color: DarkTheme.colors.textSecondary,
+    fontWeight: '500',
+  },
+  disclosureValue: {
+    fontSize: 13,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  disclosureLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.1)',
+  },
+  disclosureLink: {
+    paddingVertical: 4,
+  },
+  disclosureLinkText: {
+    fontSize: 12,
+    color: DarkTheme.colors.primary,
+    textDecorationLine: 'underline',
+  },
+  disclosureSeparator: {
+    fontSize: 12,
+    color: DarkTheme.colors.textSecondary,
+    marginHorizontal: 4,
   },
 });

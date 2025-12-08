@@ -17,8 +17,7 @@ export function SettingsScreen() {
   const [notifications, setNotifications] = useState(true);
   const [analytics, setAnalytics] = useState(true);
   const privacyPolicyUrl = 'https://www.black-pill.app/privacy';
-  const appleEulaUrl =
-    'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+  const termsUrl = 'https://www.black-pill.app/terms';
 
   const handleOpenLink = async (url: string) => {
     try {
@@ -27,9 +26,6 @@ export function SettingsScreen() {
       Alert.alert('Unable to open link', 'Please try again later.');
     }
   };
-
-  // Use Apple's default EULA (requested for iOS review) instead of any custom terms.
-  const termsUrl = appleEulaUrl;
 
   return (
     <View style={styles.container}>
@@ -66,7 +62,7 @@ export function SettingsScreen() {
 
       <GlassCard style={styles.card}>
         <Text style={styles.cardTitle}>About</Text>
-        <Text style={styles.version}>Version 1.0.0</Text>
+        <Text style={styles.version}>Version 1.0.1</Text>
         <TouchableOpacity
           style={styles.link}
           onPress={() => handleOpenLink(privacyPolicyUrl)}
@@ -74,7 +70,7 @@ export function SettingsScreen() {
           <Text style={styles.linkText}>Privacy Policy</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.link} onPress={() => handleOpenLink(termsUrl)}>
-          <Text style={styles.linkText}>Terms of Service</Text>
+          <Text style={styles.linkText}>Terms of Use</Text>
         </TouchableOpacity>
       </GlassCard>
       </ScrollView>
