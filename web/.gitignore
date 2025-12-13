@@ -1,4 +1,4 @@
 .vercel
 .next
 node_modules/
-scripts/grant-affiliate-entitlement.ts
+
