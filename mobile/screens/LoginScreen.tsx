@@ -16,11 +16,12 @@ import { DarkTheme } from '../lib/theme';
 
 export function LoginScreen() {
   const navigation = useNavigation();
-  const { signIn, signInWithGoogle, signInWithApple } = useAuth();
+  const { signIn, signInWithGoogle, signInWithApple, resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   const validate = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -80,6 +81,32 @@ export function LoginScreen() {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!email.trim()) {
+      Alert.alert('Email Required', 'Please enter your email address first');
+      return;
+    }
+
+    if (!/\S+@\S+\.\S+/.test(email.trim())) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await resetPassword(email.trim());
+      Alert.alert(
+        'Password Reset Email Sent',
+        'Check your email for a password reset link. The link will expire in 1 hour.',
+        [{ text: 'OK', onPress: () => setShowResetPassword(false) }]
+      );
+    } catch (error: any) {
+      Alert.alert('Password Reset Failed', error.message || 'Please try again');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -105,21 +132,49 @@ export function LoginScreen() {
             error={errors.email}
           />
 
-          <TextInput
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoComplete="password"
-            error={errors.password}
-          />
+          {!showResetPassword && (
+            <TextInput
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoComplete="password"
+              error={errors.password}
+            />
+          )}
 
-          <PrimaryButton
-            title="Sign In"
-            onPress={handleEmailLogin}
-            loading={loading}
-            style={styles.button}
-          />
+          {!showResetPassword && (
+            <Text
+              style={styles.forgotPassword}
+              onPress={() => setShowResetPassword(true)}
+            >
+              Forgot Password?
+            </Text>
+          )}
+
+          {showResetPassword ? (
+            <>
+              <PrimaryButton
+                title="Send Reset Email"
+                onPress={handleResetPassword}
+                loading={loading}
+                style={styles.button}
+              />
+              <Text
+                style={styles.backToLogin}
+                onPress={() => setShowResetPassword(false)}
+              >
+                Back to Sign In
+              </Text>
+            </>
+          ) : (
+            <PrimaryButton
+              title="Sign In"
+              onPress={handleEmailLogin}
+              loading={loading}
+              style={styles.button}
+            />
+          )}
 
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
@@ -221,6 +276,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     fontFamily: DarkTheme.typography.fontFamily,
+  },
+  forgotPassword: {
+    color: DarkTheme.colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: DarkTheme.typography.fontFamily,
+    textAlign: 'right',
+    marginTop: DarkTheme.spacing.sm,
+    marginBottom: DarkTheme.spacing.xs,
+  },
+  backToLogin: {
+    color: DarkTheme.colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: DarkTheme.typography.fontFamily,
+    textAlign: 'center',
+    marginTop: DarkTheme.spacing.md,
   },
 });
 

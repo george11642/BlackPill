@@ -21,6 +21,7 @@ type AuthContextType = {
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   refreshOnboardingStatus: () => Promise<boolean>;
 };
 
@@ -35,6 +36,7 @@ const AuthContext = createContext<AuthContextType>({
   signInWithGoogle: async () => {},
   signInWithApple: async () => {},
   signOut: async () => {},
+  resetPassword: async () => {},
   refreshOnboardingStatus: async () => false,
 });
 
@@ -412,6 +414,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   };
 
+  const resetPassword = async (email: string) => {
+    // Get the redirect URL for password reset
+    const redirectUrl = Platform.OS === 'web'
+      ? `${process.env.EXPO_PUBLIC_APP_URL || window.location.origin}/auth/callback`
+      : Linking.createURL('auth/callback');
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl,
+    });
+    if (error) throw error;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -425,6 +439,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signInWithGoogle,
         signInWithApple,
         signOut,
+        resetPassword,
         refreshOnboardingStatus,
       }}
     >
