@@ -263,7 +263,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-BlackPill/expo-configure-project.sh\"\n";
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nset -e\n\n# Source .xcode.env files to set up NODE_BINARY\nif [[ -f \"$SRCROOT/.xcode.env\" ]]; then\n  source \"$SRCROOT/.xcode.env\"\nfi\nif [[ -f \"$SRCROOT/.xcode.env.local\" ]]; then\n  source \"$SRCROOT/.xcode.env.local\"\nfi\n\n# Ensure NODE_BINARY is set\nif [[ -z \"$NODE_BINARY\" ]]; then\n  echo \"error: NODE_BINARY is not set. Please set it in .xcode.env or .xcode.env.local\"\n  exit 1\nfi\n\n# Run the Expo configure script\nCONFIGURE_SCRIPT=\"$SRCROOT/Pods/Target Support Files/Pods-BlackPill/expo-configure-project.sh\"\nif [[ ! -f \"$CONFIGURE_SCRIPT\" ]]; then\n  echo \"error: Expo configure script not found at $CONFIGURE_SCRIPT\"\n  exit 1\nfi\n\nbash \"$CONFIGURE_SCRIPT\"\n";
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
