@@ -37,8 +37,16 @@ export async function POST(request: Request) {
     const adminSupabase = createAdminClient();
 
     // Find user by email
-    const { data: authUser } = await adminSupabase.auth.admin.listUsers();
-    const targetUser = authUser.users.find((u) => u.email === email);
+    const { data: authUser, error: listUsersError } = await adminSupabase.auth.admin.listUsers();
+    
+    if (listUsersError || !authUser || !authUser.users) {
+      return NextResponse.json(
+        { error: 'Failed to retrieve users' },
+        { status: 500 }
+      );
+    }
+
+    const targetUser = authUser.users.find((u: any) => u.email === email);
 
     if (!targetUser) {
       return NextResponse.json(
