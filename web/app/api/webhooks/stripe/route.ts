@@ -172,6 +172,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     referredByUserId = user?.referred_by || null;
   }
 
+  // Generate RevenueCat IDs for app compatibility
+  // The mobile app requires RevenueCat IDs to recognize subscriptions, even for Stripe subscriptions
+  const revenuecatSubscriptionId = `stripe_${subscriptionId}`;
+  const revenuecatCustomerId = finalUserId || customerId;
+
   // Create or update subscription record
   const { error: subscriptionError } = await supabaseAdmin
     .from('subscriptions')
@@ -185,6 +190,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
       referred_by_user_id: referredByUserId,
       current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
       current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+      payment_provider: 'stripe',
+      // Set RevenueCat IDs for app compatibility
+      revenuecat_subscription_id: revenuecatSubscriptionId,
+      revenuecat_customer_id: revenuecatCustomerId,
     });
 
   if (subscriptionError) {
@@ -228,17 +237,28 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {
   const { data: subscriptionRecord } = await supabaseAdmin
     .from('subscriptions')
-    .select('user_id, tier')
+    .select('user_id, tier, revenuecat_subscription_id, revenuecat_customer_id')
     .eq('stripe_subscription_id', subscription.id)
     .single();
+
+  // Ensure RevenueCat IDs are set if missing (for app compatibility)
+  const updateData: any = {
+    status: subscription.status,
+    current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+  };
+
+  // Set RevenueCat IDs if missing
+  if (!subscriptionRecord?.revenuecat_subscription_id) {
+    updateData.revenuecat_subscription_id = `stripe_${subscription.id}`;
+  }
+  if (!subscriptionRecord?.revenuecat_customer_id && subscriptionRecord?.user_id) {
+    updateData.revenuecat_customer_id = subscriptionRecord.user_id;
+  }
 
   // Update subscription status
   await supabaseAdmin
     .from('subscriptions')
-    .update({
-      status: subscription.status,
-      current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
-    })
+    .update(updateData)
     .eq('stripe_subscription_id', subscription.id);
 }
 
