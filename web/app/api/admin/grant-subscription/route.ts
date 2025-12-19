@@ -63,6 +63,11 @@ export async function POST(request: Request) {
       });
     }
 
+    // Generate RevenueCat IDs for app compatibility
+    // The mobile app requires RevenueCat IDs to recognize subscriptions, even for admin-granted ones
+    const revenuecatSubscriptionId = `admin_granted_${crypto.randomUUID()}`;
+    const revenuecatCustomerId = targetUser.id;
+
     // Grant free subscription (lifetime or long-term)
     const subscriptionData = {
       user_id: targetUser.id,
@@ -70,22 +75,29 @@ export async function POST(request: Request) {
       tier: 'pro',
       current_period_start: new Date().toISOString(),
       current_period_end: new Date('2099-12-31').toISOString(), // Far future date
-      payment_provider: 'admin_granted',
+      payment_provider: 'revenuecat', // Changed from 'admin_granted' to 'revenuecat' for app compatibility
+      revenuecat_subscription_id: revenuecatSubscriptionId,
+      revenuecat_customer_id: revenuecatCustomerId,
     };
 
     // Check if subscription already exists
     const { data: existingSubscription } = await adminSupabase
       .from('subscriptions')
-      .select('id')
+      .select('id, revenuecat_subscription_id, revenuecat_customer_id')
       .eq('user_id', targetUser.id)
-      .eq('status', 'active')
       .maybeSingle();
 
     if (existingSubscription) {
-      // Update existing subscription
+      // Update existing subscription, ensuring RevenueCat IDs are set if missing
+      const updateData = {
+        ...subscriptionData,
+        // Preserve existing RevenueCat IDs if they exist, otherwise use new ones
+        revenuecat_subscription_id: existingSubscription.revenuecat_subscription_id || revenuecatSubscriptionId,
+        revenuecat_customer_id: existingSubscription.revenuecat_customer_id || revenuecatCustomerId,
+      };
       await adminSupabase
         .from('subscriptions')
-        .update(subscriptionData)
+        .update(updateData)
         .eq('id', existingSubscription.id);
     } else {
       // Create new subscription
