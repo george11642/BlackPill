@@ -112,7 +112,7 @@ export function ProfileScreen() {
         '/api/user/stats',
         session?.access_token
       );
-      
+
       setStats({
         score: data.overall_score,
         potential: data.potential_score,
@@ -125,7 +125,7 @@ export function ProfileScreen() {
         latestAnalysisImage: data.latest_analysis_image,
         globalRank: data.global_rank,
       });
-      
+
       startAnimations();
     } catch (error) {
       console.error('Failed to load user stats:', error);
@@ -241,12 +241,6 @@ export function ProfileScreen() {
       highlight: false,
     }] : []),
     {
-      icon: Users,
-      label: 'Referrals',
-      sublabel: 'Invite friends, earn scans',
-      onPress: () => navigation.navigate('Referrals' as never),
-    },
-    {
       icon: Trophy,
       label: 'Challenges',
       sublabel: 'Join community events',
@@ -305,13 +299,13 @@ export function ProfileScreen() {
         <GlassCard variant="gold" style={styles.profileCard}>
           <View style={styles.profileContent}>
             <ProfileAvatar
-              imageUrl={stats.latestAnalysisImage || stats.avatarUrl || user?.avatar_url}
+              imageUrl={stats.latestAnalysisImage || stats.avatarUrl || user?.user_metadata?.avatar_url}
               size="lg"
               showGoldRing
             />
             <View style={styles.profileInfo}>
               <Text style={styles.userName}>
-                {user?.username || user?.email?.split('@')[0] || 'User'}
+                {user?.user_metadata?.username || user?.email?.split('@')[0] || 'User'}
               </Text>
               <Text style={styles.userEmail}>{user?.email}</Text>
               <View style={styles.badgeRow}>
@@ -420,7 +414,7 @@ export function ProfileScreen() {
 
 // Menu Item Component
 interface MenuItemProps {
-  icon: React.ComponentType<{ size: number; color: string }>;
+  icon: any;
   label: string;
   sublabel: string;
   onPress: () => void;

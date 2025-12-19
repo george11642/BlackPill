@@ -37,8 +37,8 @@ export const initializeRevenueCat = async (userId?: string): Promise<void> => {
         ALL_PRODUCT_IDS,
       });
     }
-    
-    const apiKey = Platform.OS === 'ios' 
+
+    const apiKey = Platform.OS === 'ios'
       ? process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS
       : process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID;
 
@@ -48,7 +48,7 @@ export const initializeRevenueCat = async (userId?: string): Promise<void> => {
     }
 
     await Purchases.configure({ apiKey });
-    
+
     if (userId) {
       await Purchases.logIn(userId);
     }
@@ -90,7 +90,7 @@ export const getCustomerInfo = async (): Promise<CustomerInfo | null> => {
       console.warn('RevenueCat SDK not initialized yet');
       return null;
     }
-    
+
     return await Purchases.getCustomerInfo();
   } catch (error: any) {
     // Handle specific configuration errors
@@ -109,40 +109,12 @@ export const purchasePackage = async (
   referralCode?: string
 ): Promise<CustomerInfo> => {
   try {
-    // Set referral code as subscriber attribute before purchase (if provided)
     if (referralCode) {
-      try {
-        await Purchases.setAttributes({
-          '$referralCode': referralCode,
-        });
-      } catch (attrError) {
-        console.error('Error setting referral code attribute:', attrError);
-        // Continue with purchase even if attribute setting fails
-      }
+      console.log('[RevenueCat] Setting referral_code attribute:', referralCode);
+      await Purchases.setAttributes({ referral_code: referralCode });
     }
 
     const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
-    
-    // Also send to backend for immediate attribution (webhook will handle it too)
-    if (referralCode && customerInfo.originalAppUserId) {
-      try {
-        const apiUrl = getApiUrl();
-        await fetch(`${apiUrl}/api/revenuecat/attribution`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: customerInfo.originalAppUserId,
-            referralCode,
-          }),
-        });
-      } catch (attributionError) {
-        console.error('Error sending referral attribution:', attributionError);
-        // Don't throw - purchase succeeded, attribution is secondary
-      }
-    }
-    
     return customerInfo;
   } catch (error: any) {
     if (error.userCancelled) {
@@ -165,7 +137,7 @@ export const restorePurchases = async (): Promise<CustomerInfo> => {
 // Check if user has active subscription
 export const hasActiveSubscription = (customerInfo: CustomerInfo | null): boolean => {
   if (!customerInfo) return false;
-  
+
   const activeEntitlements = customerInfo.entitlements.active;
   return Object.keys(activeEntitlements).length > 0;
 };
@@ -173,9 +145,9 @@ export const hasActiveSubscription = (customerInfo: CustomerInfo | null): boolea
 // Get subscription tier from entitlements
 export const getSubscriptionTier = (customerInfo: CustomerInfo | null): 'pro' | 'elite' | null => {
   if (!customerInfo) return null;
-  
+
   const activeEntitlements = customerInfo.entitlements.active;
-  
+
   // Check for elite entitlement first (highest priority)
   // Support multiple entitlement identifier formats
   if (
@@ -185,12 +157,12 @@ export const getSubscriptionTier = (customerInfo: CustomerInfo | null): 'pro' | 
   ) {
     return 'elite';
   }
-  
+
   // Check for pro entitlement (supports multiple variations)
   if (activeEntitlements['BlackPill Pro'] || activeEntitlements['pro']) {
     return 'pro';
   }
-  
+
   return null;
 };
 
@@ -203,11 +175,11 @@ export const getPackageByIdentifier = async (
   try {
     const offering = await getOfferings();
     if (!offering) return null;
-    
+
     // Try to find by package identifier first
     const byPackage = offering.availablePackages.find(pkg => pkg.identifier === identifier);
     if (byPackage) return byPackage;
-    
+
     // Fallback: try product identifier (for cases where identifier is a product ID)
     // Product IDs: pro_monthly, pro_yearly, elite_monthly, elite_yearly
     const byProduct = offering.availablePackages.find(pkg => pkg.product.identifier === identifier);
@@ -223,17 +195,17 @@ export const syncSubscriptionToBackend = async (customerInfo: CustomerInfo): Pro
   try {
     // Get the current session for authentication
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
+
     if (sessionError) {
       console.error('Error getting session for sync:', sessionError);
       throw new Error('Authentication error: Unable to get session');
     }
-    
+
     if (!session?.access_token) {
       console.error('No active session found for subscription sync');
       throw new Error('Authentication required: Please log in to sync subscription');
     }
-    
+
     const apiUrl = getApiUrl();
     const response = await fetch(`${apiUrl}/api/revenuecat/sync`, {
       method: 'POST',
@@ -256,7 +228,7 @@ export const syncSubscriptionToBackend = async (customerInfo: CustomerInfo): Pro
       console.error('Sync response error:', response.status, errorText);
       throw new Error(`Failed to sync subscription to backend: ${response.status}`);
     }
-    
+
     console.log('Subscription synced to backend successfully');
   } catch (error) {
     console.error('Error syncing subscription to backend:', error);

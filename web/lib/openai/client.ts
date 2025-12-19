@@ -82,13 +82,15 @@ THE 8 CATEGORIES TO ANALYZE:
 
 8. HAIR: Complete assessment - density, hairline shape (straight/rounded/receding), temple points, texture quality, current styling effectiveness, color vibrancy
 
-SCORING GUIDELINES:
-- 9-10: Exceptional/model-tier for this feature
-- 7-8: Above average, noticeably attractive
-- 5-6: Average, typical
-- 3-4: Below average, noticeable weakness
-- 1-2: Significant concern
-- USE THE FULL RANGE - not everyone is 6-8
+SCORING GUIDELINES (CRITICAL - READ CAREFULLY):
+- 9-10: Extremely rare, model-tier, top 1% genetics. Almost NEVER assign these.
+- 8: Very attractive, top 5%. Rarely assign.
+- 7: Above average, top 20%. Noticeable good looks.
+- 5-6: AVERAGE. This is where MOST people fall. 50% of faces are 5.0 or below.
+- 4: Slightly below average, noticeable flaws.
+- 3: Below average, multiple weak features.
+- 2: Significantly below average, major structural concerns.
+- 1: Severe issues requiring medical attention.
 
 Respond in this exact JSON structure:
 {
@@ -157,7 +159,7 @@ IMPORTANT: Provide 5-7 comprehensive, actionable tips in the tips array. Focus o
         {
           role: 'system',
           content:
-            'You are a professional facial analysis expert. You MUST analyze each face individually and provide UNIQUE, ACCURATE scores based on what you actually observe. Different people have different features - your scores should reflect real differences. Avoid defaulting to average scores (6-8 range) for everything. Use the full 1-10 scale appropriately. Provide constructive, actionable feedback focused on self-improvement.',
+            'You are a brutally honest facial analysis expert. Your purpose is ACCURATE assessment, not flattery. Most people are AVERAGE (score 5). Scores above 6 should be RARE and earned. If you see weak features, flaws, asymmetry, or anything below average, your scores MUST reflect that. Never inflate scores to be nice. Users come here for TRUTH, not validation. If someone is unattractive, say so tactfully but honestly with low scores (1-4 range). Provide constructive, actionable feedback for improvement.',
         },
         {
           role: 'user',
@@ -208,7 +210,7 @@ IMPORTANT: Provide 5-7 comprehensive, actionable tips in the tips array. Focus o
       console.error('[OpenAI] Raw content that failed to parse:', rawContent);
       throw new Error(`Failed to parse OpenAI response as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
     }
-    
+
     // Validate and sanitize the response
     try {
       validateAnalysisResult(result);
@@ -219,11 +221,11 @@ IMPORTANT: Provide 5-7 comprehensive, actionable tips in the tips array. Focus o
       // Re-throw with more context
       throw new Error(`OpenAI response validation failed: ${validationError instanceof Error ? validationError.message : String(validationError)}. Response: ${JSON.stringify(result, null, 2).substring(0, 1000)}`);
     }
-    
+
     return result;
   } catch (error) {
     console.error('[OpenAI] API error:', error);
-    
+
     // Fallback to rule-based scoring if OpenAI is down or has network issues
     if (
       error instanceof Error &&
@@ -237,12 +239,12 @@ IMPORTANT: Provide 5-7 comprehensive, actionable tips in the tips array. Focus o
       console.warn('[OpenAI] API unavailable, using fallback scoring');
       return calculateFallbackScore(faceMetrics);
     }
-    
+
     // Re-throw validation/parsing errors with full context
     if (error instanceof Error) {
       throw error;
     }
-    
+
     throw new Error(`Failed to analyze image with AI: ${String(error)}`);
   }
 }
@@ -260,7 +262,7 @@ function validateAnalysisResult(result: AnalysisResult): void {
   if (typeof result.score === 'undefined' || result.score === null) {
     throw new Error(`Invalid score in AI response: score is missing or null. Result: ${JSON.stringify(result, null, 2).substring(0, 500)}`);
   }
-  
+
   const scoreValue = typeof result.score === 'number' ? result.score : parseFloat(String(result.score));
   if (isNaN(scoreValue) || scoreValue < 1 || scoreValue > 10) {
     throw new Error(`Invalid score in AI response: score must be between 1 and 10, but got ${result.score} (type: ${typeof result.score})`);
@@ -277,16 +279,16 @@ function validateAnalysisResult(result: AnalysisResult): void {
     if (!feature || typeof feature !== 'object') {
       throw new Error(`Missing ${category} in AI response breakdown. Available keys: ${Object.keys(result.breakdown).join(', ')}`);
     }
-    
+
     const featureScore = typeof feature.score === 'number' ? feature.score : parseFloat(String(feature.score));
     if (isNaN(featureScore) || featureScore < 1 || featureScore > 10) {
       throw new Error(`Invalid ${category} score in AI response: score must be between 1 and 10, but got ${feature.score} (type: ${typeof feature.score})`);
     }
-    
+
     if (!feature.description || typeof feature.description !== 'string' || feature.description.length < 10) {
       throw new Error(`Invalid ${category} description in AI response: description is missing, not a string, or too short (${feature.description?.length || 0} chars). Received: ${typeof feature.description}`);
     }
-    
+
     if (!feature.improvement || typeof feature.improvement !== 'string' || feature.improvement.length < 20) {
       throw new Error(`Invalid ${category} improvement tip in AI response: improvement is missing, not a string, or too short (${feature.improvement?.length || 0} chars). Received: ${typeof feature.improvement}`);
     }
@@ -296,30 +298,30 @@ function validateAnalysisResult(result: AnalysisResult): void {
   if (!result.tips) {
     throw new Error('Missing tips array in AI response');
   }
-  
+
   if (!Array.isArray(result.tips)) {
     throw new Error(`Invalid tips in AI response: tips must be an array, but got ${typeof result.tips}`);
   }
-  
+
   if (result.tips.length < 5) {
     throw new Error(`Insufficient tips in AI response: need at least 5 comprehensive tips, but got ${result.tips.length}`);
   }
-  
+
   // Validate each tip has required fields
   for (let i = 0; i < result.tips.length; i++) {
     const tip = result.tips[i];
     if (!tip || typeof tip !== 'object') {
       throw new Error(`Invalid tip at index ${i} in AI response: tip is not an object. Received: ${typeof tip}`);
     }
-    
+
     if (!tip.title || typeof tip.title !== 'string' || tip.title.length < 5) {
       throw new Error(`Invalid tip title at index ${i} in AI response: title is missing, not a string, or too short (${tip.title?.length || 0} chars). Received: ${typeof tip.title}`);
     }
-    
+
     if (!tip.description || typeof tip.description !== 'string' || tip.description.length < 30) {
       throw new Error(`Invalid tip description at index ${i} in AI response: description is missing, not a string, or too short (${tip.description?.length || 0} chars). Received: ${typeof tip.description}`);
     }
-    
+
     if (!tip.timeframe || typeof tip.timeframe !== 'string' || tip.timeframe.length < 5) {
       throw new Error(`Invalid tip timeframe at index ${i} in AI response: timeframe is missing, not a string, or too short (${tip.timeframe?.length || 0} chars). Received: ${typeof tip.timeframe}`);
     }
@@ -337,14 +339,14 @@ function validateAnalysisResult(result: AnalysisResult): void {
     'stacy',
     'becky',
   ];
-  
+
   // Multi-word phrases that need complete phrase matching
   const bannedPhrases = [
     /\b(it'?s\s+over)\b/i,      // "it's over" or "its over" - complete phrase only
     /\bbeta\s+male\b/i,         // "beta male"
     /\balpha\s+male\b/i,        // "alpha male"
   ];
-  
+
   // Single-word terms that need word boundary matching to avoid false positives
   // (e.g., "microscope" is fine, "cope" alone is not; "jump rope" is fine, "rope" alone is not)
   const wordBoundaryTerms = [
@@ -353,9 +355,9 @@ function validateAnalysisResult(result: AnalysisResult): void {
     'rope',   // Allow "jump rope", "tightrope", etc.
     'mog',    // Allow "mogul", etc.
   ];
-  
+
   const fullText = JSON.stringify(result).toLowerCase();
-  
+
   // Check single-word banned terms with word boundaries
   for (const term of bannedSingleWordTerms) {
     const regex = new RegExp(`\\b${term}\\b`, 'i');
@@ -364,7 +366,7 @@ function validateAnalysisResult(result: AnalysisResult): void {
       throw new Error('AI response contains inappropriate terminology');
     }
   }
-  
+
   // Check multi-word phrase bans
   for (const phraseRegex of bannedPhrases) {
     if (phraseRegex.test(fullText)) {
@@ -372,7 +374,7 @@ function validateAnalysisResult(result: AnalysisResult): void {
       throw new Error('AI response contains inappropriate terminology');
     }
   }
-  
+
   // Check word boundary terms with regex
   for (const term of wordBoundaryTerms) {
     const regex = new RegExp(`\\b${term}\\b`, 'i');

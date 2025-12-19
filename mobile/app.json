@@ -18,8 +18,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.blackpill.blackpill",
       "infoPlist": {
-        "NSCameraUsageDescription": "Black Pill needs access to your camera to take photos for AI analysis.",
-        "NSPhotoLibraryUsageDescription": "Black Pill needs access to your photo library to select photos for analysis.",
+        "NSCameraUsageDescription": "Black Pill uses your camera to take selfies so our AI can analyze your face and provide personalized attractiveness scores and improvement suggestions.",
+        "NSPhotoLibraryUsageDescription": "Black Pill uses your photo library so you can select existing selfies for AI analysis and personalized attractiveness feedback.",
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleURLTypes": [
           {
@@ -67,13 +67,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Black Pill to access your camera to take photos for analysis."
+          "cameraPermission": "Allow Black Pill to use your camera to take selfies so our AI can analyze your face and provide personalized attractiveness feedback and improvement tips."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Black Pill to access your photos to select images for analysis."
+          "photosPermission": "Allow Black Pill to access your photos so you can choose existing selfies for AI analysis and personalized attractiveness feedback."
         }
       ],
       [
@@ -87,7 +87,8 @@
       "expo-dev-client",
       "expo-secure-store",
       "expo-web-browser",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      "./plugins/with-storekit-config.js"
     ],
     "extra": {
       "eas": {

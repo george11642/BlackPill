@@ -47,7 +47,6 @@ interface AnalysisData {
     skin: number;
     bone_structure: number;
   };
-  referral_code?: string;
 }
 
 export function ShareScreen() {
@@ -115,7 +114,7 @@ export function ShareScreen() {
   const handleShare = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSharing(true);
-    
+
     try {
       const uri = await captureCard();
       if (uri) {
@@ -163,9 +162,6 @@ export function ShareScreen() {
   }
 
   const potentialScore = analysis.potential_score || Math.min(10, analysis.score + 1.5);
-  const referralCode = analysis.referral_code || user?.referral_code || 'BLACKPILL';
-  const appUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://www.black-pill.app';
-  const shareUrl = `${appUrl}/ref/${referralCode}`;
 
   return (
     <View style={styles.container}>
@@ -194,8 +190,6 @@ export function ShareScreen() {
               potentialScore={potentialScore}
               imageUrl={analysis.image_url}
               breakdown={analysis.breakdown}
-              referralCode={referralCode}
-              shareUrl={shareUrl}
             />
           </ViewShot>
         </Animated.View>
@@ -259,8 +253,6 @@ interface ShareCardProps {
     skin: number;
     bone_structure: number;
   };
-  referralCode: string;
-  shareUrl: string;
 }
 
 function ShareCard({
@@ -268,8 +260,6 @@ function ShareCard({
   potentialScore,
   imageUrl,
   breakdown,
-  referralCode,
-  shareUrl,
 }: ShareCardProps) {
   const scoreColor = getScoreColor(score);
 
@@ -330,20 +320,9 @@ function ShareCard({
         ))}
       </View>
 
-      {/* QR Code and Referral */}
+      {/* Watermark only */}
       <View style={shareCardStyles.footer}>
-        <View style={shareCardStyles.qrContainer}>
-          <QRCode
-            value={shareUrl}
-            size={60}
-            color={DarkTheme.colors.primary}
-            backgroundColor="transparent"
-          />
-        </View>
-        <View style={shareCardStyles.referralInfo}>
-          <Text style={shareCardStyles.referralLabel}>Get your score</Text>
-          <Text style={shareCardStyles.referralCode}>{referralCode}</Text>
-        </View>
+        <Text style={shareCardStyles.watermark}>black-pill.app</Text>
       </View>
 
       {/* Watermark */}

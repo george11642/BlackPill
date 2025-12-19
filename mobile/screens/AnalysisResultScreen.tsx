@@ -100,6 +100,28 @@ function getFeatureImprovement(feature: FeatureAnalysis | number | undefined): s
   return feature.improvement;
 }
 
+// PSL Scale: Rating category based on score (stricter thresholds)
+function getRatingCategory(score: number): string {
+  if (score >= 9.5) return 'Gigachad';
+  if (score >= 8) return 'Chad';
+  if (score >= 7) return 'Chadlite';
+  if (score >= 5.5) return 'HTN';
+  if (score >= 4.5) return 'MTN';
+  if (score >= 3) return 'LTN';
+  return 'Incel';
+}
+
+// PSL Scale: Category color based on score (stricter thresholds)
+function getCategoryColor(score: number): string {
+  if (score >= 9.5) return '#AA44FF'; // Gigachad - Purple
+  if (score >= 8) return '#44AAFF';   // Chad - Blue
+  if (score >= 7) return '#44CC88';   // Chadlite - Teal
+  if (score >= 5.5) return '#88CC44'; // HTN - Green
+  if (score >= 4.5) return '#FFAA44'; // MTN - Orange
+  if (score >= 3) return '#FF8844';   // LTN - Light Orange
+  return '#FF4444';                   // Incel - Red
+}
+
 export function AnalysisResultScreen() {
   const route = useRoute();
   const navigation = useNavigation();
@@ -114,11 +136,11 @@ export function AnalysisResultScreen() {
   const [isOnLeaderboard, setIsOnLeaderboard] = useState(false);
   const [joiningLeaderboard, setJoiningLeaderboard] = useState(false);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
-  
+
   // Unblur state
   const [isUnblurred, setIsUnblurred] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
-  
+
   // Guided tour state
   const [showTour, setShowTour] = useState(false);
   const [isFirstAnalysis, setIsFirstAnalysis] = useState(false);
@@ -181,15 +203,15 @@ export function AnalysisResultScreen() {
     // Or if they own the analysis and used a credit.
     // Ideally, backend should tell us if it's unblurred.
     // For now, let's rely on local state + subscription checks.
-    
+
     if (tier === 'elite') {
-        setIsUnblurred(true);
-        return;
+      setIsUnblurred(true);
+      return;
     }
-    
+
     if (tier === 'pro' && analysesUsedThisMonth < features.analyses.unblurredCount) {
-        setIsUnblurred(true);
-        return;
+      setIsUnblurred(true);
+      return;
     }
 
     // If free or quota exceeded, it's blurred by default (unless unlocked previously - needing backend flag)
@@ -199,32 +221,32 @@ export function AnalysisResultScreen() {
 
   const handleUnlock = async () => {
     if (unlocking) return;
-    
+
     if (tier === 'free' && unblurCredits > 0) {
-        Alert.alert(
-            'Unlock Results',
-            `Spend 1 referral credit to unlock this analysis? You have ${unblurCredits} credits.`,
-            [
-                { text: 'Cancel', style: 'cancel' },
-                { 
-                    text: 'Unlock', 
-                    onPress: async () => {
-                        setUnlocking(true);
-                        const success = await spendUnblurCredit();
-                        if (success) {
-                            setIsUnblurred(true);
-                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                        } else {
-                            Alert.alert('Error', 'Failed to use credit');
-                        }
-                        setUnlocking(false);
-                    }
-                }
-            ]
-        );
+      Alert.alert(
+        'Unlock Results',
+        `Spend 1 referral credit to unlock this analysis? You have ${unblurCredits} credits.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Unlock',
+            onPress: async () => {
+              setUnlocking(true);
+              const success = await spendUnblurCredit();
+              if (success) {
+                setIsUnblurred(true);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              } else {
+                Alert.alert('Error', 'Failed to use credit');
+              }
+              setUnlocking(false);
+            }
+          }
+        ]
+      );
     } else {
-        // Direct to subscription
-        navigation.navigate('Subscription' as never);
+      // Direct to subscription
+      navigation.navigate('Subscription' as never);
     }
   };
 
@@ -237,7 +259,7 @@ export function AnalysisResultScreen() {
       setAnalysis(data);
       setIsOnLeaderboard(data.is_public || false);
       startAnimations(data.score);
-      
+
       // Clear first scan pending flag since analysis is successfully loaded
       try {
         await AsyncStorage.removeItem('@blackpill_first_scan_pending');
@@ -245,7 +267,7 @@ export function AnalysisResultScreen() {
       } catch (storageError) {
         console.error('[AnalysisResult] Error clearing first scan flag:', storageError);
       }
-      
+
       // Load routine suggestion
       const suggestion = await fetchRoutineSuggestion(
         session?.access_token,
@@ -365,7 +387,7 @@ export function AnalysisResultScreen() {
   const handleJoinLeaderboard = async () => {
     console.log('handleJoinLeaderboard called', { analysisId: analysis?.id, isOnLeaderboard, hasToken: !!session?.access_token });
     if (!analysis || !session?.access_token) return;
-    
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     if (isOnLeaderboard) {
@@ -480,11 +502,11 @@ export function AnalysisResultScreen() {
   // Use masculinity if available, otherwise fall back to jawline for legacy data
   const masculinityFeature = analysis.breakdown.masculinity || analysis.breakdown.jawline;
   const cheekbonesFeature = analysis.breakdown.cheekbones || analysis.breakdown.bone_structure;
-  
+
   const metrics = [
-    { 
-      label: 'Masculinity', 
-      value: getFeatureScore(masculinityFeature), 
+    {
+      label: 'Masculinity',
+      value: getFeatureScore(masculinityFeature),
       key: 'masculinity',
       description: getFeatureDescription(
         analysis.breakdown.masculinity,
@@ -492,9 +514,9 @@ export function AnalysisResultScreen() {
       ),
       improvement: getFeatureImprovement(analysis.breakdown.masculinity),
     },
-    { 
-      label: 'Skin Quality', 
-      value: getFeatureScore(analysis.breakdown.skin), 
+    {
+      label: 'Skin Quality',
+      value: getFeatureScore(analysis.breakdown.skin),
       key: 'skin',
       description: getFeatureDescription(
         analysis.breakdown.skin,
@@ -502,9 +524,9 @@ export function AnalysisResultScreen() {
       ),
       improvement: getFeatureImprovement(analysis.breakdown.skin),
     },
-    { 
-      label: 'Jawline', 
-      value: getFeatureScore(analysis.breakdown.jawline), 
+    {
+      label: 'Jawline',
+      value: getFeatureScore(analysis.breakdown.jawline),
       key: 'jawline',
       description: getFeatureDescription(
         analysis.breakdown.jawline,
@@ -512,9 +534,9 @@ export function AnalysisResultScreen() {
       ),
       improvement: getFeatureImprovement(analysis.breakdown.jawline),
     },
-    { 
-      label: 'Cheekbones', 
-      value: getFeatureScore(cheekbonesFeature), 
+    {
+      label: 'Cheekbones',
+      value: getFeatureScore(cheekbonesFeature),
       key: 'cheekbones',
       description: getFeatureDescription(
         analysis.breakdown.cheekbones || analysis.breakdown.bone_structure,
@@ -522,9 +544,9 @@ export function AnalysisResultScreen() {
       ),
       improvement: getFeatureImprovement(analysis.breakdown.cheekbones || analysis.breakdown.bone_structure),
     },
-    { 
-      label: 'Eyes', 
-      value: getFeatureScore(analysis.breakdown.eyes), 
+    {
+      label: 'Eyes',
+      value: getFeatureScore(analysis.breakdown.eyes),
       key: 'eyes',
       description: getFeatureDescription(
         analysis.breakdown.eyes,
@@ -532,9 +554,9 @@ export function AnalysisResultScreen() {
       ),
       improvement: getFeatureImprovement(analysis.breakdown.eyes),
     },
-    { 
-      label: 'Symmetry', 
-      value: getFeatureScore(analysis.breakdown.symmetry), 
+    {
+      label: 'Symmetry',
+      value: getFeatureScore(analysis.breakdown.symmetry),
       key: 'symmetry',
       description: getFeatureDescription(
         analysis.breakdown.symmetry,
@@ -542,9 +564,9 @@ export function AnalysisResultScreen() {
       ),
       improvement: getFeatureImprovement(analysis.breakdown.symmetry),
     },
-    { 
-      label: 'Lips', 
-      value: getFeatureScore(analysis.breakdown.lips), 
+    {
+      label: 'Lips',
+      value: getFeatureScore(analysis.breakdown.lips),
       key: 'lips',
       description: getFeatureDescription(
         analysis.breakdown.lips,
@@ -552,9 +574,9 @@ export function AnalysisResultScreen() {
       ),
       improvement: getFeatureImprovement(analysis.breakdown.lips),
     },
-    { 
-      label: 'Hair Quality', 
-      value: getFeatureScore(analysis.breakdown.hair), 
+    {
+      label: 'Hair Quality',
+      value: getFeatureScore(analysis.breakdown.hair),
       key: 'hair',
       description: getFeatureDescription(
         analysis.breakdown.hair,
@@ -613,38 +635,38 @@ export function AnalysisResultScreen() {
           />
         </Animated.View>
 
-        {/* Main Scores - Overall and Potential (ALWAYS VISIBLE) */}
+        {/* Main Scores with PSL Categories (ALWAYS VISIBLE) */}
         <Animated.View style={[styles.mainScoresContainer, scoreAnimatedStyle]}>
           <View style={styles.scoreColumn}>
             <Text style={styles.scoreLabel}>Overall</Text>
             <AnimatedScore value={analysis.score} />
-            <TouchableOpacity 
-              onPress={() => (navigation as any).navigate('Methodology')}
-              style={styles.methodologyLink}
-            >
-              <Text style={styles.methodologyText}>How is this calculated?</Text>
-            </TouchableOpacity>
+            <View style={[styles.categoryBadgeSmall, { backgroundColor: getCategoryColor(analysis.score) }]}>
+              <Text style={styles.categoryTextSmall}>{getRatingCategory(analysis.score)}</Text>
+            </View>
           </View>
           <View style={styles.scoreDivider} />
           <View style={styles.scoreColumn}>
             <Text style={styles.scoreLabel}>Potential</Text>
-            <View style={styles.potentialRow}>
-              <AnimatedScore value={potentialScore} />
-              <View style={styles.potentialBadge}>
-                <Text style={styles.potentialBadgeText}>
-                  +{potentialGain.toFixed(1)}
-                </Text>
-              </View>
+            <AnimatedScore value={potentialScore} />
+            <View style={[styles.categoryBadgeSmall, { backgroundColor: getCategoryColor(potentialScore) }]}>
+              <Text style={styles.categoryTextSmall}>{getRatingCategory(potentialScore)}</Text>
             </View>
           </View>
         </Animated.View>
 
+        <TouchableOpacity
+          onPress={() => (navigation as any).navigate('Methodology')}
+          style={styles.methodologyLinkCentered}
+        >
+          <Text style={styles.methodologyText}>How is this calculated?</Text>
+        </TouchableOpacity>
+
         {/* BLURRED CONTENT SECTION */}
         <BlurredContent isBlurred={!isUnblurred} overlay={!isUnblurred ? UnlockOverlay : undefined}>
-            {/* Metrics Grid - 6 detailed metrics (more than Umax's 4 in grid) */}
-            <Animated.View style={[styles.metricsGrid, contentAnimatedStyle]}>
+          {/* Metrics Grid - 6 detailed metrics (more than Umax's 4 in grid) */}
+          <Animated.View style={[styles.metricsGrid, contentAnimatedStyle]}>
             {metrics.map((metric, index) => (
-                <ScoreMetric
+              <ScoreMetric
                 key={metric.key}
                 label={metric.label}
                 value={metric.value}
@@ -652,172 +674,172 @@ export function AnalysisResultScreen() {
                 description={metric.description}
                 tip={metric.improvement}
                 onAICoachPress={() => (navigation as any).navigate('AICoach', { metric: metric.key })}
-                />
+              />
             ))}
-            </Animated.View>
+          </Animated.View>
 
-            {/* Your Strengths Section */}
-            <Animated.View style={[styles.strengthsSection, contentAnimatedStyle]}>
+          {/* Your Strengths Section */}
+          <Animated.View style={[styles.strengthsSection, contentAnimatedStyle]}>
             <GlassCard variant="elevated">
-                <View style={styles.sectionHeader}>
+              <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>💪 Your Strengths</Text>
                 <Text style={styles.sectionSubtitle}>Top performing areas</Text>
-                </View>
-                {strengths.map((metric, index) => (
+              </View>
+              {strengths.map((metric, index) => (
                 <View key={metric.key} style={styles.strengthItem}>
-                    <View style={styles.strengthRank}>
+                  <View style={styles.strengthRank}>
                     <Text style={styles.strengthRankText}>#{index + 1}</Text>
-                    </View>
-                    <View style={styles.strengthContent}>
+                  </View>
+                  <View style={styles.strengthContent}>
                     <Text style={styles.strengthLabel}>{metric.label}</Text>
                     <Text style={styles.strengthDescription}>{metric.description}</Text>
-                    </View>
-                    <Text style={[styles.strengthScore, { color: getScoreColor(metric.value) }]}>
+                  </View>
+                  <Text style={[styles.strengthScore, { color: getScoreColor(metric.value) }]}>
                     {metric.value.toFixed(1)}
-                    </Text>
+                  </Text>
                 </View>
-                ))}
+              ))}
             </GlassCard>
-            </Animated.View>
+          </Animated.View>
 
-            {/* Areas to Improve Section */}
-            <Animated.View style={[styles.weaknessesSection, contentAnimatedStyle]}>
+          {/* Areas to Improve Section */}
+          <Animated.View style={[styles.weaknessesSection, contentAnimatedStyle]}>
             <GlassCard variant="subtle">
-                <View style={styles.sectionHeader}>
+              <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>🎯 Areas to Improve</Text>
                 <Text style={styles.sectionSubtitle}>Focus here for maximum gains</Text>
-                </View>
-                {weaknesses.map((metric, index) => (
+              </View>
+              {weaknesses.map((metric, index) => (
                 <View key={metric.key} style={styles.weaknessItem}>
-                    <View style={styles.weaknessContent}>
+                  <View style={styles.weaknessContent}>
                     <Text style={styles.weaknessLabel}>{metric.label}</Text>
                     <Text style={styles.weaknessDescription}>{metric.description}</Text>
-                    </View>
-                    <View style={styles.weaknessScoreContainer}>
+                  </View>
+                  <View style={styles.weaknessScoreContainer}>
                     <Text style={[styles.weaknessScore, { color: getScoreColor(metric.value) }]}>
-                        {metric.value.toFixed(1)}
+                      {metric.value.toFixed(1)}
                     </Text>
-                    <TouchableOpacity 
-                        style={styles.askAIButton}
-                        onPress={() => (navigation as any).navigate('AICoach', { metric: metric.key })}
+                    <TouchableOpacity
+                      style={styles.askAIButton}
+                      onPress={() => (navigation as any).navigate('AICoach', { metric: metric.key })}
                     >
-                        <MessageCircle size={14} color={DarkTheme.colors.primary} />
+                      <MessageCircle size={14} color={DarkTheme.colors.primary} />
                     </TouchableOpacity>
-                    </View>
+                  </View>
                 </View>
-                ))}
+              ))}
             </GlassCard>
-            </Animated.View>
+          </Animated.View>
 
-            {/* Bell Curve Distribution */}
-            <Animated.View style={[styles.bellCurveContainer, contentAnimatedStyle]}>
+          {/* Bell Curve Distribution */}
+          <Animated.View style={[styles.bellCurveContainer, contentAnimatedStyle]}>
             <GlassCard variant="subtle">
-                <Text style={styles.sectionTitle}>Your Ranking</Text>
-                <BellCurve score={analysis.score} delay={500} />
+              <Text style={styles.sectionTitle}>Your Ranking</Text>
+              <BellCurve score={analysis.score} delay={500} />
             </GlassCard>
-            </Animated.View>
+          </Animated.View>
 
-            {/* Routine Suggestion Card */}
-            {routineSuggestion && (
+          {/* Routine Suggestion Card */}
+          {routineSuggestion && (
             <Animated.View style={[styles.suggestionSection, contentAnimatedStyle]}>
-                <Text style={styles.sectionTitle}>Your Routine</Text>
-                <RoutineSuggestionCard suggestion={routineSuggestion} />
+              <Text style={styles.sectionTitle}>Your Routine</Text>
+              <RoutineSuggestionCard suggestion={routineSuggestion} />
             </Animated.View>
-            )}
+          )}
 
-            {/* Tips Section */}
-            {analysis.tips && analysis.tips.length > 0 && (() => {
+          {/* Tips Section */}
+          {analysis.tips && analysis.tips.length > 0 && (() => {
             const displayedTips = showAllTips ? analysis.tips : analysis.tips.slice(0, 2);
             const hasMoreTips = analysis.tips.length > 2;
-            
+
             return (
-                <Animated.View style={[styles.tipsSection, contentAnimatedStyle]}>
+              <Animated.View style={[styles.tipsSection, contentAnimatedStyle]}>
                 <Text style={styles.sectionTitle}>How to Reach Your Potential</Text>
                 {displayedTips.map((tip, index) => (
-                    <GlassCard
+                  <GlassCard
                     key={index}
                     variant="elevated"
                     onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        (navigation as any).navigate('AICoach', { 
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      (navigation as any).navigate('AICoach', {
                         tip: tip.title,
                         tipDescription: tip.description,
                         tipTimeframe: tip.timeframe,
-                        });
+                      });
                     }}
                     style={styles.tipCard}
-                    >
+                  >
                     <View style={styles.tipContent}>
-                        <View style={styles.tipTextContainer}>
+                      <View style={styles.tipTextContainer}>
                         <Text style={styles.tipTitle}>{tip.title}</Text>
                         <Text style={styles.tipDescription}>{tip.description}</Text>
                         <Text style={styles.tipTimeframe}>{tip.timeframe}</Text>
-                        </View>
-                        <ChevronRight size={24} color={DarkTheme.colors.textTertiary} />
+                      </View>
+                      <ChevronRight size={24} color={DarkTheme.colors.textTertiary} />
                     </View>
-                    </GlassCard>
+                  </GlassCard>
                 ))}
                 {hasMoreTips && (
-                    <TouchableOpacity
+                  <TouchableOpacity
                     style={styles.seeMoreButton}
                     onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setShowAllTips(!showAllTips);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setShowAllTips(!showAllTips);
                     }}
                     activeOpacity={0.7}
-                    >
+                  >
                     <Text style={styles.seeMoreText}>
-                        {showAllTips ? 'See less' : 'See more'}
+                      {showAllTips ? 'See less' : 'See more'}
                     </Text>
                     <Animated.View style={chevronAnimatedStyle}>
-                        <ChevronDown size={18} color={DarkTheme.colors.primary} />
+                      <ChevronDown size={18} color={DarkTheme.colors.primary} />
                     </Animated.View>
-                    </TouchableOpacity>
+                  </TouchableOpacity>
                 )}
-                </Animated.View>
+              </Animated.View>
             );
-            })()}
+          })()}
 
-            {/* Take Action CTA - Create Custom Routine */}
-            <Animated.View style={[styles.takeActionSection, contentAnimatedStyle]}>
-              <LinearGradient
-                colors={[`${DarkTheme.colors.primary}15`, `${DarkTheme.colors.primaryDark}25`]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.takeActionCard}
+          {/* Take Action CTA - Create Custom Routine */}
+          <Animated.View style={[styles.takeActionSection, contentAnimatedStyle]}>
+            <LinearGradient
+              colors={[`${DarkTheme.colors.primary}15`, `${DarkTheme.colors.primaryDark}25`]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.takeActionCard}
+            >
+              <View style={styles.takeActionIconContainer}>
+                <Target size={28} color={DarkTheme.colors.primary} />
+              </View>
+              <Text style={styles.takeActionTitle}>Take Action on Your Results</Text>
+              <Text style={styles.takeActionSubtitle}>
+                Create a personalized routine based on your analysis to improve your weak areas
+              </Text>
+              <TouchableOpacity
+                style={styles.takeActionButton}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  (navigation as any).navigate('CreateRoutine', {
+                    analysisId: analysis.id,
+                    weakAreas: weaknesses.map(w => w.label),
+                    tips: analysis.tips,
+                  });
+                }}
+                activeOpacity={0.8}
               >
-                <View style={styles.takeActionIconContainer}>
-                  <Target size={28} color={DarkTheme.colors.primary} />
-                </View>
-                <Text style={styles.takeActionTitle}>Take Action on Your Results</Text>
-                <Text style={styles.takeActionSubtitle}>
-                  Create a personalized routine based on your analysis to improve your weak areas
-                </Text>
-                <TouchableOpacity
-                  style={styles.takeActionButton}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    (navigation as any).navigate('CreateRoutine', {
-                      analysisId: analysis.id,
-                      weakAreas: weaknesses.map(w => w.label),
-                      tips: analysis.tips,
-                    });
-                  }}
-                  activeOpacity={0.8}
+                <LinearGradient
+                  colors={[DarkTheme.colors.primary, DarkTheme.colors.primaryDark]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.takeActionButtonGradient}
                 >
-                  <LinearGradient
-                    colors={[DarkTheme.colors.primary, DarkTheme.colors.primaryDark]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.takeActionButtonGradient}
-                  >
-                    <Sparkles size={18} color="#fff" />
-                    <Text style={styles.takeActionButtonText}>Create Custom Routine</Text>
-                    <ChevronRight size={18} color="#fff" />
-                  </LinearGradient>
-                </TouchableOpacity>
-              </LinearGradient>
-            </Animated.View>
+                  <Sparkles size={18} color="#fff" />
+                  <Text style={styles.takeActionButtonText}>Create Custom Routine</Text>
+                  <ChevronRight size={18} color="#fff" />
+                </LinearGradient>
+              </TouchableOpacity>
+            </LinearGradient>
+          </Animated.View>
         </BlurredContent>
 
         {/* Action Buttons - Always accessible even if blurred, though actions might trigger upsell */}
@@ -1278,6 +1300,121 @@ const styles = StyleSheet.create({
   },
   unlockButton: {
     width: 240,
+  },
+  // PSL Scale styles
+  pslContainer: {
+    marginTop: DarkTheme.spacing.lg,
+  },
+  pslCard: {
+    padding: DarkTheme.spacing.lg,
+  },
+  pslHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: DarkTheme.spacing.md,
+  },
+  pslTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: DarkTheme.colors.text,
+    fontFamily: DarkTheme.typography.fontFamily,
+  },
+  pslValue: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: DarkTheme.colors.primary,
+    fontFamily: DarkTheme.typography.fontFamily,
+  },
+  pslScaleContainer: {
+    marginBottom: DarkTheme.spacing.lg,
+  },
+  pslScale: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: DarkTheme.spacing.xs,
+  },
+  pslTick: {
+    width: 24,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: DarkTheme.colors.border,
+  },
+  pslTickActive: {
+    backgroundColor: DarkTheme.colors.primary,
+    height: 12,
+  },
+  pslLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  pslLabelText: {
+    fontSize: 10,
+    color: DarkTheme.colors.textTertiary,
+    fontFamily: DarkTheme.typography.fontFamily,
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: DarkTheme.spacing.lg,
+    paddingTop: DarkTheme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: DarkTheme.colors.border,
+  },
+  categoryLabel: {
+    fontSize: 14,
+    color: DarkTheme.colors.textSecondary,
+    fontFamily: DarkTheme.typography.fontFamily,
+  },
+  categoryBadge: {
+    paddingHorizontal: DarkTheme.spacing.md,
+    paddingVertical: DarkTheme.spacing.xs,
+    borderRadius: 20,
+  },
+  categoryText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#000',
+    fontFamily: DarkTheme.typography.fontFamily,
+  },
+  categoryLegend: {
+    gap: DarkTheme.spacing.xs,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: DarkTheme.spacing.xs,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginLeft: DarkTheme.spacing.sm,
+  },
+  legendText: {
+    fontSize: 10,
+    color: DarkTheme.colors.textTertiary,
+    fontFamily: DarkTheme.typography.fontFamily,
+    marginRight: DarkTheme.spacing.sm,
+  },
+  categoryBadgeSmall: {
+    paddingHorizontal: DarkTheme.spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: DarkTheme.spacing.xs,
+  },
+  categoryTextSmall: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#000',
+    fontFamily: DarkTheme.typography.fontFamily,
+  },
+  methodologyLinkCentered: {
+    alignItems: 'center',
+    paddingVertical: DarkTheme.spacing.sm,
+    marginBottom: DarkTheme.spacing.md,
   },
 });
 

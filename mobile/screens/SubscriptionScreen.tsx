@@ -11,17 +11,18 @@ import {
   Platform,
   Linking,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { Check, Crown, Sparkles, Zap, Shield, Star } from 'lucide-react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
-  withSpring, 
-  withDelay 
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  withDelay
 } from 'react-native-reanimated';
 
 import { useAuth } from '../lib/auth/context';
@@ -69,7 +70,7 @@ export function SubscriptionScreen() {
   const [managingSubscription, setManagingSubscription] = useState(false);
   const [selectedTier, setSelectedTier] = useState<'pro' | 'elite'>('elite');
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('monthly');
-  
+
   // Check if user has an active subscription
   const hasActiveSubscription = tier !== 'free';
 
@@ -79,7 +80,7 @@ export function SubscriptionScreen() {
 
   useEffect(() => {
     loadOfferings();
-    
+
     // Reference product IDs to ensure they're included in the binary
     // This helps Apple App Store Connect detect subscriptions during submission
     if (__DEV__) {
@@ -91,7 +92,7 @@ export function SubscriptionScreen() {
         ALL_PRODUCT_IDS,
       });
     }
-    
+
     // Animations
     headerOpacity.value = withTiming(1, { duration: 800 });
     contentTranslateY.value = withSpring(0, { damping: 15 });
@@ -126,7 +127,7 @@ export function SubscriptionScreen() {
     // Use product ID constants to ensure they're included in the binary
     const productId = getProductId(selectedTier, billingInterval);
     const identifier = `${selectedTier}_${billingInterval}`;
-    const pkg = offerings.availablePackages.find((p: PurchasesPackage) => 
+    const pkg = offerings.availablePackages.find((p: PurchasesPackage) =>
       p.identifier.toLowerCase().includes(identifier) ||
       p.product.identifier === productId
     );
@@ -140,10 +141,31 @@ export function SubscriptionScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     try {
-      const customerInfo = await purchasePackage(pkg);
-      await syncSubscriptionToBackend(customerInfo);
-      await refreshSubscription();
-      Alert.alert('Success', 'Welcome to the club! Subscription activated.');
+      // Get stored referral code
+      const referralCode = await AsyncStorage.getItem('@blackpill_referral_code');
+      const customerInfo = await purchasePackage(pkg, referralCode || undefined);
+
+      // Clear referral code after successful purchase
+      if (referralCode) {
+        await AsyncStorage.removeItem('@blackpill_referral_code');
+      }
+
+      // Only sync to backend if user is logged in
+      if (user) {
+        await syncSubscriptionToBackend(customerInfo);
+        await refreshSubscription();
+        Alert.alert('Success', 'Welcome to the club! Subscription activated.');
+      } else {
+        // Guest purchase successful
+        Alert.alert(
+          'Success',
+          'Subscription activated! Create an account to sync this purchase across your devices.',
+          [
+            { text: 'Later', style: 'cancel' },
+            { text: 'Create Account', onPress: () => navigation.navigate('Signup' as never) }
+          ]
+        );
+      }
     } catch (error: any) {
       if (error.message !== 'Purchase was cancelled') {
         Alert.alert('Error', error.message || 'Failed to purchase');
@@ -156,7 +178,7 @@ export function SubscriptionScreen() {
   const handleManageSubscription = async () => {
     try {
       setManagingSubscription(true);
-      
+
       // For iOS, open App Store subscription management
       if (Platform.OS === 'ios') {
         const url = 'https://apps.apple.com/account/subscriptions';
@@ -176,7 +198,7 @@ export function SubscriptionScreen() {
         // Try to open Play Store subscriptions page
         const packageName = 'com.blackpill.app'; // Update with actual package name if different
         const playStoreUrl = `https://play.google.com/store/account/subscriptions?package=${packageName}&sku=${packageName}`;
-        
+
         try {
           const canOpen = await Linking.canOpenURL(playStoreUrl);
           if (canOpen) {
@@ -251,14 +273,14 @@ export function SubscriptionScreen() {
     // Use product ID constants to ensure they're included in the binary
     const productId = getProductId(tier, billingInterval);
     const identifier = `${tier}_${billingInterval}`;
-    const pkg = offerings?.availablePackages.find((p: PurchasesPackage) => 
+    const pkg = offerings?.availablePackages.find((p: PurchasesPackage) =>
       p.identifier.toLowerCase().includes(identifier) ||
       p.product.identifier === productId
     );
-    
+
     // Always use StoreKit's localized price if available
     if (pkg) return pkg.product.priceString;
-    
+
     // Fallback prices (should match App Store Connect)
     if (billingInterval === 'yearly') {
       return tier === 'pro' ? '$119.99' : '$219.99';
@@ -276,12 +298,12 @@ export function SubscriptionScreen() {
 
       <BackHeader title="Plans" variant="large" onBackPress={() => navigation.goBack()} />
 
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={[styles.header, headerStyle]}>
-          <GradientText 
+          <GradientText
             text="Unlock Your Full Potential"
             fontSize={36}
             fontWeight="800"
@@ -294,7 +316,7 @@ export function SubscriptionScreen() {
 
         <View style={styles.toggleContainer}>
           <View style={styles.toggleWrapper}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.toggleOption, billingInterval === 'monthly' && styles.toggleOptionActive]}
               onPress={() => {
                 Haptics.selectionAsync();
@@ -303,7 +325,7 @@ export function SubscriptionScreen() {
             >
               <Text style={[styles.toggleText, billingInterval === 'monthly' && styles.toggleTextActive]}>Monthly</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.toggleOption, billingInterval === 'yearly' && styles.toggleOptionActive]}
               onPress={() => {
                 Haptics.selectionAsync();
@@ -329,7 +351,7 @@ export function SubscriptionScreen() {
               setSelectedTier('pro');
             }}
             style={[
-              styles.tierCard, 
+              styles.tierCard,
               selectedTier === 'pro' && styles.selectedCard
             ]}
           >
@@ -383,9 +405,9 @@ export function SubscriptionScreen() {
               <View style={styles.divider} />
               {FEATURES.map((feature, i) => (
                 <View key={i} style={styles.featureRow}>
-                  <Star 
-                    size={14} 
-                    color={feature.elite === true || typeof feature.elite === 'string' ? DarkTheme.colors.primary : DarkTheme.colors.textDisabled} 
+                  <Star
+                    size={14}
+                    color={feature.elite === true || typeof feature.elite === 'string' ? DarkTheme.colors.primary : DarkTheme.colors.textDisabled}
                     fill={feature.elite === true || typeof feature.elite === 'string' ? DarkTheme.colors.primary : 'transparent'}
                   />
                   <Text style={[
@@ -548,7 +570,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 12,
     marginBottom: 32,
-    height: 420, 
+    height: 420,
   },
   tierCard: {
     flex: 1,

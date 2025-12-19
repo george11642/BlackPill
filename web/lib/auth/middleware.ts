@@ -31,14 +31,14 @@ export interface AuthenticatedRequest extends Request {
 export async function getAuthenticatedUser(request: Request): Promise<AuthenticatedUser> {
   const url = new URL(request.url);
   console.log('[Auth] Verifying token for:', request.method, url.pathname);
-  
+
   // Get Authorization header directly - no fallback to x-vercel-sc-headers
   // (that contains Vercel's internal token, not the user's Supabase token)
   const authHeader = request.headers.get('authorization');
-  
+
   console.log('[Auth] Authorization header present:', !!authHeader);
   console.log('[Auth] Authorization header starts with Bearer:', authHeader?.startsWith('Bearer '));
-  
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     console.error('[Auth] REJECTED: Missing or invalid authorization header');
     console.error('[Auth] Headers received:', Object.fromEntries(request.headers.entries()));
@@ -77,14 +77,14 @@ export async function getAuthenticatedUser(request: Request): Promise<Authentica
     console.error('[Auth] Error details:', JSON.stringify(error));
     throw new Error('Invalid or expired token');
   }
-  
+
   if (!data.user) {
     console.error('[Auth] REJECTED: No user returned from Supabase');
     throw new Error('Invalid or expired token');
   }
 
   console.log('[Auth] SUCCESS: User authenticated:', data.user.id, data.user.email);
-  
+
   return {
     id: data.user.id,
     email: data.user.email,
@@ -110,8 +110,8 @@ export async function checkScansRemaining(userId: string): Promise<{
     throw new Error('User not found');
   }
 
-  // Check if unlimited tier
-  if (user.tier === 'unlimited') {
+  // Check if elite tier (unlimited scans)
+  if (user.tier === 'elite') {
     return {
       tier: user.tier,
       scansRemaining: Infinity,
@@ -152,7 +152,7 @@ export function withAuth<T = unknown>(
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Authentication failed';
       console.error('[withAuth] Authentication failed:', message);
-      
+
       if (message.includes('Missing') || message.includes('Invalid') || message.includes('expired')) {
         console.error('[withAuth] Returning 401 Unauthorized');
         return NextResponse.json(

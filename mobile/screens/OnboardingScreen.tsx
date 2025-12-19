@@ -23,7 +23,8 @@ import * as Notifications from 'expo-notifications';
 import { Camera } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronRight, ChevronLeft, Camera as CameraIcon, Sparkles } from 'lucide-react-native';
+import { ChevronRight, ChevronLeft, Camera as CameraIcon, Sparkles, Star } from 'lucide-react-native';
+import * as StoreReview from 'expo-store-review';
 
 import { OnboardingSlide } from '../components/OnboardingSlide';
 import { ProfileSetupStep, ProfileSetupData } from '../components/ProfileSetupStep';
@@ -40,11 +41,12 @@ import { showAlert } from '../lib/utils/alert';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Onboarding steps
-type OnboardingStep = 
+type OnboardingStep =
   | 'profile'
   | 'goals'
   | 'permissions'
   | 'disclaimer'
+  | 'rating'
   | 'firstScan';
 
 const STEPS: OnboardingStep[] = [
@@ -52,6 +54,7 @@ const STEPS: OnboardingStep[] = [
   'goals',
   'permissions',
   'disclaimer',
+  'rating',
   'firstScan',
 ];
 
@@ -61,7 +64,7 @@ export function OnboardingScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const isCompletingRef = useRef(false); // Track if onboarding completion is in progress
   const lastValidStepIndexRef = useRef(0); // Track the last valid step index
-  
+
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [profileData, setProfileData] = useState<ProfileSetupData>({
     username: '',
@@ -70,6 +73,7 @@ export function OnboardingScreen() {
   const [selectedGoals, setSelectedGoals] = useState<OnboardingGoal[]>([]);
   const [permissionsGranted, setPermissionsGranted] = useState(false);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+  const [rating, setRating] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const currentStep = STEPS[currentStepIndex];
@@ -86,12 +90,12 @@ export function OnboardingScreen() {
       console.log('[Onboarding] Blocked step navigation - completion in progress');
       return;
     }
-    
+
     if (index < 0 || index >= STEPS.length) return;
-    
+
     // Update the last valid step index
     lastValidStepIndexRef.current = index;
-    
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCurrentStepIndex(index);
     progressWidth.value = withTiming((index + 1) / STEPS.length, { duration: 300 });
@@ -105,6 +109,8 @@ export function OnboardingScreen() {
         return permissionsGranted;
       case 'disclaimer':
         return disclaimerAccepted;
+      case 'rating':
+        return rating > 0;
       default:
         return true;
     }
@@ -115,7 +121,7 @@ export function OnboardingScreen() {
     if (isCompletingRef.current || loading) {
       return;
     }
-    
+
     if (!canProceed()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return;
@@ -125,6 +131,17 @@ export function OnboardingScreen() {
     if (currentStep === 'permissions') {
       const granted = await requestPermissions();
       if (!granted) return;
+    }
+
+    if (currentStep === 'rating' && rating >= 4) {
+      const isAvailable = await StoreReview.isAvailableAsync();
+      if (isAvailable) {
+        try {
+          await StoreReview.requestReview();
+        } catch (error) {
+          console.warn('[Onboarding] StoreReview error:', error);
+        }
+      }
     }
 
     if (currentStepIndex < STEPS.length - 1) {
@@ -137,7 +154,7 @@ export function OnboardingScreen() {
     if (isCompletingRef.current || loading) {
       return;
     }
-    
+
     if (currentStepIndex > 0) {
       goToStep(currentStepIndex - 1);
     }
@@ -190,7 +207,7 @@ export function OnboardingScreen() {
         tokenLength: accessToken?.length || 0,
         tokenPrefix: accessToken?.substring(0, 20) || 'none',
       });
-      
+
       if (!accessToken) {
         console.warn('[Onboarding] No session token in context, attempting to fetch fresh session...');
         const { data, error } = await supabase.auth.getSession();
@@ -200,15 +217,15 @@ export function OnboardingScreen() {
           hasAccessToken: !!data?.session?.access_token,
           error: error?.message || 'none',
         });
-        
+
         if (error) {
           throw new Error(`Failed to get session: ${error.message}`);
         }
-        
+
         if (!data.session?.access_token) {
           throw new Error('No active session. Please log in again.');
         }
-        
+
         accessToken = data.session.access_token;
         console.log('[Onboarding] Fresh session token obtained, length:', accessToken.length);
       }
@@ -218,7 +235,7 @@ export function OnboardingScreen() {
         console.error('[Onboarding] CRITICAL: accessToken is still empty/undefined after all checks!');
         throw new Error('Unable to obtain authentication token. Please log in again.');
       }
-      
+
       console.log('[Onboarding] Token validation passed, token length:', accessToken.length);
 
       // Save onboarding data to server
@@ -253,7 +270,7 @@ export function OnboardingScreen() {
       // Verify the state was actually updated
       // Give it a moment for state to propagate
       await new Promise(resolve => setTimeout(resolve, 200));
-      
+
       // Check if onboarding is actually complete now
       // We'll use a small delay and check the auth context state
       // Note: We can't directly access hasCompletedOnboarding here, but the navigation
@@ -266,7 +283,7 @@ export function OnboardingScreen() {
       // The component will unmount when navigation occurs, so we don't need to clear these
     } catch (error: any) {
       console.error('[Onboarding] Failed to complete onboarding:', error);
-      
+
       // Handle 401 Unauthorized specifically - attempt session refresh and retry
       if (error.status === 401 || (error.message && error.message.includes('Invalid or expired'))) {
         console.warn('[Onboarding] 401 Unauthorized detected. Attempting session refresh and retry...');
@@ -276,13 +293,13 @@ export function OnboardingScreen() {
           if (refreshError) {
             throw new Error(`Session refresh failed: ${refreshError.message}`);
           }
-          
+
           if (!data.session?.access_token) {
             throw new Error('Session refresh successful but no new token obtained');
           }
 
           console.log('[Onboarding] Session refreshed successfully, retrying API call...');
-          
+
           // Retry the API call with the new token
           await apiPost(
             '/api/user/onboarding',
@@ -308,10 +325,10 @@ export function OnboardingScreen() {
           return; // Success - exit without showing error alert
         } catch (retryError: any) {
           console.error('[Onboarding] Failed to refresh session or retry API call:', retryError);
-          
+
           // Clear the completion flag on error
           isCompletingRef.current = false;
-          
+
           // Clear the first scan flag if onboarding failed
           if (goToCamera) {
             await AsyncStorage.removeItem('@blackpill_first_scan_pending');
@@ -332,28 +349,28 @@ export function OnboardingScreen() {
           return;
         }
       }
-      
+
       // Clear the completion flag on error so user can try again
       isCompletingRef.current = false;
-      
+
       // Clear the first scan flag if onboarding failed
       if (goToCamera) {
         await AsyncStorage.removeItem('@blackpill_first_scan_pending');
       }
-      
+
       // Restore the step index if it was reset (safety check)
       if (currentStepIndex !== lastValidStepIndexRef.current) {
         console.warn('[Onboarding] Step index was reset, restoring to last valid step:', lastValidStepIndexRef.current);
         setCurrentStepIndex(lastValidStepIndexRef.current);
       }
-      
+
       // Show error to user
       showAlert({
         title: 'Onboarding Error',
         message: error.message || 'Failed to complete onboarding. Please try again.',
         buttons: [{ text: 'OK' }],
       });
-      
+
       // Still try to refresh and navigate even if save fails
       try {
         console.log('[Onboarding] Attempting final refresh...');
@@ -390,7 +407,7 @@ export function OnboardingScreen() {
 
       case 'permissions':
         return (
-          <Animated.View 
+          <Animated.View
             style={styles.stepContainer}
             entering={FadeIn.duration(500)}
           >
@@ -450,7 +467,7 @@ export function OnboardingScreen() {
 
       case 'disclaimer':
         return (
-          <Animated.View 
+          <Animated.View
             style={styles.stepContainer}
             entering={FadeIn.duration(500)}
           >
@@ -462,8 +479,8 @@ export function OnboardingScreen() {
             <View style={styles.disclaimerCard}>
               <View style={styles.disclaimerInner}>
                 <Text style={styles.disclaimerTitle}>Medical Disclaimer</Text>
-                <ScrollView 
-                  style={styles.disclaimerScroll} 
+                <ScrollView
+                  style={styles.disclaimerScroll}
                   contentContainerStyle={styles.disclaimerScrollContent}
                   showsVerticalScrollIndicator={true}
                   nestedScrollEnabled={true}
@@ -507,9 +524,67 @@ export function OnboardingScreen() {
           </Animated.View>
         );
 
+      case 'rating':
+        return (
+          <Animated.View
+            style={styles.stepContainer}
+            entering={FadeIn.duration(500)}
+          >
+            <View style={styles.ratingHeader}>
+              <View style={styles.appIconContainer}>
+                <Text style={styles.appIconPlaceholder}>B</Text>
+              </View>
+              <Text style={styles.stepTitle}>Enjoying Black Pill?</Text>
+              <Text style={styles.stepSubtitle}>
+                Your feedback helps us improve and stay ad-free for everyone.
+              </Text>
+            </View>
+
+            <GlassCard style={styles.ratingCard}>
+              <Text style={styles.ratingQuestion}>How would you rate your experience so far?</Text>
+              <View style={styles.starsContainer}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity
+                    key={star}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      setRating(star);
+                    }}
+                    style={styles.starButton}
+                  >
+                    <Star
+                      size={40}
+                      color={star <= rating ? '#FFD700' : DarkTheme.colors.borderSubtle}
+                      fill={star <= rating ? '#FFD700' : 'transparent'}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Animated.View style={styles.ratingFeedback}>
+                {rating > 0 && (
+                  <Text style={styles.ratingText}>
+                    {rating === 5 ? "Love it! 😍" :
+                      rating === 4 ? "It's great! 😊" :
+                        rating === 3 ? "It's good. 👍" :
+                          rating === 2 ? "Could be better. 😕" :
+                            "Need improvement. 😞"}
+                  </Text>
+                )}
+              </Animated.View>
+            </GlassCard>
+
+            <View style={styles.ratingFooter}>
+              <Text style={styles.secureText}>
+                🛡️ Your rating is private and helps us grow.
+              </Text>
+            </View>
+          </Animated.View>
+        );
+
       case 'firstScan':
         return (
-          <Animated.View 
+          <Animated.View
             style={styles.stepContainer}
             entering={FadeIn.duration(500)}
           >
@@ -608,9 +683,9 @@ export function OnboardingScreen() {
             ]}>
               {currentStep === 'disclaimer' ? 'Accept' : 'Next'}
             </Text>
-            <ChevronRight 
-              size={24} 
-              color={canProceed() ? DarkTheme.colors.primary : DarkTheme.colors.textTertiary} 
+            <ChevronRight
+              size={24}
+              color={canProceed() ? DarkTheme.colors.primary : DarkTheme.colors.textTertiary}
             />
           </TouchableOpacity>
         </View>
@@ -841,6 +916,76 @@ const styles = StyleSheet.create({
     color: DarkTheme.colors.text,
     fontFamily: DarkTheme.typography.fontFamily,
     flex: 1,
+  },
+  // Rating styles
+  ratingHeader: {
+    alignItems: 'center',
+    marginBottom: DarkTheme.spacing.lg,
+  },
+  appIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    backgroundColor: DarkTheme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: DarkTheme.spacing.md,
+    ...Platform.select({
+      ios: {
+        shadowColor: DarkTheme.colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  appIconPlaceholder: {
+    fontSize: 40,
+    fontWeight: '800',
+    color: '#000',
+  },
+  ratingCard: {
+    padding: DarkTheme.spacing.xl,
+    alignItems: 'center',
+    marginBottom: DarkTheme.spacing.xl,
+  },
+  ratingQuestion: {
+    fontSize: 18,
+    color: DarkTheme.colors.text,
+    fontFamily: DarkTheme.typography.fontFamily,
+    marginBottom: DarkTheme.spacing.xl,
+    textAlign: 'center',
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: DarkTheme.spacing.lg,
+  },
+  starButton: {
+    padding: 4,
+  },
+  ratingFeedback: {
+    height: 30,
+    justifyContent: 'center',
+  },
+  ratingText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: DarkTheme.colors.primary,
+    fontFamily: DarkTheme.typography.fontFamily,
+  },
+  ratingFooter: {
+    marginTop: 'auto',
+    alignItems: 'center',
+    paddingBottom: DarkTheme.spacing.xl,
+  },
+  secureText: {
+    fontSize: 12,
+    color: DarkTheme.colors.textTertiary,
+    fontFamily: DarkTheme.typography.fontFamily,
   },
   // First scan styles
   firstScanEmoji: {

@@ -13,6 +13,7 @@ import { AuthProvider, useAuth } from './lib/auth/context';
 import { SubscriptionProvider } from './lib/subscription/context';
 import { DarkTheme } from './lib/theme';
 import { apiGet } from './lib/api/client';
+import * as Linking from 'expo-linking';
 
 // Ignore warnings from third-party libraries
 LogBox.ignoreLogs([
@@ -50,7 +51,6 @@ import { DailyRoutineScreen } from './screens/DailyRoutineScreen';
 import { ProgressPicturesScreen } from './screens/ProgressPicturesScreen';
 import { CreateRoutineScreen } from './screens/CreateRoutineScreen';
 import AffiliateDashboardScreen from './screens/AffiliateDashboardScreen';
-import { ReferralsScreen } from './screens/ReferralsScreen';
 import { NotificationsScreen } from './screens/NotificationsScreen';
 import { HelpAndSupportScreen } from './screens/HelpAndSupportScreen';
 import { TimelapseSelectionScreen } from './screens/TimelapseSelectionScreen';
@@ -88,10 +88,48 @@ function RootNavigator() {
   const hasCheckedFirstScan = useRef(false);
   const [isFirstScanPending, setIsFirstScanPending] = useState(false);
 
-  // Initialize RevenueCat when user is available
+  // Handle deep links for referral codes
   useEffect(() => {
-    if (user?.id && !loading) {
-      initializeRevenueCat(user.id);
+    const handleDeepLink = async (url: string) => {
+      console.log('[App] Received deep link:', url);
+      const { path, queryParams } = Linking.parse(url);
+
+      // Handle blackpill://ref/CODE
+      if (path && path.startsWith('ref/')) {
+        const code = path.split('/')[1];
+        if (code) {
+          console.log('[App] Captured referral code from deep link:', code);
+          await AsyncStorage.setItem('@blackpill_referral_code', code);
+        }
+      }
+
+      // Also handle query param if present: ?ref=CODE
+      if (queryParams && queryParams.ref) {
+        const code = queryParams.ref as string;
+        console.log('[App] Captured referral code from query param:', code);
+        await AsyncStorage.setItem('@blackpill_referral_code', code);
+      }
+    };
+
+    // Handle initial link
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink(url);
+    });
+
+    // Handle incoming links while app is open
+    const subscription = Linking.addEventListener('url', (event) => {
+      handleDeepLink(event.url);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  // Initialize RevenueCat
+  useEffect(() => {
+    if (!loading) {
+      initializeRevenueCat(user?.id);
     }
   }, [user?.id, loading]);
 
@@ -108,7 +146,7 @@ function RootNavigator() {
         const pending = await AsyncStorage.getItem('@blackpill_first_scan_pending');
         if (pending === 'true') {
           console.log('[App] First scan pending flag detected');
-          
+
           // Check if user already has analyses - if so, clear flag and don't show first scan screen
           if (session?.access_token) {
             try {
@@ -116,7 +154,7 @@ function RootNavigator() {
                 '/api/analyses/history?limit=1',
                 session.access_token
               );
-              
+
               if (historyData.analyses && historyData.analyses.length > 0) {
                 console.log('[App] User already has analyses, clearing first scan flag');
                 await AsyncStorage.removeItem('@blackpill_first_scan_pending');
@@ -128,7 +166,7 @@ function RootNavigator() {
               // If API call fails, proceed with showing first scan screen as fallback
             }
           }
-          
+
           // Mark as checked immediately
           hasCheckedFirstScan.current = true;
           // Clear the flag
@@ -188,7 +226,6 @@ function RootNavigator() {
                 <Stack.Screen name="ProgressPictures" component={ProgressPicturesScreen} />
                 <Stack.Screen name="CreateRoutine" component={CreateRoutineScreen} />
                 <Stack.Screen name="Affiliate" component={AffiliateDashboardScreen} />
-                <Stack.Screen name="Referrals" component={ReferralsScreen} />
                 <Stack.Screen name="Notifications" component={NotificationsScreen} />
                 <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
                 <Stack.Screen name="TimelapseSelection" component={TimelapseSelectionScreen} />
@@ -201,38 +238,37 @@ function RootNavigator() {
               // Normal flow - show main app starting with Home
               <>
                 <Stack.Screen name="Home" component={HomeScreen} />
-              <Stack.Screen name="Camera" component={CameraScreen} />
-              <Stack.Screen name="AnalysisResult" component={AnalysisResultScreen} />
-              <Stack.Screen name="History" component={HistoryScreen} />
-              <Stack.Screen name="Comparison" component={ComparisonScreen} />
-              <Stack.Screen name="Progress" component={ProgressScreen} />
-              <Stack.Screen name="Routines" component={RoutinesScreen} />
-              <Stack.Screen name="RoutineDetail" component={RoutineDetailScreen} />
-              <Stack.Screen name="Tasks" component={TasksScreen} />
-              <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
-              <Stack.Screen name="Achievements" component={AchievementsScreen} />
-              <Stack.Screen name="Share" component={ShareScreen} />
-              <Stack.Screen name="Challenges" component={ChallengesScreen} />
-              <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
-              <Stack.Screen name="Wellness" component={WellnessScreen} />
-              <Stack.Screen name="Profile" component={ProfileScreen} />
-              <Stack.Screen name="Settings" component={SettingsScreen} />
-              <Stack.Screen name="Subscription" component={SubscriptionScreen} />
-              <Stack.Screen name="EthicalSettings" component={EthicalSettingsScreen} />
-              <Stack.Screen name="AICoach" component={AICoachScreen} />
-              <Stack.Screen name="AITransform" component={AITransformScreen} />
-              <Stack.Screen name="DailyRoutine" component={DailyRoutineScreen} />
-              <Stack.Screen name="ProgressPictures" component={ProgressPicturesScreen} />
-              <Stack.Screen name="CreateRoutine" component={CreateRoutineScreen} />
-              <Stack.Screen name="Affiliate" component={AffiliateDashboardScreen} />
-              <Stack.Screen name="Referrals" component={ReferralsScreen} />
-              <Stack.Screen name="Notifications" component={NotificationsScreen} />
-              <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
-              <Stack.Screen name="TimelapseSelection" component={TimelapseSelectionScreen} />
-              <Stack.Screen name="TimelapseGeneration" component={TimelapseGenerationScreen} />
-              <Stack.Screen name="CreateGoal" component={CreateGoalScreen} />
-              <Stack.Screen name="Methodology" component={MethodologyScreen} />
-              <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
+                <Stack.Screen name="Camera" component={CameraScreen} />
+                <Stack.Screen name="AnalysisResult" component={AnalysisResultScreen} />
+                <Stack.Screen name="History" component={HistoryScreen} />
+                <Stack.Screen name="Comparison" component={ComparisonScreen} />
+                <Stack.Screen name="Progress" component={ProgressScreen} />
+                <Stack.Screen name="Routines" component={RoutinesScreen} />
+                <Stack.Screen name="RoutineDetail" component={RoutineDetailScreen} />
+                <Stack.Screen name="Tasks" component={TasksScreen} />
+                <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+                <Stack.Screen name="Achievements" component={AchievementsScreen} />
+                <Stack.Screen name="Share" component={ShareScreen} />
+                <Stack.Screen name="Challenges" component={ChallengesScreen} />
+                <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
+                <Stack.Screen name="Wellness" component={WellnessScreen} />
+                <Stack.Screen name="Profile" component={ProfileScreen} />
+                <Stack.Screen name="Settings" component={SettingsScreen} />
+                <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+                <Stack.Screen name="EthicalSettings" component={EthicalSettingsScreen} />
+                <Stack.Screen name="AICoach" component={AICoachScreen} />
+                <Stack.Screen name="AITransform" component={AITransformScreen} />
+                <Stack.Screen name="DailyRoutine" component={DailyRoutineScreen} />
+                <Stack.Screen name="ProgressPictures" component={ProgressPicturesScreen} />
+                <Stack.Screen name="CreateRoutine" component={CreateRoutineScreen} />
+                <Stack.Screen name="Affiliate" component={AffiliateDashboardScreen} />
+                <Stack.Screen name="Notifications" component={NotificationsScreen} />
+                <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
+                <Stack.Screen name="TimelapseSelection" component={TimelapseSelectionScreen} />
+                <Stack.Screen name="TimelapseGeneration" component={TimelapseGenerationScreen} />
+                <Stack.Screen name="CreateGoal" component={CreateGoalScreen} />
+                <Stack.Screen name="Methodology" component={MethodologyScreen} />
+                <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
               </>
             )
           ) : (
@@ -265,7 +301,6 @@ function RootNavigator() {
               <Stack.Screen name="ProgressPictures" component={ProgressPicturesScreen} />
               <Stack.Screen name="CreateRoutine" component={CreateRoutineScreen} />
               <Stack.Screen name="Affiliate" component={AffiliateDashboardScreen} />
-              <Stack.Screen name="Referrals" component={ReferralsScreen} />
               <Stack.Screen name="Notifications" component={NotificationsScreen} />
               <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
               <Stack.Screen name="TimelapseSelection" component={TimelapseSelectionScreen} />
@@ -281,6 +316,7 @@ function RootNavigator() {
             <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Signup" component={SignupScreen} />
+            <Stack.Screen name="Subscription" component={SubscriptionScreen} />
           </>
         )}
       </Stack.Navigator>

@@ -58,7 +58,7 @@ export function WelcomeScreen() {
 
   const goToSlide = (index: number) => {
     if (index < 0 || index >= WELCOME_SLIDES.length) return;
-    
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCurrentSlideIndex(index);
     progressWidth.value = withTiming((index + 1) / WELCOME_SLIDES.length, { duration: 300 });
@@ -113,15 +113,25 @@ export function WelcomeScreen() {
           <Text style={[styles.navButtonText, styles.navButtonTextNext]}>
             {currentSlideIndex === WELCOME_SLIDES.length - 1 ? 'Get Started' : 'Next'}
           </Text>
-          <ChevronRight 
-            size={24} 
-            color={DarkTheme.colors.primary} 
+          <ChevronRight
+            size={24}
+            color={DarkTheme.colors.primary}
           />
         </TouchableOpacity>
       </View>
 
+      {/* Guest IAP Link */}
+      <TouchableOpacity
+        style={styles.plansLink}
+        onPress={() => navigation.navigate('Subscription' as never)}
+      >
+        <Text style={styles.plansText}>
+          Want to see our plans? <Text style={styles.plansTextBold}>View Plans</Text>
+        </Text>
+      </TouchableOpacity>
+
       {/* Login Link */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.loginLink}
         onPress={() => navigation.navigate('Login' as never)}
       >
@@ -212,6 +222,19 @@ const styles = StyleSheet.create({
     fontFamily: DarkTheme.typography.fontFamily,
   },
   loginTextBold: {
+    color: DarkTheme.colors.primary,
+    fontWeight: '600',
+  },
+  plansLink: {
+    alignItems: 'center',
+    paddingBottom: DarkTheme.spacing.md,
+  },
+  plansText: {
+    fontSize: 14,
+    color: DarkTheme.colors.textSecondary,
+    fontFamily: DarkTheme.typography.fontFamily,
+  },
+  plansTextBold: {
     color: DarkTheme.colors.primary,
     fontWeight: '600',
   },

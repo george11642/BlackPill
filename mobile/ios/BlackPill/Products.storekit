@@ -1,0 +1,237 @@
+{
+  "identifier" : "Products",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "12.99",
+      "familyShareable" : false,
+      "internalID" : "pro_monthly",
+      "localizations" : [
+        {
+          "description" : "Pro Monthly subscription - 10 unblurred scans per month, AI Coach access, and more premium features.",
+          "displayName" : "Pro Monthly",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "pro_monthly",
+      "referenceName" : "Pro Monthly",
+      "type" : "SUBSCRIPTION"
+    },
+    {
+      "displayPrice" : "119.99",
+      "familyShareable" : false,
+      "internalID" : "pro_yearly",
+      "localizations" : [
+        {
+          "description" : "Pro Yearly subscription - 10 unblurred scans per month, AI Coach access, and more premium features. Save with annual billing.",
+          "displayName" : "Pro Yearly",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "pro_yearly",
+      "referenceName" : "Pro Yearly",
+      "type" : "SUBSCRIPTION"
+    },
+    {
+      "displayPrice" : "19.99",
+      "familyShareable" : false,
+      "internalID" : "elite_monthly",
+      "localizations" : [
+        {
+          "description" : "Elite Monthly subscription - 30 unblurred scans per month, unlimited AI Coach, AI Transform, and all premium features.",
+          "displayName" : "Elite Monthly",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "elite_monthly",
+      "referenceName" : "Elite Monthly",
+      "type" : "SUBSCRIPTION"
+    },
+    {
+      "displayPrice" : "219.99",
+      "familyShareable" : false,
+      "internalID" : "elite_yearly",
+      "localizations" : [
+        {
+          "description" : "Elite Yearly subscription - 30 unblurred scans per month, unlimited AI Coach, AI Transform, and all premium features. Save with annual billing.",
+          "displayName" : "Elite Yearly",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "elite_yearly",
+      "referenceName" : "Elite Yearly",
+      "type" : "SUBSCRIPTION"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "2147483647",
+      "localizations" : [
+        {
+          "name" : "BlackPill Subscriptions",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "BlackPill Subscriptions",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "12.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "pro_monthly",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Pro Monthly subscription - 10 unblurred scans per month, AI Coach access, and more premium features.",
+              "displayName" : "Pro Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "pro_monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Pro Monthly",
+          "subscriptionGroupID" : "2147483647",
+          "type" : "SUBSCRIPTION"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "119.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "pro_yearly",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Pro Yearly subscription - 10 unblurred scans per month, AI Coach access, and more premium features. Save with annual billing.",
+              "displayName" : "Pro Yearly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "pro_yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Pro Yearly",
+          "subscriptionGroupID" : "2147483647",
+          "type" : "SUBSCRIPTION"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "19.99",
+          "familyShareable" : false,
+          "groupNumber" : 3,
+          "internalID" : "elite_monthly",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Elite Monthly subscription - 30 unblurred scans per month, unlimited AI Coach, AI Transform, and all premium features.",
+              "displayName" : "Elite Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "elite_monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Elite Monthly",
+          "subscriptionGroupID" : "2147483647",
+          "type" : "SUBSCRIPTION"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "219.99",
+          "familyShareable" : false,
+          "groupNumber" : 4,
+          "internalID" : "elite_yearly",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Elite Yearly subscription - 30 unblurred scans per month, unlimited AI Coach, AI Transform, and all premium features. Save with annual billing.",
+              "displayName" : "Elite Yearly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "elite_yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Elite Yearly",
+          "subscriptionGroupID" : "2147483647",
+          "type" : "SUBSCRIPTION"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}
+

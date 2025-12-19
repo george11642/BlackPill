@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   const expectedToken = process.env.REVENUECAT_WEBHOOK_SECRET;
   if (!expectedToken) {
     console.error('[RevenueCat Webhook] REVENUECAT_WEBHOOK_SECRET not configured in environment variables');
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: 'Webhook not configured',
       message: 'REVENUECAT_WEBHOOK_SECRET environment variable is missing. Please set it in Vercel environment variables.'
     }, { status: 500 });
@@ -58,11 +58,11 @@ export async function POST(request: Request) {
 
   // Check authorization - try multiple methods
   const headersList = await headers();
-  
+
   // Check User-Agent to verify it's from RevenueCat
   const userAgent = headersList.get('user-agent');
   const isFromRevenueCat = userAgent?.includes('RevenueCat') || userAgent?.includes('revenuecat');
-  
+
   // Log event environment for diagnostics
   console.log(`[RevenueCat Webhook] Event environment: ${eventEnvironment}, Event type: ${event.event?.type}`);
   if (userAgent) {
@@ -71,11 +71,11 @@ export async function POST(request: Request) {
   } else {
     console.warn('[RevenueCat Webhook] No User-Agent header found');
   }
-  
+
   // Try multiple header name variations (case-insensitive)
   // Note: headers() in Next.js App Router returns lowercase keys
-  const authHeader = 
-    headersList.get('authorization') || 
+  const authHeader =
+    headersList.get('authorization') ||
     headersList.get('Authorization') ||
     headersList.get('AUTHORIZATION');
 
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
     console.error('[RevenueCat Webhook] User-Agent verification:', isFromRevenueCat ? 'PASSED' : 'FAILED');
     console.error('[RevenueCat Webhook] Available headers:', Object.fromEntries(headersList.entries()));
     console.error('[RevenueCat Webhook] Request URL:', request.url);
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: 'Unauthorized',
       message: `Missing Authorization header for PRODUCTION event (environment: ${eventEnvironment}). Please configure the Authorization Token in RevenueCat webhook settings. SANDBOX events may bypass authentication, but PRODUCTION events require proper authorization.`
     }, { status: 401 });
@@ -127,7 +127,7 @@ export async function POST(request: Request) {
     console.error('[RevenueCat Webhook] Received token (first 10 chars):', token.substring(0, 10));
     console.error('[RevenueCat Webhook] Event type:', event.event?.type);
     console.error('[RevenueCat Webhook] User-Agent verification:', isFromRevenueCat ? 'PASSED' : 'FAILED');
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: 'Unauthorized',
       message: 'Invalid authorization token. Please verify the REVENUECAT_WEBHOOK_SECRET matches the token configured in RevenueCat.'
     }, { status: 401 });
@@ -139,17 +139,17 @@ export async function POST(request: Request) {
 
   try {
     const eventType = event.event.type;
-    
+
     // For TEST and PRODUCT_CHANGE events, just acknowledge receipt
     // SANDBOX events are now processed to support development/testing
     if (isTestEvent || isProductChangeEvent) {
       console.log(`[RevenueCat Webhook] ${eventType} event (environment: ${eventEnvironment}) acknowledged (not processed)`);
-      return NextResponse.json({ 
-        received: true, 
-        message: `${eventType} event (environment: ${eventEnvironment}) received successfully. Note: TEST/PRODUCT_CHANGE events are acknowledged but not processed.` 
+      return NextResponse.json({
+        received: true,
+        message: `${eventType} event (environment: ${eventEnvironment}) received successfully. Note: TEST/PRODUCT_CHANGE events are acknowledged but not processed.`
       });
     }
-    
+
     // Log sandbox events for visibility
     if (isSandboxEvent) {
       console.log(`[RevenueCat Webhook] Processing SANDBOX event: ${eventType} for user: ${event.event.app_user_id}`);
@@ -157,14 +157,14 @@ export async function POST(request: Request) {
 
     const appUserId = event.event.app_user_id;
     const entitlementIds = event.event.entitlement_ids || [];
-    
+
     console.log('[RevenueCat Webhook] Entitlement IDs in event:', entitlementIds);
-    
+
     // Determine tier from entitlements
     // Check for elite tier first (highest priority), then pro tier
     // Support multiple entitlement identifier formats
     let tier: 'pro' | 'elite' | null = null;
-    
+
     if (
       entitlementIds.includes('elite') ||
       entitlementIds.includes('BlackPill Elite') ||
@@ -209,7 +209,7 @@ export async function POST(request: Request) {
       .select('referred_by')
       .eq('id', userId)
       .single();
-    
+
     const referredByUserId = user?.referred_by || null;
 
     switch (eventType) {
@@ -221,7 +221,7 @@ export async function POST(request: Request) {
         const purchaseDate = new Date(event.event.purchased_at_ms).toISOString();
 
         // Get subscription price (convert from cents if needed, or use as-is)
-        const subscriptionPrice = event.event.price 
+        const subscriptionPrice = event.event.price
           ? (event.event.price / 100) // RevenueCat price is typically in cents
           : (tier === 'pro' ? 12.99 : 19.99); // Fallback to default prices
 
@@ -263,6 +263,18 @@ export async function POST(request: Request) {
             cancel_at_period_end: false,
           });
         }
+
+        // CRITICAL: Update the user's tier and scans_remaining in the users table
+        // This is what checkScansRemaining() reads from
+        const scansForTier = tier === 'elite' ? 999999 : (tier === 'pro' ? 30 : 5);
+        await supabase
+          .from('users')
+          .update({
+            tier: tier,
+            scans_remaining: scansForTier,
+          })
+          .eq('id', userId);
+        console.log(`[RevenueCat] Updated user ${userId} tier to ${tier}, scans to ${scansForTier}`);
 
         // Send subscription confirmation email
         if (profile.email) {
@@ -321,7 +333,7 @@ export async function POST(request: Request) {
           .single();
 
         // Get subscription price (convert from cents if needed, or use as-is)
-        const subscriptionPrice = event.event.price 
+        const subscriptionPrice = event.event.price
           ? (event.event.price / 100) // RevenueCat price is typically in cents
           : (subscriptionRecord?.tier === 'pro' ? 12.99 : 19.99); // Fallback to default prices
 
@@ -338,6 +350,18 @@ export async function POST(request: Request) {
           })
           .eq('revenuecat_customer_id', appUserId)
           .eq('payment_provider', 'revenuecat');
+
+        // Refresh user's scans on renewal
+        const renewalTier = subscriptionRecord?.tier || tier;
+        const renewalScans = renewalTier === 'elite' ? 999999 : (renewalTier === 'pro' ? 30 : 5);
+        await supabase
+          .from('users')
+          .update({
+            tier: renewalTier,
+            scans_remaining: renewalScans,
+          })
+          .eq('id', userId);
+        console.log(`[RevenueCat] RENEWAL: Refreshed user ${userId} scans to ${renewalScans}`);
 
         // Calculate commission or grant credits for renewal
         if (referrerUserId && subscriptionPrice > 0) {
@@ -412,6 +436,16 @@ export async function POST(request: Request) {
           })
           .eq('revenuecat_customer_id', appUserId)
           .eq('payment_provider', 'revenuecat');
+
+        // Reset user back to free tier
+        await supabase
+          .from('users')
+          .update({
+            tier: 'free',
+            scans_remaining: 1, // Give 1 scan to encourage re-subscription
+          })
+          .eq('id', userId);
+        console.log(`[RevenueCat] EXPIRATION: Reset user ${userId} to free tier`);
         break;
       }
 
@@ -441,7 +475,7 @@ async function handleReferralConversion(
     .single();
 
   if (affiliate) {
-    // Mark referral as converted
+    // 1. Mark referral as converted
     await supabase
       .from('referrals')
       .update({
@@ -453,6 +487,19 @@ async function handleReferralConversion(
       .is('referred_user_id', null)
       .order('click_timestamp', { ascending: false })
       .limit(1);
+
+    // 2. Link user to referrer
+    await supabase
+      .from('users')
+      .update({ referred_by: affiliate.user_id })
+      .eq('id', userId);
+
+    // 3. Link current subscription to referrer
+    await supabase
+      .from('subscriptions')
+      .update({ referred_by_user_id: affiliate.user_id })
+      .eq('user_id', userId)
+      .eq('status', 'active');
 
     // Send referral success email to affiliate
     const { data: affiliateProfile } = await supabase
@@ -466,7 +513,7 @@ async function handleReferralConversion(
       const estimatedCommission = 2.60; // 20% of $12.99
       try {
         await sendAffiliateReferralSuccessEmail(
-          affiliateProfile.email, 
+          affiliateProfile.email,
           profile.name,
           estimatedCommission,
           20
