@@ -110,7 +110,7 @@ export function OnboardingScreen() {
       case 'disclaimer':
         return disclaimerAccepted;
       case 'rating':
-        return rating > 0;
+        return true; // Rating is optional - don't block onboarding
       default:
         return true;
     }
@@ -540,7 +540,7 @@ export function OnboardingScreen() {
               </Text>
             </View>
 
-            <GlassCard style={styles.ratingCard}>
+            <View style={styles.ratingCardContainer}>
               <Text style={styles.ratingQuestion}>How would you rate your experience so far?</Text>
               <View style={styles.starsContainer}>
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -553,7 +553,7 @@ export function OnboardingScreen() {
                     style={styles.starButton}
                   >
                     <Star
-                      size={40}
+                      size={44}
                       color={star <= rating ? '#FFD700' : DarkTheme.colors.borderSubtle}
                       fill={star <= rating ? '#FFD700' : 'transparent'}
                     />
@@ -561,7 +561,7 @@ export function OnboardingScreen() {
                 ))}
               </View>
 
-              <Animated.View style={styles.ratingFeedback}>
+              <View style={styles.ratingFeedback}>
                 {rating > 0 && (
                   <Text style={styles.ratingText}>
                     {rating === 5 ? "Love it! 😍" :
@@ -571,12 +571,15 @@ export function OnboardingScreen() {
                             "Need improvement. 😞"}
                   </Text>
                 )}
-              </Animated.View>
-            </GlassCard>
+              </View>
+            </View>
 
             <View style={styles.ratingFooter}>
               <Text style={styles.secureText}>
                 🛡️ Your rating is private and helps us grow.
+              </Text>
+              <Text style={styles.optionalText}>
+                This step is optional - tap Next to continue
               </Text>
             </View>
           </Animated.View>
@@ -947,8 +950,13 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#000',
   },
-  ratingCard: {
-    padding: DarkTheme.spacing.xl,
+  ratingCardContainer: {
+    backgroundColor: DarkTheme.colors.card,
+    borderRadius: DarkTheme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: DarkTheme.colors.borderSubtle,
+    paddingVertical: DarkTheme.spacing.xl,
+    paddingHorizontal: DarkTheme.spacing.lg,
     alignItems: 'center',
     marginBottom: DarkTheme.spacing.xl,
   },
@@ -986,6 +994,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: DarkTheme.colors.textTertiary,
     fontFamily: DarkTheme.typography.fontFamily,
+  },
+  optionalText: {
+    fontSize: 12,
+    color: DarkTheme.colors.textSecondary,
+    fontFamily: DarkTheme.typography.fontFamily,
+    marginTop: DarkTheme.spacing.sm,
+    fontStyle: 'italic',
   },
   // First scan styles
   firstScanEmoji: {

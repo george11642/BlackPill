@@ -73,7 +73,7 @@ export function CameraScreen() {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Check context from route params
-  const params = route.params as { 
+  const params = route.params as {
     context?: 'challenge_check_in' | 'analysis';
     challengeId?: string;
     baselinePhotoUrl?: string;
@@ -96,7 +96,7 @@ export function CameraScreen() {
     // Auto-hide hints after 5 seconds
     setTimeout(() => setShowGuidanceHints(false), 5000);
   };
-  
+
   // Disable client-side face detection - it's unreliable and SmileScore doesn't use it
   // Server-side OpenAI will handle face detection properly
   const useVerification = false;
@@ -115,9 +115,9 @@ export function CameraScreen() {
           >
             <Camera size={56} color={DarkTheme.colors.primary} />
           </LinearGradient>
-          
+
           <Text style={styles.permissionTitle}>Camera Access Needed</Text>
-          
+
           <Text style={styles.permissionDescription}>
             To analyze your facial features and get your beauty score, we need access to your camera.
           </Text>
@@ -148,12 +148,12 @@ export function CameraScreen() {
             </View>
           </GlassCard>
 
-          <PrimaryButton 
-            title="Grant Camera Access" 
+          <PrimaryButton
+            title="Continue"
             onPress={requestPermission}
             style={styles.permissionButton}
           />
-          
+
           <Text style={styles.privacyNote}>
             Your camera is only used when you take a photo. We don't store or access your camera without permission.
           </Text>
@@ -201,17 +201,17 @@ export function CameraScreen() {
 
             const face = faces.faces[0];
             const { yawAngle, rollAngle } = face;
-            
+
             if (Math.abs(yawAngle) > 20) {
-               setLoading(false);
-               Alert.alert('Adjust Angle', 'Please face the camera directly (turn head ' + (yawAngle > 0 ? 'left' : 'right') + ').');
-               return;
+              setLoading(false);
+              Alert.alert('Adjust Angle', 'Please face the camera directly (turn head ' + (yawAngle > 0 ? 'left' : 'right') + ').');
+              return;
             }
-            
+
             if (Math.abs(rollAngle) > 20) {
-               setLoading(false);
-               Alert.alert('Adjust Angle', 'Please keep your head straight (tilt head ' + (rollAngle > 0 ? 'right' : 'left') + ').');
-               return;
+              setLoading(false);
+              Alert.alert('Adjust Angle', 'Please keep your head straight (tilt head ' + (rollAngle > 0 ? 'right' : 'left') + ').');
+              return;
             }
           } catch (faceError) {
             // Face detection failed, continue without it
@@ -299,14 +299,14 @@ export function CameraScreen() {
     setLoading(true);
     // Create abort controller for cleanup
     abortControllerRef.current = new AbortController();
-    
+
     try {
       console.log('[CameraScreen] Starting analysis for URI:', uri);
-      
+
       // Get fresh session token for authentication (like SmileScore does)
       console.log('[CameraScreen] Getting session token...');
       const { data: { session: freshSession }, error: sessionError } = await supabase.auth.getSession();
-      
+
       if (sessionError) {
         console.error('[CameraScreen] Session error:', sessionError);
         Alert.alert(
@@ -317,7 +317,7 @@ export function CameraScreen() {
         setLoading(false);
         return;
       }
-      
+
       if (!freshSession) {
         console.error('[CameraScreen] No session found');
         Alert.alert(
@@ -328,7 +328,7 @@ export function CameraScreen() {
         setLoading(false);
         return;
       }
-      
+
       if (!freshSession.access_token) {
         console.error('[CameraScreen] Session token missing');
         Alert.alert(
@@ -339,12 +339,12 @@ export function CameraScreen() {
         setLoading(false);
         return;
       }
-      
+
       const accessToken = freshSession.access_token;
       console.log('[CameraScreen] Session token obtained, length:', accessToken.length);
-      
+
       const formData = new FormData();
-      
+
       if (Platform.OS === 'web') {
         // On web, the URI is a blob URL or data URL - we need to fetch it and create a Blob
         console.log('[CameraScreen] Web platform - converting URI to blob');
@@ -368,7 +368,7 @@ export function CameraScreen() {
       const APP_URL = Constants.expoConfig?.extra?.appUrl || process.env.EXPO_PUBLIC_APP_URL || 'https://www.black-pill.app';
       console.log('[CameraScreen] Sending to:', `${APP_URL}/api/analyze`);
       console.log('[CameraScreen] Authorization header will be sent:', !!accessToken);
-      
+
       const analysisResponse = await fetch(`${APP_URL}/api/analyze`, {
         method: 'POST',
         body: formData,
@@ -476,10 +476,10 @@ export function CameraScreen() {
         style={styles.camera}
         facing={facing}
       />
-      
+
       {/* Challenge Verification Overlay */}
       {useVerification && (
-        <CameraOverlay 
+        <CameraOverlay
           isActive={!capturedPhoto}
           onVerificationChange={setVerificationResult}
           baselinePhotoUrl={params.baselinePhotoUrl}
@@ -488,7 +488,7 @@ export function CameraScreen() {
 
       {/* First Scan Guidance Hints */}
       {showGuidanceHints && (
-        <Animated.View 
+        <Animated.View
           style={styles.guidanceOverlay}
           entering={FadeIn.duration(300)}
           exiting={FadeOut.duration(300)}
