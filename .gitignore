@@ -1,5 +1,16 @@
 # Environment files
+.env
+.env.local
+.env*.local
+.env.production
+.env.development
 
+# Apple App Store Connect keys (NEVER COMMIT)
+AuthKey_*.p8
+*.p8
+
+# Temporary/test images at root
+/*.png
 
 # VAPID keys (keep private)
 VAPID_KEYS.txt
