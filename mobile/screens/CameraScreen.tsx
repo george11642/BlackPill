@@ -373,7 +373,8 @@ export function CameraScreen() {
         console.log('[CameraScreen] Web platform - converting URI to blob');
         const response = await fetch(uri);
         const blob = await response.blob();
-        formData.append('image', blob, 'photo.jpg');
+        const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+        formData.append('image', file);
         console.log('[CameraScreen] Blob created with size:', blob.size);
       } else {
         // React Native specific: append file as an object with uri, type, name
