@@ -65,7 +65,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       if (user?.id) {
         console.log('[Subscription] Checking Supabase subscriptions table...');
         console.log('[Subscription] User ID:', user.id);
-        
+
         const { data: subscription, error: subError } = await supabase
           .from('subscriptions')
           .select('tier, status')
@@ -77,12 +77,14 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
         if (subscription && !subError && subscription.tier) {
           console.log('[Subscription] Found subscription with tier:', subscription.tier);
-          // Map subscription tier from Supabase (supports 'pro' and 'elite')
-          if (subscription.tier === 'elite' || subscription.tier === 'pro') {
-            currentTier = subscription.tier;
-            console.log('[Subscription] Set tier from Supabase:', currentTier);
+          // Map subscription tier from Supabase
+          // Support legacy 'pro' and 'elite' tiers (map to 'premium')
+          // Support new 'premium' tier directly
+          if (subscription.tier === 'premium' || subscription.tier === 'elite' || subscription.tier === 'pro') {
+            currentTier = 'premium';
+            console.log('[Subscription] Set tier to premium (from:', subscription.tier, ')');
           } else {
-            console.log('[Subscription] Tier not recognized (expected elite or pro):', subscription.tier);
+            console.log('[Subscription] Tier not recognized:', subscription.tier);
           }
         } else {
           console.log('[Subscription] No active subscription found in Supabase');
@@ -94,7 +96,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         console.log('[Subscription] Checking RevenueCat...');
         const customerInfo = await getCustomerInfo();
         console.log('[Subscription] RevenueCat customerInfo:', customerInfo ? 'found' : 'null');
-        
+
         if (customerInfo) {
           const tierFromRevenueCat = getSubscriptionTier(customerInfo);
           console.log('[Subscription] RevenueCat tier:', tierFromRevenueCat);
@@ -176,26 +178,26 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   const canAccessFeature = (feature: keyof FeatureAccess): boolean => {
     const access = state.features[feature];
-    
+
     if (feature === 'aiCoach') {
       const limit = (access as FeatureAccess['aiCoach']).messageLimit;
       if (limit === 'unlimited') return true;
       return state.coachMessagesUsedThisMonth < limit;
     }
-    
+
     if (feature === 'analyses') {
-        // This is handled separately via unblur logic usually, but generally
-        // everyone can access analyses, just blurred or limited unblurred
-        return true; 
+      // This is handled separately via unblur logic usually, but generally
+      // everyone can access analyses, just blurred or limited unblurred
+      return true;
     }
 
     // Basic boolean checks for other features (simplified)
     // You might need specific logic per feature
     if (typeof access === 'object' && 'access' in access) {
-        return (access as any).access !== false && (access as any).access !== 'locked';
+      return (access as any).access !== false && (access as any).access !== 'locked';
     }
-    
-    return true; 
+
+    return true;
   };
 
   return (
@@ -220,4 +222,3 @@ export const useSubscription = () => {
   }
   return context;
 };
-

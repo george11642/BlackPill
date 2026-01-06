@@ -14,15 +14,13 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
-import { Check, Crown, Sparkles, Zap, Shield, Star } from 'lucide-react-native';
+import { Check, Crown, Zap, Shield, Star, Sparkles } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withSpring,
-  withDelay
 } from 'react-native-reanimated';
 
 import { useAuth } from '../lib/auth/context';
@@ -39,25 +37,26 @@ import {
   restorePurchases,
 } from '../lib/revenuecat/client';
 import {
-  PRO_MONTHLY_PRODUCT_ID,
-  PRO_YEARLY_PRODUCT_ID,
-  ELITE_MONTHLY_PRODUCT_ID,
-  ELITE_YEARLY_PRODUCT_ID,
+  PREMIUM_WEEKLY_PRODUCT_ID,
+  PREMIUM_MONTHLY_PRODUCT_ID,
+  PREMIUM_YEARLY_PRODUCT_ID,
   getProductId,
   ALL_PRODUCT_IDS,
+  BillingInterval,
 } from '../lib/subscription/constants';
 import type { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const FEATURES = [
-  { id: 'analyses', label: 'Monthly Unblurred Scans', pro: '10/mo', elite: '30/mo' },
-  { id: 'coach', label: 'AI Coach Chat', pro: '20 msgs', elite: 'Unlimited' },
-  { id: 'routines', label: 'Active Routines', pro: '5 Routines', elite: 'Unlimited + AI' },
-  { id: 'challenges', label: 'Challenges Access', pro: 'Standard', elite: 'All + Exclusive' },
-  { id: 'transform', label: 'AI Transform', pro: false, elite: true },
-  { id: 'progress', label: 'Deep Progress Insights', pro: false, elite: true },
-  { id: 'priority', label: 'Priority Support', pro: false, elite: true },
+// Premium features list - all Elite features included
+const PREMIUM_FEATURES = [
+  { icon: '🔍', title: '30 Unblurred Scans', description: 'High-definition face analysis every month' },
+  { icon: '🤖', title: 'Unlimited AI Coach', description: 'Get personalized advice anytime' },
+  { icon: '📋', title: 'Unlimited Routines', description: 'Create custom routines with AI optimization' },
+  { icon: '🏆', title: 'All Challenges', description: 'Access exclusive challenges and competitions' },
+  { icon: '✨', title: 'AI Transform', description: 'See your potential with AI visualization' },
+  { icon: '📊', title: 'Deep Insights', description: 'Advanced progress tracking and analytics' },
+  { icon: '⚡', title: 'Priority Support', description: 'Get help when you need it most' },
 ];
 
 export function SubscriptionScreen() {
@@ -68,8 +67,7 @@ export function SubscriptionScreen() {
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [managingSubscription, setManagingSubscription] = useState(false);
-  const [selectedTier, setSelectedTier] = useState<'pro' | 'elite'>('elite');
-  const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('monthly');
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>('monthly');
 
   // Check if user has an active subscription
   const hasActiveSubscription = tier !== 'free';
@@ -82,13 +80,11 @@ export function SubscriptionScreen() {
     loadOfferings();
 
     // Reference product IDs to ensure they're included in the binary
-    // This helps Apple App Store Connect detect subscriptions during submission
     if (__DEV__) {
       console.log('Subscription Product IDs:', {
-        PRO_MONTHLY_PRODUCT_ID,
-        PRO_YEARLY_PRODUCT_ID,
-        ELITE_MONTHLY_PRODUCT_ID,
-        ELITE_YEARLY_PRODUCT_ID,
+        PREMIUM_WEEKLY_PRODUCT_ID,
+        PREMIUM_MONTHLY_PRODUCT_ID,
+        PREMIUM_YEARLY_PRODUCT_ID,
         ALL_PRODUCT_IDS,
       });
     }
@@ -115,7 +111,7 @@ export function SubscriptionScreen() {
     if (hasActiveSubscription) {
       Alert.alert(
         'Already Subscribed',
-        'You already have an active subscription. Use "Manage Subscription" to change or cancel your plan.',
+        'You already have an active Premium subscription. Use "Manage Subscription" to change or cancel your plan.',
         [{ text: 'OK' }]
       );
       return;
@@ -123,12 +119,10 @@ export function SubscriptionScreen() {
 
     if (!offerings) return;
 
-    // Map selected tier to RevenueCat package
-    // Use product ID constants to ensure they're included in the binary
-    const productId = getProductId(selectedTier, billingInterval);
-    const identifier = `${selectedTier}_${billingInterval}`;
+    // Get the product ID for selected billing interval
+    const productId = getProductId(billingInterval);
     const pkg = offerings.availablePackages.find((p: PurchasesPackage) =>
-      p.identifier.toLowerCase().includes(identifier) ||
+      p.identifier.toLowerCase().includes(billingInterval) ||
       p.product.identifier === productId
     );
 
@@ -154,12 +148,12 @@ export function SubscriptionScreen() {
       if (user) {
         await syncSubscriptionToBackend(customerInfo);
         await refreshSubscription();
-        Alert.alert('Success', 'Welcome to the club! Subscription activated.');
+        Alert.alert('Success', 'Welcome to Premium! Your subscription is now active.');
       } else {
         // Guest purchase successful
         Alert.alert(
           'Success',
-          'Subscription activated! Create an account to sync this purchase across your devices.',
+          'Premium activated! Create an account to sync this purchase across your devices.',
           [
             { text: 'Later', style: 'cancel' },
             { text: 'Create Account', onPress: () => navigation.navigate('Signup' as never) }
@@ -179,14 +173,12 @@ export function SubscriptionScreen() {
     try {
       setManagingSubscription(true);
 
-      // For iOS, open App Store subscription management
       if (Platform.OS === 'ios') {
         const url = 'https://apps.apple.com/account/subscriptions';
         const canOpen = await Linking.canOpenURL(url);
         if (canOpen) {
           await Linking.openURL(url);
         } else {
-          // Fallback: Show instructions
           Alert.alert(
             'Manage Subscription',
             'To manage your subscription:\n\n1. Open Settings\n2. Tap your name at the top\n3. Tap Subscriptions\n4. Find BlackPill and manage your subscription',
@@ -194,32 +186,21 @@ export function SubscriptionScreen() {
           );
         }
       } else {
-        // Android: Open Google Play Store subscription management
-        // Try to open Play Store subscriptions page
-        const packageName = 'com.blackpill.app'; // Update with actual package name if different
-        const playStoreUrl = `https://play.google.com/store/account/subscriptions?package=${packageName}&sku=${packageName}`;
+        const packageName = 'com.blackpill.app';
+        const playStoreUrl = `https://play.google.com/store/account/subscriptions?package=${packageName}`;
 
         try {
           const canOpen = await Linking.canOpenURL(playStoreUrl);
           if (canOpen) {
             await Linking.openURL(playStoreUrl);
           } else {
-            // Fallback: Open Play Store app
-            const playStoreAppUrl = `market://details?id=${packageName}`;
-            const canOpenApp = await Linking.canOpenURL(playStoreAppUrl);
-            if (canOpenApp) {
-              await Linking.openURL(playStoreAppUrl);
-            } else {
-              // Final fallback: Show instructions
-              Alert.alert(
-                'Manage Subscription',
-                'To manage your subscription:\n\n1. Open Google Play Store\n2. Tap Menu (☰)\n3. Tap Subscriptions\n4. Find BlackPill and manage your subscription',
-                [{ text: 'OK' }]
-              );
-            }
+            Alert.alert(
+              'Manage Subscription',
+              'To manage your subscription:\n\n1. Open Google Play Store\n2. Tap Menu (☰)\n3. Tap Subscriptions\n4. Find BlackPill and manage your subscription',
+              [{ text: 'OK' }]
+            );
           }
-        } catch (linkError) {
-          // Fallback: Show instructions
+        } catch {
           Alert.alert(
             'Manage Subscription',
             'To manage your subscription:\n\n1. Open Google Play Store\n2. Tap Menu (☰)\n3. Tap Subscriptions\n4. Find BlackPill and manage your subscription',
@@ -269,24 +250,47 @@ export function SubscriptionScreen() {
     );
   }
 
-  const getPriceString = (tier: 'pro' | 'elite') => {
-    // Use product ID constants to ensure they're included in the binary
-    const productId = getProductId(tier, billingInterval);
-    const identifier = `${tier}_${billingInterval}`;
+  const getPriceString = (interval: BillingInterval) => {
+    const productId = getProductId(interval);
     const pkg = offerings?.availablePackages.find((p: PurchasesPackage) =>
-      p.identifier.toLowerCase().includes(identifier) ||
+      p.identifier.toLowerCase().includes(interval) ||
       p.product.identifier === productId
     );
 
-    // Always use StoreKit's localized price if available
+    // Use StoreKit's localized price if available
     if (pkg) return pkg.product.priceString;
 
     // Fallback prices (should match App Store Connect)
-    if (billingInterval === 'yearly') {
-      return tier === 'pro' ? '$119.99' : '$219.99';
+    switch (interval) {
+      case 'weekly':
+        return '$4.99';
+      case 'monthly':
+        return '$12.99';
+      case 'yearly':
+        return '$39.99';
     }
-    // Monthly prices: Pro = $12.99, Elite = $19.99
-    return tier === 'pro' ? '$12.99' : '$19.99';
+  };
+
+  const getPeriodLabel = (interval: BillingInterval) => {
+    switch (interval) {
+      case 'weekly':
+        return '/week';
+      case 'monthly':
+        return '/month';
+      case 'yearly':
+        return '/year';
+    }
+  };
+
+  const getSavingsText = (interval: BillingInterval) => {
+    switch (interval) {
+      case 'weekly':
+        return null;
+      case 'monthly':
+        return 'Save 35%';
+      case 'yearly':
+        return 'Best Value';
+    }
   };
 
   return (
@@ -296,202 +300,152 @@ export function SubscriptionScreen() {
         style={styles.background}
       />
 
-      <BackHeader title="Plans" variant="large" onBackPress={() => navigation.goBack()} />
+      <BackHeader title="Premium" variant="large" onBackPress={() => navigation.goBack()} />
 
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={[styles.header, headerStyle]}>
+          <View style={styles.crownContainer}>
+            <Crown size={40} color={DarkTheme.colors.primary} fill={DarkTheme.colors.primary} />
+          </View>
           <GradientText
-            text="Unlock Your Full Potential"
-            fontSize={36}
+            text="Unlock Premium"
+            fontSize={32}
             fontWeight="800"
             colors={[DarkTheme.colors.primary, DarkTheme.colors.accent]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
           />
-          <Text style={styles.subtitle}>Choose the plan that fits your goals</Text>
+          <Text style={styles.subtitle}>Get unlimited access to all features</Text>
         </Animated.View>
 
-        <View style={styles.toggleContainer}>
-          <View style={styles.toggleWrapper}>
-            <TouchableOpacity
-              style={[styles.toggleOption, billingInterval === 'monthly' && styles.toggleOptionActive]}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setBillingInterval('monthly');
-              }}
-            >
-              <Text style={[styles.toggleText, billingInterval === 'monthly' && styles.toggleTextActive]}>Monthly</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.toggleOption, billingInterval === 'yearly' && styles.toggleOptionActive]}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setBillingInterval('yearly');
-              }}
-            >
-              <Text style={[styles.toggleText, billingInterval === 'yearly' && styles.toggleTextActive]}>Yearly</Text>
-              {billingInterval === 'yearly' && (
-                <View style={styles.saveBadge}>
-                  <Text style={styles.saveText}>SAVE 20%</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <Animated.View style={[styles.cardsContainer, contentStyle]}>
-          {/* Pro Card */}
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => {
-              Haptics.selectionAsync();
-              setSelectedTier('pro');
-            }}
-            style={[
-              styles.tierCard,
-              selectedTier === 'pro' && styles.selectedCard
-            ]}
-          >
-            <GlassCard variant="subtle" style={styles.cardInner}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.tierName}>PRO</Text>
-                <Text style={styles.tierPrice}>{getPriceString('pro')}<Text style={styles.period}>/{billingInterval === 'monthly' ? 'mo' : 'yr'}</Text></Text>
-              </View>
-              <View style={styles.divider} />
-              {FEATURES.slice(0, 4).map((feature, i) => (
-                <View key={i} style={styles.featureRow}>
-                  <Check size={14} color={DarkTheme.colors.textSecondary} />
-                  <Text style={styles.featureText}>
-                    {feature.pro || feature.label}
-                  </Text>
-                </View>
-              ))}
-            </GlassCard>
-          </TouchableOpacity>
-
-          {/* Elite Card */}
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => {
-              Haptics.selectionAsync();
-              setSelectedTier('elite');
-            }}
-            style={[
-              styles.tierCard,
-              selectedTier === 'elite' && styles.selectedCardElite
-            ]}
-          >
-            {selectedTier === 'elite' && (
-              <LinearGradient
-                colors={[DarkTheme.colors.primary, DarkTheme.colors.primaryDark]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.popularBadge}
+        <Animated.View style={[styles.mainContent, contentStyle]}>
+          {/* Billing Interval Selection */}
+          <View style={styles.billingContainer}>
+            {(['weekly', 'monthly', 'yearly'] as BillingInterval[]).map((interval) => (
+              <TouchableOpacity
+                key={interval}
+                style={[
+                  styles.billingOption,
+                  billingInterval === interval && styles.billingOptionActive,
+                ]}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setBillingInterval(interval);
+                }}
               >
-                <Text style={styles.popularText}>MOST POPULAR</Text>
-              </LinearGradient>
-            )}
-            <GlassCard variant="gold" style={styles.cardInner}>
-              <View style={styles.cardHeader}>
-                <View style={styles.eliteTitleRow}>
-                  <Crown size={16} color={DarkTheme.colors.primary} fill={DarkTheme.colors.primary} />
-                  <Text style={[styles.tierName, { color: DarkTheme.colors.primary }]}>ELITE</Text>
-                </View>
-                <Text style={styles.tierPrice}>{getPriceString('elite')}<Text style={styles.period}>/{billingInterval === 'monthly' ? 'mo' : 'yr'}</Text></Text>
-              </View>
-              <View style={styles.divider} />
-              {FEATURES.map((feature, i) => (
-                <View key={i} style={styles.featureRow}>
-                  <Star
-                    size={14}
-                    color={feature.elite === true || typeof feature.elite === 'string' ? DarkTheme.colors.primary : DarkTheme.colors.textDisabled}
-                    fill={feature.elite === true || typeof feature.elite === 'string' ? DarkTheme.colors.primary : 'transparent'}
-                  />
-                  <Text style={[
-                    styles.featureText,
-                    (feature.elite === true || typeof feature.elite === 'string') && styles.featureTextHighlight
+                {getSavingsText(interval) && (
+                  <View style={[
+                    styles.savingsBadge,
+                    interval === 'yearly' && styles.savingsBadgeBest
                   ]}>
-                    {feature.elite === true ? feature.label : (feature.elite || feature.label)}
-                  </Text>
-                </View>
-              ))}
-            </GlassCard>
-          </TouchableOpacity>
-        </Animated.View>
-
-        <Animated.View style={[styles.footer, contentStyle]}>
-          {hasActiveSubscription ? (
-            <>
-              <View style={styles.currentSubscriptionInfo}>
-                <Text style={styles.currentSubscriptionText}>
-                  You're currently subscribed to <Text style={styles.tierNameText}>{tier.toUpperCase()}</Text>
+                    <Text style={styles.savingsText}>{getSavingsText(interval)}</Text>
+                  </View>
+                )}
+                <Text style={styles.billingIntervalText}>
+                  {interval.charAt(0).toUpperCase() + interval.slice(1)}
                 </Text>
-              </View>
-              <PrimaryButton
-                title={managingSubscription ? 'Opening...' : 'Manage Subscription'}
-                onPress={handleManageSubscription}
-                disabled={managingSubscription}
-                style={styles.subscribeButton}
-                icon={<Shield size={20} color="#000" fill="#000" />}
-              />
-            </>
-          ) : (
-            <>
-              {/* Apple Required Subscription Disclosures */}
-              <View style={styles.disclosureContainer}>
-                <Text style={styles.disclosureTitle}>
-                  {selectedTier.toUpperCase()} Subscription
+                <Text style={[
+                  styles.billingPriceText,
+                  billingInterval === interval && styles.billingPriceActive
+                ]}>
+                  {getPriceString(interval)}
                 </Text>
-                <View style={styles.disclosureRow}>
-                  <Text style={styles.disclosureLabel}>Duration:</Text>
-                  <Text style={styles.disclosureValue}>
-                    {billingInterval === 'monthly' ? 'Monthly' : 'Yearly'}
-                  </Text>
-                </View>
-                <View style={styles.disclosureRow}>
-                  <Text style={styles.disclosureLabel}>Price:</Text>
-                  <Text style={styles.disclosureValue}>
-                    {getPriceString(selectedTier)}/{billingInterval === 'monthly' ? 'month' : 'year'}
-                  </Text>
-                </View>
-                <View style={styles.disclosureRow}>
-                  <Text style={styles.disclosureLabel}>Auto-renew:</Text>
-                  <Text style={styles.disclosureValue}>
-                    Auto-renews until canceled
-                  </Text>
-                </View>
-                <View style={styles.disclosureLinks}>
-                  <TouchableOpacity
-                    onPress={() => Linking.openURL('https://www.black-pill.app/privacy')}
-                    style={styles.disclosureLink}
-                  >
-                    <Text style={styles.disclosureLinkText}>Privacy Policy</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.disclosureSeparator}> • </Text>
-                  <TouchableOpacity
-                    onPress={() => Linking.openURL('https://www.black-pill.app/terms')}
-                    style={styles.disclosureLink}
-                  >
-                    <Text style={styles.disclosureLinkText}>Terms of Use</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <PrimaryButton
-                title={purchasing ? 'Processing...' : `Subscribe to ${selectedTier.toUpperCase()}`}
-                onPress={handlePurchase}
-                disabled={purchasing}
-                style={styles.subscribeButton}
-                icon={<Zap size={20} color="#000" fill="#000" />}
-              />
-              <TouchableOpacity onPress={handleRestore} disabled={purchasing}>
-                <Text style={styles.restoreText}>Restore Purchases</Text>
+                <Text style={styles.billingPeriodText}>
+                  {getPeriodLabel(interval)}
+                </Text>
               </TouchableOpacity>
-            </>
-          )}
+            ))}
+          </View>
+
+          {/* Features Card */}
+          <GlassCard variant="gold" style={styles.featuresCard}>
+            <View style={styles.featuresHeader}>
+              <Sparkles size={20} color={DarkTheme.colors.primary} />
+              <Text style={styles.featuresTitle}>Everything Included</Text>
+            </View>
+
+            {PREMIUM_FEATURES.map((feature, index) => (
+              <View key={index} style={styles.featureRow}>
+                <Text style={styles.featureIcon}>{feature.icon}</Text>
+                <View style={styles.featureContent}>
+                  <Text style={styles.featureTitle}>{feature.title}</Text>
+                  <Text style={styles.featureDescription}>{feature.description}</Text>
+                </View>
+                <Check size={18} color={DarkTheme.colors.primary} />
+              </View>
+            ))}
+          </GlassCard>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            {hasActiveSubscription ? (
+              <>
+                <View style={styles.currentSubscriptionInfo}>
+                  <Crown size={20} color={DarkTheme.colors.primary} fill={DarkTheme.colors.primary} />
+                  <Text style={styles.currentSubscriptionText}>
+                    You're a <Text style={styles.tierNameText}>PREMIUM</Text> member
+                  </Text>
+                </View>
+                <PrimaryButton
+                  title={managingSubscription ? 'Opening...' : 'Manage Subscription'}
+                  onPress={handleManageSubscription}
+                  disabled={managingSubscription}
+                  style={styles.subscribeButton}
+                  icon={<Shield size={20} color="#000" fill="#000" />}
+                />
+              </>
+            ) : (
+              <>
+                {/* Apple Required Subscription Disclosures */}
+                <View style={styles.disclosureContainer}>
+                  <Text style={styles.disclosureTitle}>
+                    Premium {billingInterval.charAt(0).toUpperCase() + billingInterval.slice(1)} Subscription
+                  </Text>
+                  <View style={styles.disclosureRow}>
+                    <Text style={styles.disclosureLabel}>Price:</Text>
+                    <Text style={styles.disclosureValue}>
+                      {getPriceString(billingInterval)}{getPeriodLabel(billingInterval)}
+                    </Text>
+                  </View>
+                  <View style={styles.disclosureRow}>
+                    <Text style={styles.disclosureLabel}>Auto-renew:</Text>
+                    <Text style={styles.disclosureValue}>
+                      Auto-renews until canceled
+                    </Text>
+                  </View>
+                  <View style={styles.disclosureLinks}>
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL('https://www.black-pill.app/privacy')}
+                      style={styles.disclosureLink}
+                    >
+                      <Text style={styles.disclosureLinkText}>Privacy Policy</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.disclosureSeparator}> • </Text>
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL('https://www.black-pill.app/terms')}
+                      style={styles.disclosureLink}
+                    >
+                      <Text style={styles.disclosureLinkText}>Terms of Use</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <PrimaryButton
+                  title={purchasing ? 'Processing...' : 'Subscribe to Premium'}
+                  onPress={handlePurchase}
+                  disabled={purchasing}
+                  style={styles.subscribeButton}
+                  icon={<Zap size={20} color="#000" fill="#000" />}
+                />
+                <TouchableOpacity onPress={handleRestore} disabled={purchasing}>
+                  <Text style={styles.restoreText}>Restore Purchases</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
         </Animated.View>
       </ScrollView>
     </View>
@@ -514,156 +468,128 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   header: {
+    alignItems: 'center',
     paddingHorizontal: 24,
-    marginBottom: 16,
-    marginTop: 0,
+    marginBottom: 24,
   },
-  title: {
-    marginBottom: 8,
+  crownContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: `${DarkTheme.colors.primary}20`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: `${DarkTheme.colors.primary}40`,
   },
   subtitle: {
     fontSize: 16,
     color: DarkTheme.colors.textSecondary,
+    marginTop: 8,
   },
-  toggleContainer: {
-    alignItems: 'center',
+  mainContent: {
+    paddingHorizontal: 16,
+  },
+  billingContainer: {
+    flexDirection: 'row',
+    gap: 8,
     marginBottom: 24,
   },
-  toggleWrapper: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 24,
-    padding: 4,
-  },
-  toggleOption: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-    flexDirection: 'row',
+  billingOption: {
+    flex: 1,
+    backgroundColor: DarkTheme.colors.card,
+    borderRadius: 16,
+    padding: 16,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+    position: 'relative',
   },
-  toggleOptionActive: {
+  billingOptionActive: {
+    borderColor: DarkTheme.colors.primary,
+    backgroundColor: `${DarkTheme.colors.primary}15`,
+  },
+  savingsBadge: {
+    position: 'absolute',
+    top: -10,
+    backgroundColor: DarkTheme.colors.success,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  savingsBadgeBest: {
     backgroundColor: DarkTheme.colors.primary,
   },
-  toggleText: {
-    fontSize: 14,
+  savingsText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#000',
+    letterSpacing: 0.5,
+  },
+  billingIntervalText: {
+    fontSize: 12,
     fontWeight: '600',
     color: DarkTheme.colors.textSecondary,
+    marginBottom: 4,
+    textTransform: 'capitalize',
   },
-  toggleTextActive: {
-    color: '#000',
-  },
-  saveBadge: {
-    backgroundColor: '#000',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    marginLeft: 6,
-  },
-  saveText: {
-    fontSize: 10,
+  billingPriceText: {
+    fontSize: 20,
     fontWeight: '800',
+    color: DarkTheme.colors.text,
+  },
+  billingPriceActive: {
     color: DarkTheme.colors.primary,
   },
-  cardsContainer: {
+  billingPeriodText: {
+    fontSize: 11,
+    color: DarkTheme.colors.textTertiary,
+    marginTop: 2,
+  },
+  featuresCard: {
+    padding: 20,
+    marginBottom: 24,
+  },
+  featuresHeader: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    gap: 12,
-    marginBottom: 32,
-    height: 420,
-  },
-  tierCard: {
-    flex: 1,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    overflow: 'hidden',
-  },
-  selectedCard: {
-    borderColor: DarkTheme.colors.textSecondary,
-    transform: [{ scale: 1.02 }],
-  },
-  selectedCardElite: {
-    borderColor: DarkTheme.colors.primary,
-    transform: [{ scale: 1.02 }],
-    shadowColor: DarkTheme.colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  cardInner: {
-    flex: 1,
-    padding: 16,
-    justifyContent: 'flex-start',
-  },
-  popularBadge: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 24,
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 20,
     justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
   },
-  popularText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#000',
-    letterSpacing: 1,
-  },
-  cardHeader: {
-    alignItems: 'center',
-    marginBottom: 16,
-    marginTop: 16,
-  },
-  eliteTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
-  },
-  tierName: {
+  featuresTitle: {
     fontSize: 18,
-    fontWeight: '800',
-    color: '#fff',
-    marginBottom: 4,
-    letterSpacing: 1,
-  },
-  tierPrice: {
-    fontSize: 24,
     fontWeight: '700',
-    color: '#fff',
-  },
-  period: {
-    fontSize: 14,
-    color: DarkTheme.colors.textSecondary,
-    fontWeight: '400',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    marginBottom: 16,
+    color: DarkTheme.colors.primary,
   },
   featureRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-    gap: 8,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+    gap: 12,
   },
-  featureText: {
-    fontSize: 12,
-    color: DarkTheme.colors.textSecondary,
+  featureIcon: {
+    fontSize: 24,
+    width: 32,
+    textAlign: 'center',
+  },
+  featureContent: {
     flex: 1,
-    lineHeight: 16,
   },
-  featureTextHighlight: {
-    color: '#fff',
+  featureTitle: {
+    fontSize: 15,
     fontWeight: '600',
+    color: DarkTheme.colors.text,
+    marginBottom: 2,
+  },
+  featureDescription: {
+    fontSize: 12,
+    color: DarkTheme.colors.textTertiary,
   },
   footer: {
-    paddingHorizontal: 24,
     alignItems: 'center',
   },
   subscribeButton: {
@@ -677,16 +603,19 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   currentSubscriptionInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     backgroundColor: 'rgba(255,255,255,0.05)',
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
-    alignItems: 'center',
+    width: '100%',
+    justifyContent: 'center',
   },
   currentSubscriptionText: {
     color: DarkTheme.colors.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
+    fontSize: 15,
   },
   tierNameText: {
     color: DarkTheme.colors.primary,
@@ -699,9 +628,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
+    width: '100%',
   },
   disclosureTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#fff',
     marginBottom: 12,

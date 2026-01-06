@@ -32,6 +32,7 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import { BackHeader } from '../components/BackHeader';
 import { GlassCard } from '../components/GlassCard';
 import { CameraOverlay } from '../components/CameraOverlay';
+import { FaceAnalysisLoader } from '../components/FaceAnalysisLoader';
 import { DarkTheme } from '../lib/theme';
 import { PhotoVerificationResult } from '../lib/types';
 import { notifyAchievementUnlocked } from '../lib/achievements/events';
@@ -433,12 +434,7 @@ export function CameraScreen() {
             style={styles.previewImage}
             resizeMode="cover"
           />
-          {loading && (
-            <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color={DarkTheme.colors.primary} />
-              <Text style={styles.loadingText}>Analyzing...</Text>
-            </View>
-          )}
+          {loading && <FaceAnalysisLoader capturedPhotoUri={capturedPhoto} />}
         </View>
         <View style={styles.previewActions}>
           <TouchableOpacity

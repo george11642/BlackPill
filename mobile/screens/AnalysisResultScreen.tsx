@@ -199,19 +199,15 @@ export function AnalysisResultScreen() {
 
   const checkUnblurStatus = () => {
     // Logic to determine if this specific analysis is already unblurred
-    // For simplicity, if user is Elite or Pro (within quota), we can unblur.
-    // Or if they own the analysis and used a credit.
-    // Ideally, backend should tell us if it's unblurred.
-    // For now, let's rely on local state + subscription checks.
+    // Premium users get unlimited unblurs within their quota
+    // Free users need to use credits
 
-    if (tier === 'elite') {
-      setIsUnblurred(true);
-      return;
-    }
-
-    if (tier === 'pro' && analysesUsedThisMonth < features.analyses.unblurredCount) {
-      setIsUnblurred(true);
-      return;
+    if (tier === 'premium') {
+      // Premium users get unblurred if within their monthly quota
+      if (analysesUsedThisMonth < features.analyses.unblurredCount) {
+        setIsUnblurred(true);
+        return;
+      }
     }
 
     // If free or quota exceeded, it's blurred by default (unless unlocked previously - needing backend flag)

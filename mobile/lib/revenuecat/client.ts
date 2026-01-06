@@ -3,10 +3,9 @@ import { Platform } from 'react-native';
 import { getApiUrl } from '../utils/apiUrl';
 import { supabase } from '../supabase/client';
 import {
-  PRO_MONTHLY_PRODUCT_ID,
-  PRO_YEARLY_PRODUCT_ID,
-  ELITE_MONTHLY_PRODUCT_ID,
-  ELITE_YEARLY_PRODUCT_ID,
+  PREMIUM_WEEKLY_PRODUCT_ID,
+  PREMIUM_MONTHLY_PRODUCT_ID,
+  PREMIUM_YEARLY_PRODUCT_ID,
   ALL_PRODUCT_IDS,
 } from '../subscription/constants';
 
@@ -17,10 +16,9 @@ import {
  * - RevenueCat product store identifiers
  * 
  * Product IDs:
- * - pro_monthly: Pro Monthly subscription
- * - pro_yearly: Pro Yearly subscription
- * - elite_monthly: Elite Monthly subscription
- * - elite_yearly: Elite Yearly subscription
+ * - premium_weekly: Premium Weekly subscription ($4.99/week)
+ * - premium_monthly: Premium Monthly subscription ($12.99/month)
+ * - premium_yearly: Premium Yearly subscription ($39.99/year)
  */
 
 // Initialize RevenueCat SDK
@@ -30,10 +28,9 @@ export const initializeRevenueCat = async (userId?: string): Promise<void> => {
     // This helps Apple App Store Connect detect subscriptions during submission
     if (__DEV__) {
       console.log('Initializing RevenueCat with product IDs:', {
-        PRO_MONTHLY_PRODUCT_ID,
-        PRO_YEARLY_PRODUCT_ID,
-        ELITE_MONTHLY_PRODUCT_ID,
-        ELITE_YEARLY_PRODUCT_ID,
+        PREMIUM_WEEKLY_PRODUCT_ID,
+        PREMIUM_MONTHLY_PRODUCT_ID,
+        PREMIUM_YEARLY_PRODUCT_ID,
         ALL_PRODUCT_IDS,
       });
     }
@@ -143,24 +140,30 @@ export const hasActiveSubscription = (customerInfo: CustomerInfo | null): boolea
 };
 
 // Get subscription tier from entitlements
-export const getSubscriptionTier = (customerInfo: CustomerInfo | null): 'pro' | 'elite' | null => {
+// Returns 'premium' for any active subscription (includes legacy pro/elite)
+export const getSubscriptionTier = (customerInfo: CustomerInfo | null): 'premium' | null => {
   if (!customerInfo) return null;
 
   const activeEntitlements = customerInfo.entitlements.active;
 
-  // Check for elite entitlement first (highest priority)
-  // Support multiple entitlement identifier formats
+  // Check for premium entitlement (new tier)
+  if (
+    activeEntitlements['premium'] ||
+    activeEntitlements['BlackPill Premium'] ||
+    activeEntitlements['BlackPill_Premium']
+  ) {
+    return 'premium';
+  }
+
+  // Legacy support: Map old elite/pro entitlements to premium
   if (
     activeEntitlements['elite'] ||
     activeEntitlements['BlackPill Elite'] ||
-    activeEntitlements['BlackPill_Elite']
+    activeEntitlements['BlackPill_Elite'] ||
+    activeEntitlements['BlackPill Pro'] ||
+    activeEntitlements['pro']
   ) {
-    return 'elite';
-  }
-
-  // Check for pro entitlement (supports multiple variations)
-  if (activeEntitlements['BlackPill Pro'] || activeEntitlements['pro']) {
-    return 'pro';
+    return 'premium';
   }
 
   return null;
@@ -168,7 +171,7 @@ export const getSubscriptionTier = (customerInfo: CustomerInfo | null): 'pro' | 
 
 // Get package by identifier (for pricing screen)
 // Searches by both package identifier and product identifier for flexibility
-// Expected product identifiers: pro_monthly, pro_yearly, elite_monthly, elite_yearly
+// Expected product identifiers: premium_weekly, premium_monthly, premium_yearly
 export const getPackageByIdentifier = async (
   identifier: string
 ): Promise<PurchasesPackage | null> => {
@@ -181,7 +184,7 @@ export const getPackageByIdentifier = async (
     if (byPackage) return byPackage;
 
     // Fallback: try product identifier (for cases where identifier is a product ID)
-    // Product IDs: pro_monthly, pro_yearly, elite_monthly, elite_yearly
+    // Product IDs: premium_weekly, premium_monthly, premium_yearly
     const byProduct = offering.availablePackages.find(pkg => pkg.product.identifier === identifier);
     return byProduct || null;
   } catch (error) {
@@ -235,4 +238,3 @@ export const syncSubscriptionToBackend = async (customerInfo: CustomerInfo): Pro
     throw error;
   }
 };
-

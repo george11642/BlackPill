@@ -1,16 +1,16 @@
-export type SubscriptionTier = 'free' | 'pro' | 'elite';
+export type SubscriptionTier = 'free' | 'premium';
 
 export interface FeatureAccess {
   analyses: {
-    unblurredCount: number; // 0 for free (unless credits used), 10 for pro, 30 for elite
+    unblurredCount: number; // 0 for free (unless credits used), 30 for premium
     totalCount: 'unlimited'; // All tiers get unlimited blurred analyses
   };
   aiCoach: {
     access: boolean;
-    messageLimit: number | 'unlimited'; // 0 for free, 20 for pro, 100 for elite
+    messageLimit: number | 'unlimited'; // 0 for free, unlimited for premium
   };
   routines: {
-    customCount: number | 'unlimited'; // 1 for free (template), 5 for pro, 25 for elite
+    customCount: number | 'unlimited'; // 1 for free (template), unlimited for premium
     aiOptimization: boolean;
   };
   challenges: {
@@ -65,44 +65,17 @@ export const TIER_FEATURES: Record<SubscriptionTier, FeatureAccess> = {
       access: 'view_only',
     },
   },
-  pro: {
-    analyses: {
-      unblurredCount: 10,
-      totalCount: 'unlimited',
-    },
-    aiCoach: {
-      access: true,
-      messageLimit: 20,
-    },
-    routines: {
-      customCount: 5,
-      aiOptimization: false,
-    },
-    challenges: {
-      access: 'basic',
-      exclusive: false,
-    },
-    aiTransform: {
-      access: false,
-    },
-    progressTracking: {
-      access: 'full',
-    },
-    leaderboard: {
-      access: 'full',
-    },
-  },
-  elite: {
+  premium: {
     analyses: {
       unblurredCount: 30,
       totalCount: 'unlimited',
     },
     aiCoach: {
       access: true,
-      messageLimit: 100, // Reasonable limit: 100 messages/month
+      messageLimit: 'unlimited',
     },
     routines: {
-      customCount: 25, // Reasonable limit: 25 active routines
+      customCount: 'unlimited',
       aiOptimization: true,
     },
     challenges: {
@@ -120,4 +93,3 @@ export const TIER_FEATURES: Record<SubscriptionTier, FeatureAccess> = {
     },
   },
 };
-
