@@ -14,6 +14,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import Constants from 'expo-constants';
 import { Camera, Sun, User, Smile, X, ChevronRight, Lightbulb } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -163,6 +164,23 @@ export function CameraScreen() {
     );
   }
 
+  // Resize image to prevent server timeouts on large gallery images
+  const resizeImage = async (uri: string): Promise<string> => {
+    try {
+      const result = await manipulateAsync(
+        uri,
+        [{ resize: { width: 1920, height: 1920 } }],
+        { compress: 0.8, format: SaveFormat.JPEG }
+      );
+      console.log('[CameraScreen] Image resized from', uri, 'to', result.uri);
+      return result.uri;
+    } catch (error) {
+      console.error('[CameraScreen] Failed to resize image:', error);
+      // Fall back to original if resize fails
+      return uri;
+    }
+  };
+
   const takePicture = async () => {
     if (!cameraRef.current) return;
 
@@ -220,7 +238,9 @@ export function CameraScreen() {
           }
         }
 
-        setCapturedPhoto(photo.uri);
+        // Resize the image before setting it
+        const resizedUri = await resizeImage(photo.uri);
+        setCapturedPhoto(resizedUri);
       }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to take photo');
@@ -237,7 +257,9 @@ export function CameraScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      setCapturedPhoto(result.assets[0].uri);
+      // Resize the image before setting it (critical for large gallery images)
+      const resizedUri = await resizeImage(result.assets[0].uri);
+      setCapturedPhoto(resizedUri);
     }
   };
 

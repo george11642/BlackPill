@@ -60,7 +60,7 @@ export async function analyzeFacialAttractiveness(
 Analyze this person's face and provide DETAILED scores AND descriptions for 8 categories.
 
 For EACH category, provide:
-- A score (1-10, one decimal)
+- A score (1-10, with one decimal precision like 5.1, 6.3, 7.8 - use the FULL range of decimals from .0 to .9, not just .0 or .5)
 - A personalized 1-2 sentence description specific to THIS person's features
 - An actionable improvement tip specific to THIS person's weaknesses in this category
 
@@ -83,6 +83,7 @@ THE 8 CATEGORIES TO ANALYZE:
 8. HAIR: Complete assessment - density, hairline shape (straight/rounded/receding), temple points, texture quality, current styling effectiveness, color vibrancy
 
 SCORING GUIDELINES (CRITICAL - READ CAREFULLY):
+- USE VARIED DECIMALS: Scores can be any decimal like 5.1, 6.3, 7.8 - use the full .0 to .9 range, not just .0 or .5.
 - 9-10: Extremely rare, model-tier, top 1% genetics. Almost NEVER assign these.
 - 8: Very attractive, top 5%. Rarely assign.
 - 7: Above average, top 20%. Noticeable good looks.
