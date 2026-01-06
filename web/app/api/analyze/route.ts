@@ -20,6 +20,8 @@ import { createClient } from '@supabase/supabase-js';
 // Configure runtime - force dynamic and no revalidation to avoid Vercel SC issues
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+// Increase max duration to 60 seconds (Hobby limit is 10s, Pro is higher)
+export const maxDuration = 60;
 
 // CORS headers - allow all origins for mobile app
 const corsHeaders = {
@@ -49,7 +51,7 @@ export async function POST(request: Request) {
     // Authentication - try multiple methods to get Authorization header (like SmileScore)
     let authHeader: string | null = null;
     const allHeaders: Record<string, string> = {};
-    
+
     try {
       // Method 1: Try iteration
       request.headers.forEach((value, key) => {
@@ -59,7 +61,7 @@ export async function POST(request: Request) {
           authHeader = value;
         }
       });
-      
+
       // Method 2: Try Array.from if iteration didn't work
       if (!authHeader) {
         const headerEntries = Array.from(request.headers.entries());
@@ -70,15 +72,15 @@ export async function POST(request: Request) {
           }
         }
       }
-      
+
       // Method 3: Try direct get with multiple case variations
       if (!authHeader) {
-        authHeader = request.headers.get('authorization') 
-          || request.headers.get('Authorization') 
+        authHeader = request.headers.get('authorization')
+          || request.headers.get('Authorization')
           || request.headers.get('AUTHORIZATION')
           || null;
       }
-      
+
       console.log('[Analyze] Auth header found via iteration:', !!authHeader);
       if (authHeader) {
         console.log('[Analyze] Auth header value (first 30 chars):', authHeader.substring(0, 30));
@@ -103,7 +105,7 @@ export async function POST(request: Request) {
     }
 
     const token = authHeader.substring(7).trim();
-    
+
     if (!token || token === 'undefined' || token === 'null' || token.length === 0) {
       console.error('[Analyze] Invalid token detected');
       return NextResponse.json(
@@ -116,7 +118,7 @@ export async function POST(request: Request) {
     }
 
     console.log('[Analyze] Bearer token authentication - token length:', token.length);
-    
+
     // Verify token with Supabase
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error('[Analyze] SUPABASE_SERVICE_ROLE_KEY is not set');
@@ -125,15 +127,15 @@ export async function POST(request: Request) {
         { status: 500, headers: corsHeaders }
       );
     }
-    
+
     const supabaseForAuth = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-    
+
     console.log('[Analyze] Verifying token with service role key...');
     const { data: { user }, error: tokenError } = await supabaseForAuth.auth.getUser(token);
-    
+
     if (tokenError) {
       console.error('[Analyze] Token verification error:', tokenError.message);
       return NextResponse.json(
@@ -172,10 +174,10 @@ export async function POST(request: Request) {
 
     // Parse form data
     const formData = await request.formData();
-    
+
     // Debug: Log formdata keys
     console.log('[Analyze] FormData keys:', Array.from((formData as any).keys()));
-    
+
     const imageFile = (formData as any).get('image') as File | null;
 
     if (!imageFile) {
@@ -185,7 +187,7 @@ export async function POST(request: Request) {
           error: 'No image provided',
           message: 'Please upload an image file',
         },
-        { 
+        {
           status: 400,
           headers: {
             ...corsHeaders,
@@ -196,19 +198,19 @@ export async function POST(request: Request) {
     }
 
     // Validate file type
-    console.log('[Analyze] Image file info:', { 
-      name: imageFile.name, 
-      type: imageFile.type, 
-      size: imageFile.size 
+    console.log('[Analyze] Image file info:', {
+      name: imageFile.name,
+      type: imageFile.type,
+      size: imageFile.size
     });
-    
+
     if (!imageFile.type || !imageFile.type.startsWith('image/')) {
       return NextResponse.json(
         {
           error: 'Invalid file type',
           message: 'Only image files are allowed',
         },
-        { 
+        {
           status: 400,
           headers: {
             ...corsHeaders,
@@ -227,7 +229,7 @@ export async function POST(request: Request) {
           error: 'File is empty',
           message: 'Image file is empty. Please try taking the photo again.',
         },
-        { 
+        {
           status: 400,
           headers: {
             ...corsHeaders,
@@ -236,14 +238,14 @@ export async function POST(request: Request) {
         }
       );
     }
-    
+
     if (imageFile.size > maxSize) {
       return NextResponse.json(
         {
           error: 'File too large',
           message: 'Image must be less than 2MB',
         },
-        { 
+        {
           status: 400,
           headers: {
             ...corsHeaders,
@@ -256,7 +258,7 @@ export async function POST(request: Request) {
     // Convert File to Buffer
     const arrayBuffer = await imageFile.arrayBuffer();
     const imageBuffer = Buffer.from(arrayBuffer);
-    
+
     console.log('[Analyze] Buffer created with size:', imageBuffer.length);
 
     // Process image
@@ -425,7 +427,7 @@ export async function POST(request: Request) {
         completed_goals: goalUpdateResult.updatedGoals.filter(g => g.goal_completed).map(g => g.id),
         unlocked_achievements: unlockedAchievements,
       },
-      { 
+      {
         status: 200,
         headers: {
           ...corsHeaders,
@@ -462,10 +464,10 @@ export async function POST(request: Request) {
     const errorMessage = isInsufficientScans
       ? 'Insufficient scans remaining. Please upgrade your subscription to continue.'
       : isClientError
-      ? error instanceof Error
-        ? error.message
-        : 'Invalid photo'
-      : 'Our servers encountered an error processing your photo. Please try again in a moment.';
+        ? error instanceof Error
+          ? error.message
+          : 'Invalid photo'
+        : 'Our servers encountered an error processing your photo. Please try again in a moment.';
 
     return NextResponse.json(
       {
@@ -474,7 +476,7 @@ export async function POST(request: Request) {
         ...(process.env.NODE_ENV === 'development' &&
           error instanceof Error && { details: error.message }),
       },
-      { 
+      {
         status: statusCode,
         headers: {
           ...corsHeaders,
