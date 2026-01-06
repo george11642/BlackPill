@@ -300,7 +300,7 @@ export function SubscriptionScreen() {
         style={styles.background}
       />
 
-      <BackHeader title="Premium" variant="large" onBackPress={() => navigation.goBack()} />
+      <BackHeader title="Premium" variant="large" onBackPress={() => navigation.goBack()} transparent />
 
       <ScrollView
         contentContainerStyle={styles.content}

@@ -13,9 +13,10 @@ interface BackHeaderProps {
   onBackPress?: () => void;
   subtitle?: string;
   variant?: 'default' | 'large';
+  transparent?: boolean;
 }
 
-export function BackHeader({ title, rightElement, onBackPress, subtitle, variant = 'default' }: BackHeaderProps) {
+export function BackHeader({ title, rightElement, onBackPress, subtitle, variant = 'default', transparent = false }: BackHeaderProps) {
   const navigation = useNavigation();
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? DarkTheme : LightTheme;
@@ -38,7 +39,7 @@ export function BackHeader({ title, rightElement, onBackPress, subtitle, variant
       paddingHorizontal: theme.spacing.md,
       paddingTop: insets.top + 4,
       paddingBottom: 4,
-      backgroundColor: theme.colors.background,
+      backgroundColor: transparent ? 'transparent' : theme.colors.background,
     },
     headerTopRow: {
       flexDirection: 'row',
