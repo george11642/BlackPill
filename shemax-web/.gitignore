@@ -1,0 +1,21 @@
+.vercel
+.next
+node_modules/
+
+# Environment files (CRITICAL - NEVER COMMIT)
+.env
+.env.local
+.env*.local
+.env.production
+.env.development
+
+# Keep only example files
+!.env.example
+!env.example
+
+# Credentials
+service-account*.json
+credentials*.json
+*.p8
+*.p12
+*.pem

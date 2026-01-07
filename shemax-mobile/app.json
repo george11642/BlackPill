@@ -1,0 +1,100 @@
+{
+  "expo": {
+    "name": "SheMax",
+    "slug": "shemax",
+    "version": "1.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "description": "Be Honest About Yourself - AI-powered beauty analysis with actionable self-improvement tips.",
+    "newArchEnabled": true,
+    "scheme": "shemax",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F0F1E"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.shemax.shemax",
+      "infoPlist": {
+        "NSCameraUsageDescription": "SheMax uses your camera to take selfies so our AI can analyze your face and provide personalized beauty scores and improvement suggestions.",
+        "NSPhotoLibraryUsageDescription": "SheMax uses your photo library so you can select existing selfies for AI analysis and personalized beauty feedback.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "shemax"
+            ]
+          }
+        ]
+      }
+    },
+    "android": {
+      "package": "com.shemax.shemax",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F0F1E"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "shemax"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow SheMax to use your camera to take selfies so our AI can analyze your face and provide personalized beauty feedback and improvement tips."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow SheMax to access your photos so you can choose existing selfies for AI analysis and personalized beauty feedback."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#E8A0BF",
+          "sounds": []
+        }
+      ],
+      "expo-dev-client",
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-apple-authentication",
+      "./plugins/with-storekit-config.js"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "44e23637-a48c-478e-8017-a7bdbffc2231"
+      }
+    },
+    "owner": "george11642"
+  }
+}

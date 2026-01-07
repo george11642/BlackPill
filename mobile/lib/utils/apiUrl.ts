@@ -43,8 +43,8 @@ export const getApiUrl = (): string => {
  * Check if we're using Supabase Edge Functions
  */
 export const isUsingSupabase = (): boolean => {
-  return !!process.env.EXPO_PUBLIC_SUPABASE_FUNCTIONS_URL ||
-         getApiUrl().includes('supabase.co');
+  return !!(process.env.EXPO_PUBLIC_SUPABASE_URL &&
+            process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY);
 };
 
 /**

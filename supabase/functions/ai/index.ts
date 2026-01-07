@@ -825,7 +825,8 @@ async function handleTransform(
   }
 
   const body = await req.json();
-  const { analysisId, scenario = "formal" } = body;
+  const { analysisId, scenario = "formal", app_source } = body;
+  const isFemale = app_source === "shemax";
 
   if (!analysisId) {
     return createErrorResponse("analysisId is required", 400, requestId);
@@ -885,7 +886,7 @@ async function handleTransform(
       version: "ddfc2b08d209f9fa8c1eca692712918bd449f695dabb4a958da31802a9570fe4",
       input: {
         input_image: analysis.image_url,
-        prompt: `A photo of a man img, ${prompt}`,
+        prompt: `A photo of a ${isFemale ? "woman" : "man"} img, ${prompt}`,
         negative_prompt: "nsfw, lowres, bad anatomy",
         num_steps: 50,
         style_strength_ratio: 20,

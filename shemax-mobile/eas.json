@@ -1,0 +1,33 @@
+{
+  "cli": {
+    "version": ">= 16.28.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "node": "20.19.4",
+      "env": {
+        "NPM_CONFIG_PACKAGE_MANAGER": "npm"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "node": "20.19.4",
+      "env": {
+        "NPM_CONFIG_PACKAGE_MANAGER": "npm"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "node": "20.19.4",
+      "env": {
+        "NPM_CONFIG_PACKAGE_MANAGER": "npm"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
