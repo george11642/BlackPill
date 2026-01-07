@@ -1,14 +1,18 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { SubscriptionTier, SubscriptionState, TIER_FEATURES, FeatureAccess } from './types';
 import { useAuth } from '../auth/context';
 import { supabase } from '../supabase/client';
-import { getCustomerInfo, getSubscriptionTier } from '../revenuecat/client';
+import { getCustomerInfo, getSubscriptionTier, checkGuestSubscription as checkGuestSub } from '../revenuecat/client';
 
 interface SubscriptionContextType extends SubscriptionState {
   refreshSubscription: () => Promise<void>;
   spendUnblurCredit: () => Promise<boolean>;
   canAccessFeature: (feature: keyof FeatureAccess) => boolean;
   hasUnblurCredits: boolean;
+  // Guest subscription support (App Store guideline 5.1.1)
+  guestHasPremium: boolean;
+  guestPremiumLoading: boolean;
+  refreshGuestSubscription: () => Promise<void>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -23,6 +27,42 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     analysesUsedThisMonth: 0,
     coachMessagesUsedThisMonth: 0,
   });
+
+  // Guest subscription state (App Store guideline 5.1.1)
+  // Allows guests to purchase and use premium features without creating an account
+  const [guestHasPremium, setGuestHasPremium] = useState(false);
+  const [guestPremiumLoading, setGuestPremiumLoading] = useState(true);
+
+  // Check guest subscription status via RevenueCat
+  const refreshGuestSubscription = useCallback(async () => {
+    try {
+      setGuestPremiumLoading(true);
+      const { hasSubscription, tier } = await checkGuestSub();
+      console.log('[Subscription] Guest subscription check:', { hasSubscription, tier });
+      setGuestHasPremium(hasSubscription);
+    } catch (error) {
+      console.error('[Subscription] Error checking guest subscription:', error);
+      setGuestHasPremium(false);
+    } finally {
+      setGuestPremiumLoading(false);
+    }
+  }, []);
+
+  // Check guest subscription on mount (for guests who already purchased)
+  useEffect(() => {
+    if (!user) {
+      console.log('[Subscription] No user, checking guest subscription');
+      // Small delay to allow RevenueCat to initialize
+      const timer = setTimeout(() => {
+        refreshGuestSubscription();
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      // User is logged in, reset guest state
+      setGuestHasPremium(false);
+      setGuestPremiumLoading(false);
+    }
+  }, [user, refreshGuestSubscription]);
 
   useEffect(() => {
     console.log('[Subscription] useEffect triggered, user:', !!user, 'session:', !!session);
@@ -208,6 +248,10 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         spendUnblurCredit,
         canAccessFeature,
         hasUnblurCredits: state.unblurCredits > 0,
+        // Guest subscription support (App Store guideline 5.1.1)
+        guestHasPremium,
+        guestPremiumLoading,
+        refreshGuestSubscription,
       }}
     >
       {children}

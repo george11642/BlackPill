@@ -62,7 +62,7 @@ const PREMIUM_FEATURES = [
 export function SubscriptionScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
-  const { tier, refreshSubscription } = useSubscription();
+  const { tier, refreshSubscription, refreshGuestSubscription } = useSubscription();
   const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
@@ -150,12 +150,14 @@ export function SubscriptionScreen() {
         await refreshSubscription();
         Alert.alert('Success', 'Welcome to Premium! Your subscription is now active.');
       } else {
-        // Guest purchase successful
+        // Guest purchase successful - refresh guest subscription state
+        // This triggers navigation to guest premium screens (App Store guideline 5.1.1)
+        await refreshGuestSubscription();
         Alert.alert(
           'Success',
           'Premium activated! Create an account to sync this purchase across your devices.',
           [
-            { text: 'Later', style: 'cancel' },
+            { text: 'Continue', style: 'default' },
             { text: 'Create Account', onPress: () => navigation.navigate('Signup' as never) }
           ]
         );

@@ -10,7 +10,7 @@ import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_7
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AchievementToast } from './components/AchievementToast';
 import { AuthProvider, useAuth } from './lib/auth/context';
-import { SubscriptionProvider } from './lib/subscription/context';
+import { SubscriptionProvider, useSubscription } from './lib/subscription/context';
 import { DarkTheme } from './lib/theme';
 import { apiGet } from './lib/api/client';
 import * as Linking from 'expo-linking';
@@ -35,7 +35,8 @@ import { ProgressScreen } from './screens/ProgressScreen';
 import { RoutinesScreen } from './screens/RoutinesScreen';
 import { RoutineDetailScreen } from './screens/RoutineDetailScreen';
 import { TasksScreen } from './screens/TasksScreen';
-import { LeaderboardScreen } from './screens/LeaderboardScreen';
+// REMOVED FOR APP STORE: Leaderboard feature hidden to comply with guideline 1.2
+// import { LeaderboardScreen } from './screens/LeaderboardScreen';
 import { AchievementsScreen } from './screens/AchievementsScreen';
 import { ShareScreen } from './screens/ShareScreen';
 import { ChallengesScreen } from './screens/ChallengesScreen';
@@ -84,6 +85,8 @@ const Stack = createNativeStackNavigator();
 
 function RootNavigator() {
   const { user, session, loading, hasCompletedOnboarding, onboardingLoading } = useAuth();
+  // Guest subscription state from context (App Store guideline 5.1.1 compliance)
+  const { guestHasPremium, guestPremiumLoading } = useSubscription();
   const navigationRef = useRef<any>(null);
   const hasCheckedFirstScan = useRef(false);
   const [isFirstScanPending, setIsFirstScanPending] = useState(false);
@@ -186,8 +189,8 @@ function RootNavigator() {
     checkFirstScanPending();
   }, [hasCompletedOnboarding, loading, onboardingLoading, session?.access_token]);
 
-  // Show splash while loading auth or onboarding status
-  const isLoading = loading || (user && onboardingLoading);
+  // Show splash while loading auth, onboarding status, or guest subscription check
+  const isLoading = loading || (user && onboardingLoading) || (!user && !loading && guestPremiumLoading);
 
   return (
     <NavigationContainer ref={navigationRef} theme={NavDarkTheme}>
@@ -210,7 +213,7 @@ function RootNavigator() {
                 <Stack.Screen name="Routines" component={RoutinesScreen} />
                 <Stack.Screen name="RoutineDetail" component={RoutineDetailScreen} />
                 <Stack.Screen name="Tasks" component={TasksScreen} />
-                <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+                {/* REMOVED FOR APP STORE: <Stack.Screen name="Leaderboard" component={LeaderboardScreen} /> */}
                 <Stack.Screen name="Achievements" component={AchievementsScreen} />
                 <Stack.Screen name="Share" component={ShareScreen} />
                 <Stack.Screen name="Challenges" component={ChallengesScreen} />
@@ -246,7 +249,7 @@ function RootNavigator() {
                 <Stack.Screen name="Routines" component={RoutinesScreen} />
                 <Stack.Screen name="RoutineDetail" component={RoutineDetailScreen} />
                 <Stack.Screen name="Tasks" component={TasksScreen} />
-                <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+                {/* REMOVED FOR APP STORE: <Stack.Screen name="Leaderboard" component={LeaderboardScreen} /> */}
                 <Stack.Screen name="Achievements" component={AchievementsScreen} />
                 <Stack.Screen name="Share" component={ShareScreen} />
                 <Stack.Screen name="Challenges" component={ChallengesScreen} />
@@ -285,7 +288,7 @@ function RootNavigator() {
               <Stack.Screen name="Routines" component={RoutinesScreen} />
               <Stack.Screen name="RoutineDetail" component={RoutineDetailScreen} />
               <Stack.Screen name="Tasks" component={TasksScreen} />
-              <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+              {/* REMOVED FOR APP STORE: <Stack.Screen name="Leaderboard" component={LeaderboardScreen} /> */}
               <Stack.Screen name="Achievements" component={AchievementsScreen} />
               <Stack.Screen name="Share" component={ShareScreen} />
               <Stack.Screen name="Challenges" component={ChallengesScreen} />
@@ -310,6 +313,19 @@ function RootNavigator() {
               <Stack.Screen name="Marketplace" component={MarketplaceScreen} />
             </>
           )
+        ) : guestHasPremium ? (
+          // Guest with premium subscription - allow limited access (App Store guideline 5.1.1)
+          // Core features work, but account required for progress tracking and social features
+          <>
+            <Stack.Screen name="Camera" component={CameraScreen} initialParams={{ guestMode: true }} />
+            <Stack.Screen name="AnalysisResult" component={AnalysisResultScreen} />
+            <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Signup" component={SignupScreen} />
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
+            <Stack.Screen name="Methodology" component={MethodologyScreen} />
+            <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
+          </>
         ) : (
           // Not logged in - show auth screens
           <>

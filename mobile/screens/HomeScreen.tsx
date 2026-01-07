@@ -8,7 +8,8 @@ import { Home, TrendingUp, MessageCircle, Trophy, User, ShoppingBag } from 'luci
 import { DailyRoutineScreen } from './DailyRoutineScreen';
 import { ProgressScreen } from './ProgressScreen';
 import { AICoachScreen } from './AICoachScreen';
-import { LeaderboardScreen } from './LeaderboardScreen';
+// REMOVED FOR APP STORE: Leaderboard hidden to comply with guideline 1.2
+// import { LeaderboardScreen } from './LeaderboardScreen';
 import { ProfileScreen } from './ProfileScreen';
 import { MarketplaceScreen } from './MarketplaceScreen';
 import { DarkTheme } from '../lib/theme';
@@ -96,6 +97,7 @@ export function HomeScreen() {
           ),
         }}
       />
+      {/* REMOVED FOR APP STORE: Leaderboard/Ranks tab hidden to comply with guideline 1.2
       <Tab.Screen
         name="Ranks"
         component={LeaderboardScreen}
@@ -105,6 +107,7 @@ export function HomeScreen() {
           ),
         }}
       />
+      */}
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}

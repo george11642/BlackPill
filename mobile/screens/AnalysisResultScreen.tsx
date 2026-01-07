@@ -101,25 +101,26 @@ function getFeatureImprovement(feature: FeatureAnalysis | number | undefined): s
 }
 
 // PSL Scale: Rating category based on score (stricter thresholds)
+// Updated terminology for App Store compliance (guideline 1.2)
 function getRatingCategory(score: number): string {
-  if (score >= 9.5) return 'Gigachad';
+  if (score >= 9.5) return 'True Adam';
   if (score >= 8) return 'Chad';
   if (score >= 7) return 'Chadlite';
   if (score >= 5.5) return 'HTN';
   if (score >= 4.5) return 'MTN';
   if (score >= 3) return 'LTN';
-  return 'Incel';
+  return 'Developing';
 }
 
 // PSL Scale: Category color based on score (stricter thresholds)
 function getCategoryColor(score: number): string {
-  if (score >= 9.5) return '#AA44FF'; // Gigachad - Purple
+  if (score >= 9.5) return '#AA44FF'; // True Adam - Purple
   if (score >= 8) return '#44AAFF';   // Chad - Blue
   if (score >= 7) return '#44CC88';   // Chadlite - Teal
   if (score >= 5.5) return '#88CC44'; // HTN - Green
   if (score >= 4.5) return '#FFAA44'; // MTN - Orange
   if (score >= 3) return '#FF8844';   // LTN - Light Orange
-  return '#FF4444';                   // Incel - Red
+  return '#FF4444';                   // Developing - Red
 }
 
 export function AnalysisResultScreen() {
@@ -850,6 +851,7 @@ export function AnalysisResultScreen() {
             icon={<Home size={18} color={DarkTheme.colors.primary} />}
             style={styles.actionButton}
           />
+          {/* REMOVED FOR APP STORE: Leaderboard button hidden to comply with guideline 1.2
           <PrimaryButton
             title={isOnLeaderboard ? 'On Board' : 'Leaderboard'}
             onPress={handleJoinLeaderboard}
@@ -858,6 +860,7 @@ export function AnalysisResultScreen() {
             style={styles.actionButton}
             disabled={joiningLeaderboard}
           />
+          */}
           <PrimaryButton
             title="Share"
             onPress={handleShare}

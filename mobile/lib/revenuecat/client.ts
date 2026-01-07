@@ -193,6 +193,24 @@ export const getPackageByIdentifier = async (
   }
 };
 
+// Check if guest (anonymous) user has active subscription
+// Used to allow guest access to core features after purchase (App Store guideline 5.1.1)
+export const checkGuestSubscription = async (): Promise<{ hasSubscription: boolean; tier: 'premium' | null }> => {
+  try {
+    const customerInfo = await getCustomerInfo();
+    if (!customerInfo) {
+      return { hasSubscription: false, tier: null };
+    }
+    return {
+      hasSubscription: hasActiveSubscription(customerInfo),
+      tier: getSubscriptionTier(customerInfo),
+    };
+  } catch (error) {
+    console.error('Error checking guest subscription:', error);
+    return { hasSubscription: false, tier: null };
+  }
+};
+
 // Sync subscription to backend
 export const syncSubscriptionToBackend = async (customerInfo: CustomerInfo): Promise<void> => {
   try {
