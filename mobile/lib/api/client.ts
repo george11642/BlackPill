@@ -1,4 +1,4 @@
-import { getApiUrl } from '../utils/apiUrl';
+import { getApiUrl, normalizeEndpoint } from '../utils/apiUrl';
 
 export class ApiError extends Error {
   constructor(
@@ -16,7 +16,8 @@ async function request<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const apiUrl = getApiUrl();
-  const url = `${apiUrl}${endpoint}`;
+  const normalizedEndpoint = normalizeEndpoint(endpoint);
+  const url = `${apiUrl}${normalizedEndpoint}`;
   
   // Debug logging for API URL resolution
   console.log('[API] Request:', options.method || 'GET', endpoint, '-> Full URL:', url);
