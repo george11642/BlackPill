@@ -153,6 +153,65 @@ export const normalizeEndpoint = (endpoint: string): string => {
     return '/share?action=log';
   }
 
+  // Stripe operations -> /stripe?action=X
+  if (path === '/subscriptions/create-checkout' || path.startsWith('/subscriptions/create-checkout')) {
+    return '/stripe?action=create-checkout';
+  }
+  if (path === '/subscriptions/cancel' || path.startsWith('/subscriptions/cancel')) {
+    return '/stripe?action=cancel';
+  }
+  if (path === '/subscriptions/status' || path.startsWith('/subscriptions/status')) {
+    return '/stripe?action=status';
+  }
+
+  // Affiliate operations -> /affiliate?action=X
+  if (path === '/affiliates/generate-code' || path.startsWith('/affiliates/generate-code')) {
+    return '/affiliate?action=generate-code';
+  }
+  if (path === '/affiliates/referral-click' || path.startsWith('/affiliates/referral-click')) {
+    return '/affiliate?action=referral-click';
+  }
+  if (path === '/referral/stats' || path.startsWith('/referral/stats')) {
+    return '/affiliate?action=referral-stats';
+  }
+  if (path === '/referral/accept' || path.startsWith('/referral/accept')) {
+    return '/affiliate?action=referral-accept';
+  }
+  if (path === '/referral/apply' || path.startsWith('/referral/apply')) {
+    return '/affiliate?action=referral-apply';
+  }
+  if (path === '/referrals/redeem' || path.startsWith('/referrals/redeem')) {
+    return '/affiliate?action=referral-redeem';
+  }
+  if (path === '/commissions/calculate' || path.startsWith('/commissions/calculate')) {
+    return '/affiliate?action=calculate-commission';
+  }
+  if (path === '/creators/apply' || path.startsWith('/creators/apply')) {
+    return '/affiliate?action=creator-apply';
+  }
+  if (path === '/creators/dashboard' || path.startsWith('/creators/dashboard')) {
+    return '/affiliate?action=creator-dashboard';
+  }
+  if (path === '/creators/performance' || path.startsWith('/creators/performance')) {
+    return '/affiliate?action=creator-performance';
+  }
+  if (path === '/creators/coupons' || path.startsWith('/creators/coupons')) {
+    return '/affiliate?action=creator-coupons';
+  }
+
+  // Admin review operations -> /admin?action=X
+  if (path === '/admin/review-queue' || path.startsWith('/admin/review-queue')) {
+    return '/admin?action=review-queue';
+  }
+  if (path === '/admin/review-action' || path.startsWith('/admin/review-action')) {
+    return '/admin?action=review-action';
+  }
+
+  // Auth me -> direct Supabase auth
+  if (path === '/auth/me' || path.startsWith('/auth/me')) {
+    return path; // Handled by Supabase client directly
+  }
+
   // Default: return path as-is (for direct Supabase REST API)
   return path;
 };

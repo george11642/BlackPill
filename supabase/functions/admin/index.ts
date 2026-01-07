@@ -6,6 +6,8 @@
  * - sync-subscription: Sync RevenueCat subscription to Supabase (requires auth)
  * - user-delete: Delete user account (requires auth)
  * - user-export: Export user data for GDPR (requires auth)
+ * - review-queue: Get flagged content for review (requires admin)
+ * - review-action: Take action on flagged content (requires admin)
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -45,9 +47,13 @@ serve(async (req: Request) => {
         return await handleUserDelete(req, user, supabaseAdmin, requestId);
       case "user-export":
         return await handleUserExport(req, user, supabaseAdmin, requestId);
+      case "review-queue":
+        return await handleReviewQueue(req, user, supabaseAdmin, requestId);
+      case "review-action":
+        return await handleReviewAction(req, user, supabaseAdmin, requestId);
       default:
         return createErrorResponse(
-          "Invalid action. Use: grant-subscription, sync-subscription, user-delete, user-export",
+          "Invalid action. Use: grant-subscription, sync-subscription, user-delete, user-export, review-queue, review-action",
           400,
           requestId
         );
@@ -470,4 +476,141 @@ async function handleUserExport(
   };
 
   return createResponseWithId(exportData, 200, requestId);
+}
+
+// ============ REVIEW QUEUE ============
+async function handleReviewQueue(
+  req: Request,
+  user: any,
+  supabaseAdmin: any,
+  requestId: string
+) {
+  if (req.method !== "GET") {
+    return createErrorResponse("Method not allowed", 405, requestId);
+  }
+
+  // Check if user is admin
+  const { data: profile } = await supabaseAdmin
+    .from("users")
+    .select("is_admin")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile?.is_admin) {
+    return createErrorResponse("Forbidden - Admin access required", 403, requestId);
+  }
+
+  const url = new URL(req.url);
+  const status = url.searchParams.get("status") || "pending";
+  const limit = parseInt(url.searchParams.get("limit") || "20");
+  const offset = parseInt(url.searchParams.get("offset") || "0");
+
+  const { data: queue, error } = await supabaseAdmin
+    .from("review_queue")
+    .select(`
+      *,
+      analyses(id, score, image_url),
+      users(id, email, username)
+    `)
+    .eq("status", status)
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) {
+    throw error;
+  }
+
+  return createResponseWithId(
+    {
+      queue: queue || [],
+      total: queue?.length || 0,
+    },
+    200,
+    requestId
+  );
+}
+
+// ============ REVIEW ACTION ============
+async function handleReviewAction(
+  req: Request,
+  user: any,
+  supabaseAdmin: any,
+  requestId: string
+) {
+  if (req.method !== "POST") {
+    return createErrorResponse("Method not allowed", 405, requestId);
+  }
+
+  // Check if user is admin
+  const { data: profile } = await supabaseAdmin
+    .from("users")
+    .select("is_admin")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile?.is_admin) {
+    return createErrorResponse("Forbidden - Admin access required", 403, requestId);
+  }
+
+  const body = await req.json();
+  const { review_id, action, reason } = body;
+
+  if (!review_id || !action) {
+    return createErrorResponse("Missing review_id or action", 400, requestId);
+  }
+
+  const validActions = ["approve", "reject", "ban_user"];
+  if (!validActions.includes(action)) {
+    return createErrorResponse("Invalid action. Use: approve, reject, ban_user", 400, requestId);
+  }
+
+  // Get review item
+  const { data: reviewItem, error: fetchError } = await supabaseAdmin
+    .from("review_queue")
+    .select("*")
+    .eq("id", review_id)
+    .single();
+
+  if (fetchError || !reviewItem) {
+    return createErrorResponse("Review item not found", 404, requestId);
+  }
+
+  // Update review status
+  const newStatus = action === "approve" ? "approved" : "rejected";
+  await supabaseAdmin
+    .from("review_queue")
+    .update({
+      status: newStatus,
+      reviewed_by: user.id,
+      reviewed_at: new Date().toISOString(),
+      review_notes: reason || null,
+    })
+    .eq("id", review_id);
+
+  // Handle ban_user action
+  if (action === "ban_user" && reviewItem.user_id) {
+    await supabaseAdmin
+      .from("users")
+      .update({ is_banned: true, banned_at: new Date().toISOString() })
+      .eq("id", reviewItem.user_id);
+  }
+
+  // If rejecting analysis, soft delete it
+  if (action === "reject" && reviewItem.analysis_id) {
+    await supabaseAdmin
+      .from("analyses")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", reviewItem.analysis_id);
+  }
+
+  return createResponseWithId(
+    {
+      success: true,
+      review_id,
+      action,
+      new_status: newStatus,
+    },
+    200,
+    requestId
+  );
 }
