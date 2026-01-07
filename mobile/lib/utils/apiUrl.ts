@@ -50,11 +50,13 @@ export const isUsingSupabase = (): boolean => {
 /**
  * Convert API endpoint path for consolidated Edge Functions
  *
- * Consolidated structure (4 functions):
+ * Consolidated structure (6 functions):
  * - /ai?action={analyze|coach|recommend|insights|routines|transform}
  * - /webhooks?provider={stripe|revenuecat}
  * - /cron?job={daily-morning|daily-evening|check-renewals|...}
- * - /admin?action={grant-subscription|user-delete|user-export}
+ * - /admin?action={grant-subscription|sync-subscription|user-delete|user-export}
+ * - /timelapse?action={generate|get|list|music}
+ * - /share?action={generate-card|log}
  *
  * Note: Many CRUD operations should use Supabase client directly (BaaS model)
  * This function handles the Edge Function routes only
@@ -116,6 +118,39 @@ export const normalizeEndpoint = (endpoint: string): string => {
   }
   if (path === '/user/export') {
     return '/admin?action=user-export';
+  }
+  if (path === '/revenuecat/sync' || path.startsWith('/revenuecat/sync')) {
+    return '/admin?action=sync-subscription';
+  }
+
+  // Timelapse operations -> /timelapse?action=X
+  if (path === '/timelapse/generate' || path.startsWith('/timelapse/generate')) {
+    return '/timelapse?action=generate';
+  }
+  if (path === '/timelapse/generate-video' || path.startsWith('/timelapse/generate-video')) {
+    return '/timelapse?action=generate'; // Same as generate, video is handled internally
+  }
+  if (path.match(/^\/timelapse\/[^\/]+$/)) {
+    // /timelapse/:id -> get specific timelapse
+    const id = path.replace('/timelapse/', '');
+    return `/timelapse?action=get&id=${id}`;
+  }
+  if (path === '/timelapse/music' || path.startsWith('/timelapse/music')) {
+    return '/timelapse?action=music';
+  }
+  if (path === '/timelapse' || path === '/timelapses') {
+    return '/timelapse?action=list';
+  }
+
+  // Share operations -> /share?action=X
+  if (path === '/share/generate-card' || path.startsWith('/share/generate-card')) {
+    // Parse query params from path if present
+    const queryStart = path.indexOf('?');
+    const queryString = queryStart > -1 ? path.substring(queryStart) : '';
+    return `/share?action=generate-card${queryString ? '&' + queryString.substring(1) : ''}`;
+  }
+  if (path === '/share/log' || path.startsWith('/share/log')) {
+    return '/share?action=log';
   }
 
   // Default: return path as-is (for direct Supabase REST API)

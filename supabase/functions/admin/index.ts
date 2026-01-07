@@ -3,6 +3,7 @@
  *
  * Actions (via query param ?action=):
  * - grant-subscription: Admin grants subscription to user (requires admin)
+ * - sync-subscription: Sync RevenueCat subscription to Supabase (requires auth)
  * - user-delete: Delete user account (requires auth)
  * - user-export: Export user data for GDPR (requires auth)
  */
@@ -38,13 +39,15 @@ serve(async (req: Request) => {
     switch (action) {
       case "grant-subscription":
         return await handleGrantSubscription(req, user, supabaseAdmin, requestId);
+      case "sync-subscription":
+        return await handleSyncSubscription(req, user, supabaseAdmin, requestId);
       case "user-delete":
         return await handleUserDelete(req, user, supabaseAdmin, requestId);
       case "user-export":
         return await handleUserExport(req, user, supabaseAdmin, requestId);
       default:
         return createErrorResponse(
-          "Invalid action. Use: grant-subscription, user-delete, user-export",
+          "Invalid action. Use: grant-subscription, sync-subscription, user-delete, user-export",
           400,
           requestId
         );
@@ -206,6 +209,166 @@ async function handleGrantSubscription(
     200,
     requestId
   );
+}
+
+// ============ SYNC SUBSCRIPTION (RevenueCat) ============
+async function handleSyncSubscription(
+  req: Request,
+  user: any,
+  supabaseAdmin: any,
+  requestId: string
+) {
+  if (req.method !== "POST") {
+    return createErrorResponse("Method not allowed", 405, requestId);
+  }
+
+  const body = await req.json();
+  const { customerInfo } = body;
+
+  if (!customerInfo || !customerInfo.originalAppUserId) {
+    return createErrorResponse("Invalid customer info", 400, requestId);
+  }
+
+  // Verify the app user ID matches the authenticated user
+  if (customerInfo.originalAppUserId !== user.id) {
+    console.error("[admin] User ID mismatch:", {
+      authenticated: user.id,
+      customerInfo: customerInfo.originalAppUserId,
+    });
+    return createErrorResponse("User ID mismatch", 403, requestId);
+  }
+
+  // Get active entitlements
+  const activeEntitlements = customerInfo.entitlements?.active || {};
+  const entitlementKeys = Object.keys(activeEntitlements);
+
+  console.log("[admin] Active entitlement keys:", entitlementKeys);
+
+  // Determine tier from entitlements
+  // Support multiple entitlement identifier formats
+  let tier: "pro" | "elite" | "premium" | null = null;
+
+  if (
+    entitlementKeys.includes("elite") ||
+    entitlementKeys.includes("BlackPill Elite") ||
+    entitlementKeys.includes("BlackPill_Elite")
+  ) {
+    tier = "elite";
+  } else if (
+    entitlementKeys.includes("BlackPill Pro") ||
+    entitlementKeys.includes("pro") ||
+    entitlementKeys.includes("premium") ||
+    entitlementKeys.includes("BlackPill Premium")
+  ) {
+    tier = "premium";
+  }
+
+  if (!tier) {
+    console.log("[admin] No active subscription tier found");
+    return createResponseWithId({ synced: true, message: "No active subscription" }, 200, requestId);
+  }
+
+  // Get the active entitlement for period dates
+  const tierEntitlementKey = entitlementKeys.find(
+    (key) =>
+      key === tier ||
+      (tier === "elite" && (key === "elite" || key === "BlackPill Elite" || key === "BlackPill_Elite")) ||
+      (tier === "premium" && (key === "pro" || key === "premium" || key === "BlackPill Pro" || key === "BlackPill Premium"))
+  );
+  const activeEntitlement = tierEntitlementKey
+    ? activeEntitlements[tierEntitlementKey]
+    : Object.values(activeEntitlements)[0];
+  const expirationDate = activeEntitlement?.expirationDate
+    ? new Date(activeEntitlement.expirationDate).toISOString()
+    : null;
+  const purchaseDate = activeEntitlement?.purchaseDate
+    ? new Date(activeEntitlement.purchaseDate).toISOString()
+    : new Date().toISOString();
+
+  // Get transaction ID from active subscriptions
+  const transactionId = customerInfo.activeSubscriptions?.[0] || null;
+
+  // Check if subscription exists, then insert or update
+  const { data: existingSub } = await supabaseAdmin
+    .from("subscriptions")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("payment_provider", "revenuecat")
+    .single();
+
+  let error;
+  if (existingSub) {
+    // Update existing subscription
+    const result = await supabaseAdmin
+      .from("subscriptions")
+      .update({
+        tier: tier,
+        status: "active",
+        revenuecat_subscription_id: transactionId,
+        revenuecat_customer_id: customerInfo.originalAppUserId,
+        current_period_start: purchaseDate,
+        current_period_end: expirationDate,
+        cancel_at_period_end: false,
+      })
+      .eq("id", existingSub.id);
+    error = result.error;
+  } else {
+    // Insert new subscription
+    const result = await supabaseAdmin.from("subscriptions").insert({
+      user_id: user.id,
+      tier: tier,
+      status: "active",
+      revenuecat_subscription_id: transactionId,
+      revenuecat_customer_id: customerInfo.originalAppUserId,
+      payment_provider: "revenuecat",
+      current_period_start: purchaseDate,
+      current_period_end: expirationDate,
+      cancel_at_period_end: false,
+    });
+    error = result.error;
+  }
+
+  if (error) {
+    console.error("[admin] Error syncing subscription:", error);
+    return createErrorResponse("Failed to sync subscription", 500, requestId);
+  }
+
+  // Auto-create affiliate record for new subscribers
+  try {
+    const { data: existingAffiliate } = await supabaseAdmin
+      .from("affiliates")
+      .select("id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!existingAffiliate) {
+      // Generate a unique referral code
+      const referralCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+      await supabaseAdmin.from("affiliates").insert({
+        user_id: user.id,
+        referral_code: referralCode,
+        tier: "base",
+        commission_rate: 20.0,
+        is_active: true,
+      });
+
+      console.log("[admin] Created affiliate record for user:", user.id);
+    }
+  } catch (affiliateError) {
+    // Don't fail the sync if affiliate creation fails
+    console.error("[admin] Error creating affiliate (non-fatal):", affiliateError);
+  }
+
+  // Update user tier
+  const scansForTier = tier === "elite" ? 999999 : 30;
+  await supabaseAdmin
+    .from("users")
+    .update({ tier, scans_remaining: scansForTier })
+    .eq("id", user.id);
+
+  console.log("[admin] Successfully synced subscription for user:", user.id, "tier:", tier);
+  return createResponseWithId({ synced: true, tier }, 200, requestId);
 }
 
 // ============ USER DELETE ============
