@@ -19,11 +19,9 @@ import Animated, {
   SlideInRight,
   SlideOutLeft,
 } from 'react-native-reanimated';
-import * as Notifications from 'expo-notifications';
-import { Camera } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronRight, ChevronLeft, Camera as CameraIcon, Sparkles, Star } from 'lucide-react-native';
+import { ChevronRight, ChevronLeft, Star } from 'lucide-react-native';
 import * as StoreReview from 'expo-store-review';
 
 import { OnboardingSlide } from '../components/OnboardingSlide';
@@ -44,7 +42,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 type OnboardingStep =
   | 'profile'
   | 'goals'
-  | 'permissions'
   | 'disclaimer'
   | 'rating'
   | 'firstScan';
@@ -52,7 +49,6 @@ type OnboardingStep =
 const STEPS: OnboardingStep[] = [
   'profile',
   'goals',
-  'permissions',
   'disclaimer',
   'rating',
   'firstScan',
@@ -71,7 +67,6 @@ export function OnboardingScreen() {
     avatarUri: null,
   });
   const [selectedGoals, setSelectedGoals] = useState<OnboardingGoal[]>([]);
-  const [permissionsGranted, setPermissionsGranted] = useState(false);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
   const [rating, setRating] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -105,8 +100,6 @@ export function OnboardingScreen() {
     switch (currentStep) {
       case 'goals':
         return selectedGoals.length > 0;
-      case 'permissions':
-        return permissionsGranted;
       case 'disclaimer':
         return disclaimerAccepted;
       case 'rating':
@@ -125,12 +118,6 @@ export function OnboardingScreen() {
     if (!canProceed()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return;
-    }
-
-    // Handle special step logic
-    if (currentStep === 'permissions') {
-      const granted = await requestPermissions();
-      if (!granted) return;
     }
 
     if (currentStep === 'rating' && rating >= 4) {
@@ -157,32 +144,6 @@ export function OnboardingScreen() {
 
     if (currentStepIndex > 0) {
       goToStep(currentStepIndex - 1);
-    }
-  };
-
-  const requestPermissions = async (): Promise<boolean> => {
-    try {
-      // Request camera permission
-      const cameraStatus = await Camera.requestCameraPermissionsAsync();
-      if (!cameraStatus.granted) {
-        showAlert({
-          title: 'Camera Permission Required',
-          message: 'Black Pill needs camera access to analyze your photos.',
-          buttons: [{ text: 'OK' }],
-        });
-        return false;
-      }
-
-      // Request notification permission (optional)
-      if (Platform.OS !== 'web') {
-        await Notifications.requestPermissionsAsync();
-      }
-
-      setPermissionsGranted(true);
-      return true;
-    } catch (error) {
-      console.error('Permission request error:', error);
-      return false;
     }
   };
 
@@ -403,66 +364,6 @@ export function OnboardingScreen() {
             selectedGoals={selectedGoals}
             onUpdate={setSelectedGoals}
           />
-        );
-
-      case 'permissions':
-        return (
-          <Animated.View
-            style={styles.stepContainer}
-            entering={FadeIn.duration(500)}
-          >
-            <Text style={styles.stepTitle}>Enable Permissions</Text>
-            <Text style={styles.stepSubtitle}>
-              We need a few permissions to give you the best experience
-            </Text>
-
-            <GlassCard style={styles.permissionCard}>
-              <View style={styles.permissionItem}>
-                <View style={styles.permissionIcon}>
-                  <CameraIcon size={24} color={DarkTheme.colors.primary} />
-                </View>
-                <View style={styles.permissionContent}>
-                  <Text style={styles.permissionTitle}>Camera Access</Text>
-                  <Text style={styles.permissionDesc}>
-                    Required for taking photos for AI analysis
-                  </Text>
-                </View>
-                <View style={[
-                  styles.permissionStatus,
-                  permissionsGranted && styles.permissionGranted
-                ]}>
-                  <Text style={styles.permissionStatusText}>
-                    {permissionsGranted ? '✓' : 'Required'}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.permissionDivider} />
-
-              <View style={styles.permissionItem}>
-                <View style={styles.permissionIcon}>
-                  <Sparkles size={24} color={DarkTheme.colors.primary} />
-                </View>
-                <View style={styles.permissionContent}>
-                  <Text style={styles.permissionTitle}>Notifications</Text>
-                  <Text style={styles.permissionDesc}>
-                    Get reminders for routines and progress updates
-                  </Text>
-                </View>
-                <View style={styles.permissionStatus}>
-                  <Text style={styles.permissionStatusText}>Optional</Text>
-                </View>
-              </View>
-            </GlassCard>
-
-            {!permissionsGranted && (
-              <PrimaryButton
-                title="Grant Permissions"
-                onPress={requestPermissions}
-                style={styles.permissionButton}
-              />
-            )}
-          </Animated.View>
         );
 
       case 'disclaimer':
@@ -800,62 +701,6 @@ const styles = StyleSheet.create({
     fontFamily: DarkTheme.typography.fontFamily,
     textAlign: 'center',
     marginBottom: DarkTheme.spacing.xl,
-  },
-  // Permission styles
-  permissionCard: {
-    marginBottom: DarkTheme.spacing.lg,
-  },
-  permissionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: DarkTheme.spacing.sm,
-  },
-  permissionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: `${DarkTheme.colors.primary}15`,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: DarkTheme.spacing.md,
-  },
-  permissionContent: {
-    flex: 1,
-  },
-  permissionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: DarkTheme.colors.text,
-    fontFamily: DarkTheme.typography.fontFamily,
-    marginBottom: 2,
-  },
-  permissionDesc: {
-    fontSize: 13,
-    color: DarkTheme.colors.textSecondary,
-    fontFamily: DarkTheme.typography.fontFamily,
-  },
-  permissionStatus: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: DarkTheme.colors.card,
-  },
-  permissionGranted: {
-    backgroundColor: `${DarkTheme.colors.success}20`,
-  },
-  permissionStatusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: DarkTheme.colors.textSecondary,
-    fontFamily: DarkTheme.typography.fontFamily,
-  },
-  permissionDivider: {
-    height: 1,
-    backgroundColor: DarkTheme.colors.border,
-    marginVertical: DarkTheme.spacing.sm,
-  },
-  permissionButton: {
-    marginTop: DarkTheme.spacing.md,
   },
   // Disclaimer styles
   disclaimerCard: {

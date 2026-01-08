@@ -620,13 +620,30 @@ export async function updateOnboarding(data: Record<string, any>): Promise<void>
 
   if (!user) throw new Error('Not authenticated');
 
+  // Map field names from app to database schema
+  const updateData: Record<string, any> = {
+    onboarding_completed: true,
+    onboarding_completed_at: new Date().toISOString(),
+  };
+
+  // Map avatarUri to avatar_url (database column name)
+  if (data.avatarUri !== undefined) {
+    updateData.avatar_url = data.avatarUri;
+  }
+
+  // Map username if provided
+  if (data.username !== undefined) {
+    updateData.username = data.username;
+  }
+
+  // Store selected goals as JSON (if goals column exists)
+  if (data.goals !== undefined) {
+    updateData.selected_goals = data.goals;
+  }
+
   const { error } = await supabase
     .from('users')
-    .update({
-      ...data,
-      onboarding_completed: true,
-      onboarding_completed_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq('id', user.id);
 
   if (error) {
