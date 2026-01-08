@@ -613,6 +613,32 @@ export async function getUserStats(): Promise<UserStats | null> {
 }
 
 /**
+ * Get user onboarding status
+ */
+export async function getOnboardingStatus(): Promise<{ onboarding_completed: boolean }> {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    console.warn('[Supabase] No authenticated user for onboarding status');
+    return { onboarding_completed: false };
+  }
+
+  const { data, error } = await supabase
+    .from('users')
+    .select('onboarding_completed')
+    .eq('id', user.id)
+    .single();
+
+  if (error) {
+    console.error('[Supabase] Error fetching onboarding status:', error);
+    // Return false on error to show onboarding screen
+    return { onboarding_completed: false };
+  }
+
+  return { onboarding_completed: data?.onboarding_completed === true };
+}
+
+/**
  * Update user onboarding data
  */
 export async function updateOnboarding(data: Record<string, any>): Promise<void> {
@@ -620,13 +646,30 @@ export async function updateOnboarding(data: Record<string, any>): Promise<void>
 
   if (!user) throw new Error('Not authenticated');
 
+  // Map field names from app to database schema
+  const updateData: Record<string, any> = {
+    onboarding_completed: true,
+    onboarding_completed_at: new Date().toISOString(),
+  };
+
+  // Map avatarUri to avatar_url (database column name)
+  if (data.avatarUri !== undefined) {
+    updateData.avatar_url = data.avatarUri;
+  }
+
+  // Map username if provided
+  if (data.username !== undefined) {
+    updateData.username = data.username;
+  }
+
+  // Store selected goals as JSON (if goals column exists)
+  if (data.goals !== undefined) {
+    updateData.selected_goals = data.goals;
+  }
+
   const { error } = await supabase
     .from('users')
-    .update({
-      ...data,
-      onboarding_completed: true,
-      onboarding_completed_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq('id', user.id);
 
   if (error) {
@@ -822,28 +865,46 @@ export interface Product {
   id: string;
   name: string;
   description?: string;
-  category?: string;
+  category: string;
+  subcategory?: string;
   price?: number;
+  currency: string;
+  affiliate_link: string;
+  affiliate_url?: string; // Legacy alias for affiliate_link
   image_url?: string;
-  affiliate_url?: string;
+  rating?: number;
+  review_count: number;
+  recommended_for?: string[];
+  is_featured: boolean;
 }
 
 /**
  * Get products
+ * Returns { products, total } format for API compatibility
  */
 export async function getProducts(options?: {
   category?: string;
   search?: string;
+  featured?: boolean;
+  recommended_for?: string;
   limit?: number;
   offset?: number;
-}): Promise<Product[]> {
+}): Promise<{ products: Product[]; total: number }> {
   let query = supabase
     .from('products')
-    .select('*')
+    .select('*', { count: 'exact' })
     .order('name');
 
   if (options?.category) {
     query = query.eq('category', options.category);
+  }
+
+  if (options?.featured) {
+    query = query.eq('is_featured', true);
+  }
+
+  if (options?.recommended_for) {
+    query = query.contains('recommended_for', [options.recommended_for]);
   }
 
   if (options?.search) {
@@ -855,14 +916,14 @@ export async function getProducts(options?: {
     query = query.range(offset, offset + options.limit - 1);
   }
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
 
   if (error) {
     console.error('[Supabase] Error fetching products:', error);
     throw error;
   }
 
-  return data || [];
+  return { products: data || [], total: count || 0 };
 }
 
 /**

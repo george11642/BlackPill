@@ -4,8 +4,8 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from '../supabase/client';
+import { getOnboardingStatus } from '../supabase/api';
 import type { User, Session } from '@supabase/supabase-js';
-import { getApiUrl } from '../utils/apiUrl';
 
 // Required for iOS OAuth to work properly
 WebBrowser.maybeCompleteAuthSession();
@@ -48,72 +48,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [onboardingLoading, setOnboardingLoading] = useState(true);
 
   // Fetch onboarding status when session changes
-  const fetchOnboardingStatus = async (accessToken: string, retryCount = 0): Promise<boolean> => {
+  const fetchOnboardingStatus = async (_accessToken?: string, retryCount = 0): Promise<boolean> => {
     try {
       setOnboardingLoading(true);
-      // Add cache-busting query parameter to ensure fresh data
-      const cacheBuster = `?t=${Date.now()}`;
-      const apiUrl = getApiUrl();
-      
-      // Create abort controller with 10 second timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      
-      try {
-        const response = await fetch(
-          `${apiUrl}/api/user/onboarding${cacheBuster}`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-            signal: controller.signal,
-          }
-        );
-        
-        clearTimeout(timeoutId);
-        
-        if (response.ok) {
-          const data = await response.json();
-          const completed = data.onboarding_completed === true;
-          setHasCompletedOnboarding(completed);
-          console.log('[Auth] Onboarding status fetched:', {
-            completed,
-            rawValue: data.onboarding_completed,
-            type: typeof data.onboarding_completed,
-          });
-          return true;
-        } else {
-          const errorText = await response.text();
-          console.error('[Auth] Failed to fetch onboarding status:', {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorText,
-          });
-          // Only set to false if this is not a retry (to avoid overwriting valid state)
-          if (retryCount === 0) {
-            setHasCompletedOnboarding(false);
-          }
-          return false;
-        }
-      } catch (fetchError: any) {
-        clearTimeout(timeoutId);
-        
-        // Check if it's a timeout error
-        if (fetchError.name === 'AbortError') {
-          console.error('[Auth] Onboarding status fetch timed out after 10 seconds');
-        } else {
-          console.error('[Auth] Failed to fetch onboarding status:', fetchError);
-        }
-        
-        // Only set to false if this is not a retry
-        if (retryCount === 0) {
-          setHasCompletedOnboarding(false);
-        }
-        return false;
-      }
+
+      // Use direct Supabase client call instead of HTTP
+      const data = await getOnboardingStatus();
+      const completed = data.onboarding_completed === true;
+      setHasCompletedOnboarding(completed);
+      console.log('[Auth] Onboarding status fetched via Supabase:', {
+        completed,
+        rawValue: data.onboarding_completed,
+      });
+      return true;
     } catch (error) {
-      console.error('[Auth] Unexpected error in fetchOnboardingStatus:', error);
-      // Ensure we default to incomplete if something goes wrong
+      console.error('[Auth] Failed to fetch onboarding status:', error);
+      // Only set to false if this is not a retry (to avoid overwriting valid state)
       if (retryCount === 0) {
         setHasCompletedOnboarding(false);
       }
@@ -299,13 +249,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (result.type === 'success' && result.url) {
         // Extract the URL and handle the callback
         const url = new URL(result.url);
-        const params = new URLSearchParams(url.hash.substring(1)); // Remove the # from hash
-        
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
+
+        // Try to get tokens from hash fragment first (implicit flow)
+        // Hash format: #access_token=xxx&refresh_token=yyy&...
+        let accessToken: string | null = null;
+        let refreshToken: string | null = null;
+
+        if (url.hash && url.hash.length > 1) {
+          const hashParams = new URLSearchParams(url.hash.substring(1));
+          accessToken = hashParams.get('access_token');
+          refreshToken = hashParams.get('refresh_token');
+        }
 
         if (accessToken) {
-          // Set the session with the tokens
+          console.log('[Auth] Setting session from hash tokens');
           const { error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken || '',
@@ -313,11 +270,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           if (sessionError) throw sessionError;
         } else {
-          // Try to get tokens from query params (some OAuth flows use this)
+          // Try to get authorization code from query params (PKCE flow)
           const code = url.searchParams.get('code');
           if (code) {
+            console.log('[Auth] Exchanging authorization code for session');
             const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
             if (exchangeError) throw exchangeError;
+          } else {
+            // Check for error in callback
+            const error = url.searchParams.get('error') || url.hash && new URLSearchParams(url.hash.substring(1)).get('error');
+            const errorDescription = url.searchParams.get('error_description') || url.hash && new URLSearchParams(url.hash.substring(1)).get('error_description');
+            if (error) {
+              throw new Error(errorDescription || error);
+            }
+            // No tokens or code found
+            console.warn('[Auth] No tokens or code found in OAuth callback URL:', result.url);
+            throw new Error('Authentication failed - no credentials received');
           }
         }
       } else if (result.type === 'cancel') {

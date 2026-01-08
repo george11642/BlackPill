@@ -64,22 +64,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     }
   }, [user, refreshGuestSubscription]);
 
-  useEffect(() => {
-    console.log('[Subscription] useEffect triggered, user:', !!user, 'session:', !!session);
-    if (user && session) {
-      // Add a small delay to allow RevenueCat initialization to complete
-      const timer = setTimeout(() => {
-        console.log('[Subscription] Timer fired, calling refreshSubscription');
-        refreshSubscription();
-      }, 500);
-      return () => clearTimeout(timer);
-    } else if (!user) {
-      console.log('[Subscription] No user, setting loading to false');
-      setState(prev => ({ ...prev, isLoading: false }));
-    }
-  }, [user, session]);
-
-  const refreshSubscription = async () => {
+  const refreshSubscription = useCallback(async () => {
     try {
       setState(prev => ({ ...prev, isLoading: true }));
       console.log('[Subscription] Starting refresh for user:', user?.id);
@@ -189,7 +174,23 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       console.error('[Subscription] Failed to refresh subscription:', error);
       setState(prev => ({ ...prev, isLoading: false }));
     }
-  };
+  }, [user, session]);
+
+  // Refresh subscription when user/session changes
+  useEffect(() => {
+    console.log('[Subscription] useEffect triggered, user:', !!user, 'session:', !!session);
+    if (user && session) {
+      // Add a small delay to allow RevenueCat initialization to complete
+      const timer = setTimeout(() => {
+        console.log('[Subscription] Timer fired, calling refreshSubscription');
+        refreshSubscription();
+      }, 500);
+      return () => clearTimeout(timer);
+    } else if (!user) {
+      console.log('[Subscription] No user, setting loading to false');
+      setState(prev => ({ ...prev, isLoading: false }));
+    }
+  }, [user, session, refreshSubscription]);
 
   const spendUnblurCredit = async (): Promise<boolean> => {
     if (state.unblurCredits <= 0) return false;

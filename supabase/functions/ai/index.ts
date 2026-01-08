@@ -151,9 +151,10 @@ async function handleAnalyze(
   }
 
   // Get signed URL with transform for OpenAI (resize to 1920x1920, contain)
+  // TTL: 7 days (604800 seconds) to prevent expired URLs in history
   const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin.storage
     .from("analyses")
-    .createSignedUrl(fileName, 3600, {
+    .createSignedUrl(fileName, 604800, {
       transform: {
         width: 1920,
         height: 1920,
@@ -172,9 +173,10 @@ async function handleAnalyze(
   const analysisResult = await analyzeFacialAttractiveness(imageUrl);
 
   // Get signed URL with transform for thumbnail (200x200, cover)
+  // TTL: 7 days (604800 seconds) to prevent expired URLs in history
   const { data: thumbSignedUrlData, error: thumbSignedUrlError } = await supabaseAdmin.storage
     .from("analyses")
-    .createSignedUrl(fileName, 3600, {
+    .createSignedUrl(fileName, 604800, {
       transform: {
         width: 200,
         height: 200,

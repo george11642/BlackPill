@@ -40,12 +40,14 @@ export function GradientText({
       fontSize,
       fontWeight,
       fontFamily: DarkTheme.typography.fontFamily,
+      textAlign: 'center' as const,
     },
     style,
   ];
 
   return (
     <MaskedView
+      style={{ alignSelf: 'center' }}
       maskElement={
         <Text
           style={textStyle}
@@ -63,7 +65,7 @@ export function GradientText({
         end={end}
         style={{
           height: dimensions.height,
-          width: Math.max(dimensions.width, 50),
+          width: Math.max(dimensions.width + 4, 50), // Add buffer to prevent clipping
         }}
       />
     </MaskedView>

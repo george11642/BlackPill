@@ -1,7 +1,7 @@
 # BlackPill - AI Attractiveness Analysis App
 
 ## Overview
-AI-powered attractiveness analysis with self-improvement tips. Monorepo with mobile app and web backend.
+AI-powered attractiveness analysis with self-improvement tips. Monorepo with mobile apps and web backend.
 
 ## Tech Stack
 - **Mobile**: React Native + Expo 54 (iOS/Android/Web)
@@ -14,8 +14,12 @@ AI-powered attractiveness analysis with self-improvement tips. Monorepo with mob
 ## Project Structure
 ```
 BlackPill/
-├── mobile/          # React Native/Expo app
+├── mobile/          # BlackPill React Native/Expo app
 │   ├── screens/     # App screens (Home, Camera, Analysis, etc.)
+│   ├── components/  # Reusable UI components
+│   └── lib/         # Utilities, Supabase client, theme
+├── shemax-mobile/   # SheMax React Native/Expo app (same codebase, different branding)
+│   ├── screens/     # App screens (mirrors mobile/)
 │   ├── components/  # Reusable UI components
 │   └── lib/         # Utilities, Supabase client, theme
 ├── web/             # Next.js web app
@@ -26,6 +30,20 @@ BlackPill/
 │   └── migrations/  # Database migrations
 └── docs/            # Documentation
 ```
+
+## IMPORTANT: Dual Mobile Apps
+**When making changes to mobile code, always update BOTH `mobile/` and `shemax-mobile/`.**
+
+These are two branded versions of the same app sharing the same backend:
+- `mobile/` = BlackPill (primary)
+- `shemax-mobile/` = SheMax (secondary brand)
+
+Key shared files that must stay in sync:
+- `lib/supabase/` - Supabase client and API functions
+- `lib/auth/` - Authentication context
+- `lib/api/` - API client
+- `screens/` - All screen components
+- `components/` - Shared UI components
 
 ## Development Commands
 ```bash

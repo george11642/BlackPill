@@ -95,12 +95,19 @@ export function AICoachScreen() {
 
   // Auto-send message from route params (only once on mount)
   useEffect(() => {
-    // Only run if we have params, haven't auto-sent yet, no messages exist, and user has access
-    if ((params.tip || params.metric) && !hasAutoSentRef.current && messages.length === 0 && canChat) {
+    // Only run if we have params, haven't auto-sent yet, no messages exist,
+    // conversations are loaded, and user has access
+    if (
+      (params.tip || params.metric) &&
+      !hasAutoSentRef.current &&
+      messages.length === 0 &&
+      !loadingConversations && // Wait for conversations to finish loading
+      canChat
+    ) {
       hasAutoSentRef.current = true;
-      
+
       let autoMessage = '';
-      
+
       if (params.tip && params.tipDescription) {
         autoMessage = `I want to work on this improvement tip: "${params.tip}". The suggestion was: "${params.tipDescription}" with a timeframe of "${params.tipTimeframe || 'a few weeks'}". Can you give me a detailed action plan to achieve this?`;
       } else if (params.metric) {
@@ -116,16 +123,18 @@ export function AICoachScreen() {
         };
         autoMessage = `I want to improve my ${metricLabels[params.metric] || params.metric}. What specific steps can I take to see real improvement in this area?`;
       }
-      
+
       if (autoMessage) {
         // Clear route params to prevent re-triggering
         (navigation as any).setParams({});
-        
+
         // Send message after a short delay to ensure component is ready
-        setTimeout(() => sendMessageWithContent(autoMessage), 500);
+        // Use cleanup to prevent memory leak if component unmounts
+        const timer = setTimeout(() => sendMessageWithContent(autoMessage), 500);
+        return () => clearTimeout(timer);
       }
     }
-  }, [canChat]); // Include canChat in dependencies
+  }, [canChat, loadingConversations]); // Wait for both subscription and conversations
 
   useEffect(() => {
     if (sidebarVisible) {

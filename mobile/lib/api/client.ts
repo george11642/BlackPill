@@ -29,14 +29,42 @@ type RouteParams = {
 };
 
 const directSupabaseRoutes: DirectSupabaseRoute[] = [
-  // Analyses
+  // Analyses - handle query params for limit/offset
   { pattern: /^\/api\/analyses\/history/, handler: () => SupabaseAPI.getAnalysesHistory() },
   { pattern: /^\/api\/analyses\/([^\/]+)\/visibility$/, handler: ({ data, matches }) =>
     SupabaseAPI.updateAnalysisVisibility(matches![1], data?.is_public) },
   { pattern: /^\/api\/analyses\/([^\/]+)$/, handler: ({ method, matches }) =>
     method === 'DELETE' ? SupabaseAPI.deleteAnalysis(matches![1]) : SupabaseAPI.getAnalysisById(matches![1]) },
+  // Handle /api/analyses with optional query params (limit, offset)
+  { pattern: /^\/api\/analyses(\?.*)?$/, handler: ({ endpoint }) => {
+    const url = new URL(endpoint, 'http://localhost');
+    const limit = parseInt(url.searchParams.get('limit') || '50', 10);
+    const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+    return SupabaseAPI.getAnalysesHistory(limit, offset);
+  }},
 
-  // AI Coach Conversations (CRUD only, not chat)
+  // AI Coach - route chat to Edge Function
+  { pattern: /^\/api\/ai-coach\/chat$/, handler: async ({ data }) => {
+    const { supabase } = await import('../supabase/client');
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error('Not authenticated');
+
+    const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://wzsxpxwwgaqiaoxdyhnf.supabase.co';
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/ai?action=coach`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    return response.json();
+  }},
+  // AI Coach Conversations (CRUD only)
   { pattern: /^\/api\/ai-coach\/conversations\/([^\/]+)$/, handler: ({ method, matches }) =>
     method === 'DELETE' ? SupabaseAPI.deleteConversation(matches![1]) : SupabaseAPI.getConversationById(matches![1]) },
   { pattern: /^\/api\/ai-coach\/conversations$/, handler: () => SupabaseAPI.getConversations() },
@@ -91,7 +119,29 @@ const directSupabaseRoutes: DirectSupabaseRoute[] = [
   { pattern: /^\/api\/wellness\/sync/, handler: ({ data }) => SupabaseAPI.syncWellnessData(data) },
 
   // Products
-  { pattern: /^\/api\/products\/click/, handler: ({ data }) => SupabaseAPI.recordProductClick(data?.product_id) },
+  { pattern: /^\/api\/products\/click/, handler: ({ data }) =>
+    SupabaseAPI.recordProductClick(data?.product_id || data?.productId) }, // Handle both naming conventions
+  { pattern: /^\/api\/products\/recommend$/, handler: async ({ data }) => {
+    // Route to Edge Function for AI-powered recommendations
+    const { supabase } = await import('../supabase/client');
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error('Not authenticated');
+
+    const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://wzsxpxwwgaqiaoxdyhnf.supabase.co';
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/ai?action=recommend`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    return response.json();
+  }},
   { pattern: /^\/api\/products$/, handler: () => SupabaseAPI.getProducts() },
 ];
 

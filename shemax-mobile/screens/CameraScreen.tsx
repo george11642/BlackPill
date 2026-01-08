@@ -388,12 +388,12 @@ export function CameraScreen() {
 
       console.log('[CameraScreen] FormData created with image');
 
-      // Use fetch directly to support abort signal
-      const APP_URL = Constants.expoConfig?.extra?.appUrl || process.env.EXPO_PUBLIC_APP_URL || 'https://www.shemax.app';
-      console.log('[CameraScreen] Sending to:', `${APP_URL}/api/analyze`);
+      // Use Supabase Edge Functions for analysis
+      const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://wzsxpxwwgaqiaoxdyhnf.supabase.co';
+      console.log('[CameraScreen] Sending to:', `${SUPABASE_URL}/functions/v1/ai?action=analyze`);
       console.log('[CameraScreen] Authorization header will be sent:', !!accessToken);
 
-      const analysisResponse = await fetch(`${APP_URL}/api/analyze`, {
+      const analysisResponse = await fetch(`${SUPABASE_URL}/functions/v1/ai?action=analyze`, {
         method: 'POST',
         body: formData,
         headers: {

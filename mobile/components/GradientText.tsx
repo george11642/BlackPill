@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextProps, LayoutChangeEvent, Dimensions } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { Text, StyleSheet, TextProps, LayoutChangeEvent, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { DarkTheme } from '../lib/theme';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface GradientTextProps extends TextProps {
   text: string;
@@ -24,7 +26,19 @@ export function GradientText({
   numberOfLines,
   ...props
 }: GradientTextProps) {
-  const [dimensions, setDimensions] = useState({ width: 300, height: fontSize * 1.5 });
+  // Estimate initial width based on text length and fontSize to prevent clipping
+  // Average character width is approximately 0.6 * fontSize for most fonts
+  const estimatedWidth = useMemo(() => {
+    const charWidth = fontSize * 0.6;
+    const estimated = text.length * charWidth;
+    // Cap at screen width minus padding, minimum 50px
+    return Math.min(Math.max(estimated, 50), SCREEN_WIDTH - 48);
+  }, [text, fontSize]);
+
+  const [dimensions, setDimensions] = useState({
+    width: estimatedWidth,
+    height: fontSize * 1.5
+  });
 
   const handleLayout = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
@@ -40,12 +54,14 @@ export function GradientText({
       fontSize,
       fontWeight,
       fontFamily: DarkTheme.typography.fontFamily,
+      textAlign: 'center' as const,
     },
     style,
   ];
 
   return (
     <MaskedView
+      style={{ alignSelf: 'center' }}
       maskElement={
         <Text
           style={textStyle}
@@ -63,7 +79,7 @@ export function GradientText({
         end={end}
         style={{
           height: dimensions.height,
-          width: Math.max(dimensions.width, 50),
+          width: Math.max(dimensions.width + 4, 50), // Add buffer to prevent clipping
         }}
       />
     </MaskedView>
