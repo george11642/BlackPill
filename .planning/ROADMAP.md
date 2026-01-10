@@ -83,13 +83,14 @@ Fix critical bugs blocking core functionality and polish UI issues. Phases order
 
 ## Summary
 
-| Phase | Name | Research | Status |
-|-------|------|----------|--------|
-| 1 | Photo Saving | Yes | Pending |
-| 2 | Analysis Pipeline | Yes | Pending |
-| 3 | Analysis UI — Feature Scores | No | Pending |
-| 4 | Analysis UI — Performance & Layout | Yes | Pending |
-| 5 | Shop & Coach UI | No | Pending |
+| Phase | Name | Research | Status | Plans |
+|-------|------|----------|--------|-------|
+| 1 | Photo Saving | Yes | **Completed** | 1 |
+| 2 | Analysis Pipeline | Yes | Pending | 0 |
+| 3 | Analysis UI — Feature Scores | No | Pending | 0 |
+| 4 | Analysis UI — Performance & Layout | Yes | Pending | 0 |
+| 5 | Shop & Coach UI | No | Pending | 0 |
 
 ---
 *Created: 2026-01-10*
+*Updated: 2026-01-10*
