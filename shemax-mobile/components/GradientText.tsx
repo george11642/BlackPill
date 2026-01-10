@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextProps, LayoutChangeEvent, Dimensions } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { Text, StyleSheet, TextProps, LayoutChangeEvent, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { DarkTheme } from '../lib/theme';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface GradientTextProps extends TextProps {
   text: string;
@@ -11,6 +13,7 @@ interface GradientTextProps extends TextProps {
   end?: { x: number; y: number };
   fontSize?: number;
   fontWeight?: '400' | '500' | '600' | '700' | '800';
+  align?: 'left' | 'center' | 'right';
 }
 
 export function GradientText({
@@ -22,9 +25,22 @@ export function GradientText({
   fontWeight = '700',
   style,
   numberOfLines,
+  align = 'left',
   ...props
 }: GradientTextProps) {
-  const [dimensions, setDimensions] = useState({ width: 300, height: fontSize * 1.5 });
+  // Estimate initial width based on text length and fontSize to prevent clipping
+  // Average character width is approximately 0.6 * fontSize for most fonts
+  const estimatedWidth = useMemo(() => {
+    const charWidth = fontSize * 0.6;
+    const estimated = text.length * charWidth;
+    // Cap at screen width minus padding, minimum 50px
+    return Math.min(Math.max(estimated, 50), SCREEN_WIDTH - 48);
+  }, [text, fontSize]);
+
+  const [dimensions, setDimensions] = useState({
+    width: estimatedWidth,
+    height: fontSize * 1.5
+  });
 
   const handleLayout = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
@@ -40,14 +56,14 @@ export function GradientText({
       fontSize,
       fontWeight,
       fontFamily: DarkTheme.typography.fontFamily,
-      textAlign: 'center' as const,
+      textAlign: align as const,
     },
     style,
   ];
 
   return (
     <MaskedView
-      style={{ alignSelf: 'center' }}
+      style={{ alignSelf: align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start' }}
       maskElement={
         <Text
           style={textStyle}

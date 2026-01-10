@@ -130,7 +130,7 @@ export function RatingsPage({
           </View>
         </Animated.View>
 
-        {/* Metrics Grid - 2x4 compact layout */}
+        {/* Metrics Grid - 2x4 layout with expandable details */}
         <Animated.View style={[styles.metricsGrid, contentAnimatedStyle]}>
           {metrics.map((metric, index) => (
             <View key={metric.key} style={styles.metricWrapper}>
@@ -138,7 +138,8 @@ export function RatingsPage({
                 label={metric.label}
                 value={metric.value}
                 delay={0}
-                compact
+                description={metric.description}
+                tip={metric.improvement}
               />
             </View>
           ))}

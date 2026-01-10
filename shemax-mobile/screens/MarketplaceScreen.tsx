@@ -341,6 +341,7 @@ export function MarketplaceScreen() {
           text="Marketplace"
           fontSize={32}
           fontWeight="700"
+          align="center"
           style={styles.screenTitle}
         />
         <View style={{ width: 24 }} /> 
