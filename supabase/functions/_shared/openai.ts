@@ -31,10 +31,10 @@ export interface FacialAnalysisResult {
     hair: number;
   };
   tips: Array<{
-    category: string;
-    tip: string;
-    priority: "high" | "medium" | "low";
-    timeframe?: string;
+    title: string;
+    description: string;
+    timeframe: string;
+    priority?: "high" | "medium" | "low";
   }>;
   strengths?: string[];
   areasForImprovement?: string[];
@@ -141,20 +141,42 @@ NEVER use blackpill, incel, or derogatory terminology. Focus on positive, action
       throw new Error(analysis.message || analysis.error);
     }
 
-    // Validate and clamp scores
-    if (analysis.score < 1 || analysis.score > 10) {
-      analysis.score = Math.max(1, Math.min(10, analysis.score));
+    // Validate required fields exist
+    if (typeof analysis.score !== 'number') {
+      throw new Error("Invalid analysis: missing score");
+    }
+    if (!analysis.breakdown || typeof analysis.breakdown !== 'object') {
+      throw new Error("Invalid analysis: missing breakdown");
     }
 
-    if (analysis.breakdown) {
-      for (const key of Object.keys(analysis.breakdown)) {
-        const value = analysis.breakdown[key];
-        if (value < 1 || value > 10) {
-          analysis.breakdown[key] = Math.max(1, Math.min(10, value));
-        }
+    // Validate and clamp scores
+    analysis.score = Math.max(1, Math.min(10, analysis.score));
+
+    // Ensure breakdown has all required fields with defaults
+    const requiredBreakdownFields = ['symmetry', 'jawline', 'eyes', 'lips', 'skin', 'bone_structure', 'hair'];
+    for (const key of requiredBreakdownFields) {
+      if (typeof analysis.breakdown[key] !== 'number') {
+        analysis.breakdown[key] = 5.0; // Default to neutral
+      } else {
+        analysis.breakdown[key] = Math.max(1, Math.min(10, analysis.breakdown[key]));
       }
     }
 
+    // Transform tips to match mobile app expected format
+    // OpenAI returns: { category, tip, priority, timeframe }
+    // Mobile expects: { title, description, timeframe }
+    if (Array.isArray(analysis.tips)) {
+      analysis.tips = analysis.tips.map((tip: any) => ({
+        title: tip.category || tip.title || 'Improvement',
+        description: tip.tip || tip.description || '',
+        timeframe: tip.timeframe || 'Ongoing',
+        priority: tip.priority || 'medium',
+      }));
+    } else {
+      analysis.tips = [];
+    }
+
+    console.log("[OpenAI] Analysis validated successfully");
     return analysis as FacialAnalysisResult;
   } catch (error) {
     console.error("[OpenAI] Analysis error:", error);
