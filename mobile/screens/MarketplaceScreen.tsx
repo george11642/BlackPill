@@ -337,14 +337,16 @@ export function MarketplaceScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <ArrowLeft size={24} color={DarkTheme.colors.primary} />
         </TouchableOpacity>
-        <GradientText 
-          text="Marketplace"
-          fontSize={32}
-          fontWeight="700"
-          align="center"
-          style={styles.screenTitle}
-        />
-        <View style={{ width: 24 }} /> 
+        <View style={styles.titleContainer}>
+          <GradientText
+            text="Marketplace"
+            fontSize={32}
+            fontWeight="700"
+            align="center"
+            numberOfLines={1}
+          />
+        </View>
+        <View style={styles.placeholder} />
       </View>
 
       {renderHeader()}
@@ -391,9 +393,14 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 4,
+    width: 32,
   },
-  screenTitle: {
-    textAlign: 'center',
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  placeholder: {
+    width: 32,
   },
   headerContainer: {
     paddingBottom: DarkTheme.spacing.md,

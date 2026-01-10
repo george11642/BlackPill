@@ -14,6 +14,7 @@ interface GradientTextProps extends TextProps {
   fontSize?: number;
   fontWeight?: '400' | '500' | '600' | '700' | '800';
   align?: 'left' | 'center' | 'right';
+  maxWidth?: number;
 }
 
 export function GradientText({
@@ -26,16 +27,20 @@ export function GradientText({
   style,
   numberOfLines,
   align = 'left',
+  maxWidth,
   ...props
 }: GradientTextProps) {
+  // Calculate max width: use provided maxWidth, or default to screen minus padding
+  const effectiveMaxWidth = maxWidth ?? SCREEN_WIDTH - 48;
+
   // Estimate initial width based on text length and fontSize to prevent clipping
   // Average character width is approximately 0.6 * fontSize for most fonts
   const estimatedWidth = useMemo(() => {
     const charWidth = fontSize * 0.6;
     const estimated = text.length * charWidth;
-    // Cap at screen width minus padding, minimum 50px
-    return Math.min(Math.max(estimated, 50), SCREEN_WIDTH - 48);
-  }, [text, fontSize]);
+    // Cap at effective max width, minimum 50px
+    return Math.min(Math.max(estimated, 50), effectiveMaxWidth);
+  }, [text, fontSize, effectiveMaxWidth]);
 
   const [dimensions, setDimensions] = useState({
     width: estimatedWidth,
@@ -45,8 +50,9 @@ export function GradientText({
   const handleLayout = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
     if (width > 0 && height > 0) {
-      // Add buffer to prevent clipping of descenders or edges
-      setDimensions({ width: width + 1, height: height + 2 });
+      // Add buffer to prevent clipping of descenders or edges, but respect maxWidth
+      const newWidth = Math.min(width + 1, effectiveMaxWidth);
+      setDimensions({ width: newWidth, height: height + 2 });
     }
   };
 
@@ -57,17 +63,22 @@ export function GradientText({
       fontWeight,
       fontFamily: DarkTheme.typography.fontFamily,
       textAlign: align as const,
+      maxWidth: effectiveMaxWidth, // Constrain text width
     },
     style,
   ];
 
   return (
     <MaskedView
-      style={{ alignSelf: align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start' }}
+      style={{
+        alignSelf: align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start',
+        maxWidth: effectiveMaxWidth, // Constrain container
+      }}
       maskElement={
         <Text
           style={textStyle}
           numberOfLines={numberOfLines}
+          ellipsizeMode={numberOfLines ? 'tail' : undefined}
           onLayout={handleLayout}
           {...props}
         >
@@ -76,12 +87,12 @@ export function GradientText({
       }
     >
       <LinearGradient
-        colors={colors}
+        colors={colors as [string, string, ...string[]]}
         start={start}
         end={end}
         style={{
           height: dimensions.height,
-          width: Math.max(dimensions.width + 4, 50), // Add buffer to prevent clipping
+          width: Math.min(Math.max(dimensions.width + 4, 50), effectiveMaxWidth), // Respect maxWidth
         }}
       />
     </MaskedView>
