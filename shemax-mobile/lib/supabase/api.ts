@@ -19,10 +19,74 @@ export interface Analysis {
   user_id: string;
   overall_score: number;
   image_url?: string;
+  image_thumbnail_url?: string;
   facial_features?: Record<string, any>;
   recommendations?: string[];
   is_public?: boolean;
   created_at: string;
+}
+
+/**
+ * Helper: Extract storage path from signed URL and generate a fresh signed URL
+ * This handles expired URLs by regenerating them on-demand
+ */
+async function refreshSignedUrl(signedUrl: string | undefined, width = 1920, height = 1920): Promise<string | undefined> {
+  if (\!signedUrl) return undefined;
+  
+  try {
+    // Extract the path from the signed URL
+    // Format: https://<project>.supabase.co/storage/v1/object/sign/analyses/<user_id>/<file_id>.jpg?token=...
+    const url = new URL(signedUrl);
+    const pathMatch = url.pathname.match(/\/storage\/v1\/object\/sign\/analyses\/(.+)/);
+    
+    if (\!pathMatch) {
+      console.warn('[Supabase] Could not extract path from URL:', signedUrl);
+      return signedUrl; // Return original if we can't parse
+    }
+    
+    const storagePath = decodeURIComponent(pathMatch[1]);
+    
+    // Generate a fresh signed URL
+    const { data, error } = await supabase.storage
+      .from('analyses')
+      .createSignedUrl(storagePath, 604800, {
+        transform: {
+          width,
+          height,
+          resize: 'contain',
+          quality: 85,
+        },
+      });
+    
+    if (error) {
+      console.warn('[Supabase] Failed to refresh URL:', error);
+      return signedUrl; // Return original on error
+    }
+    
+    return data.signedUrl;
+  } catch (e) {
+    console.warn('[Supabase] Error refreshing URL:', e);
+    return signedUrl;
+  }
+}
+
+/**
+ * Refresh analysis image URLs if they may be expired
+ */
+async function refreshAnalysisImages(analysis: Analysis | null): Promise<Analysis | null> {
+  if (\!analysis) return null;
+  
+  // Refresh main image and thumbnail URLs
+  const [freshImageUrl, freshThumbnailUrl] = await Promise.all([
+    refreshSignedUrl(analysis.image_url, 1920, 1920),
+    refreshSignedUrl(analysis.image_thumbnail_url, 200, 200),
+  ]);
+  
+  return {
+    ...analysis,
+    image_url: freshImageUrl,
+    image_thumbnail_url: freshThumbnailUrl,
+  };
 }
 
 /**
@@ -45,6 +109,7 @@ export async function getAnalysesHistory(limit = 50, offset = 0): Promise<Analys
 
 /**
  * Get a single analysis by ID
+ * Automatically refreshes signed URLs if they may be expired
  */
 export async function getAnalysisById(id: string): Promise<Analysis | null> {
   const { data, error } = await supabase
@@ -58,7 +123,8 @@ export async function getAnalysisById(id: string): Promise<Analysis | null> {
     throw error;
   }
 
-  return data;
+  // Refresh image URLs to handle expiration
+  return refreshAnalysisImages(data);
 }
 
 /**
@@ -928,15 +994,22 @@ export async function getProducts(options?: {
 
 /**
  * Track product click
+ * Only tracks clicks for authenticated users to comply with GDPR
  */
 export async function trackProductClick(productId: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
+
+  // Only track clicks for authenticated users (GDPR compliance)
+  if (!user?.id) {
+    console.log('[Supabase] Skipping product click tracking for unauthenticated user');
+    return;
+  }
 
   const { error } = await supabase
     .from('product_clicks')
     .insert({
       product_id: productId,
-      user_id: user?.id || null,
+      user_id: user.id,
       clicked_at: new Date().toISOString(),
     });
 

@@ -5,7 +5,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
-    public data?: any
+    public data?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'ApiError';
@@ -18,13 +18,13 @@ export class ApiError extends Error {
  */
 type DirectSupabaseRoute = {
   pattern: RegExp | string;
-  handler: (params: RouteParams) => Promise<any>;
+  handler: (params: RouteParams) => Promise<unknown>;
 };
 
 type RouteParams = {
   method: string;
   endpoint: string;
-  data?: any;
+  data?: Record<string, unknown>;
   matches?: RegExpMatchArray;
 };
 
@@ -49,7 +49,10 @@ const directSupabaseRoutes: DirectSupabaseRoute[] = [
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) throw new Error('Not authenticated');
 
-    const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://wzsxpxwwgaqiaoxdyhnf.supabase.co';
+    const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
+    if (!SUPABASE_URL) {
+      throw new Error('EXPO_PUBLIC_SUPABASE_URL environment variable is not set');
+    }
     const response = await fetch(`${SUPABASE_URL}/functions/v1/ai?action=coach`, {
       method: 'POST',
       headers: {
@@ -127,7 +130,10 @@ const directSupabaseRoutes: DirectSupabaseRoute[] = [
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) throw new Error('Not authenticated');
 
-    const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://wzsxpxwwgaqiaoxdyhnf.supabase.co';
+    const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
+    if (!SUPABASE_URL) {
+      throw new Error('EXPO_PUBLIC_SUPABASE_URL environment variable is not set');
+    }
     const response = await fetch(`${SUPABASE_URL}/functions/v1/ai?action=recommend`, {
       method: 'POST',
       headers: {
@@ -142,7 +148,16 @@ const directSupabaseRoutes: DirectSupabaseRoute[] = [
     }
     return response.json();
   }},
-  { pattern: /^\/api\/products$/, handler: () => SupabaseAPI.getProducts() },
+  { pattern: /^\/api\/products(\?.*)?$/, handler: ({ endpoint }) => {
+    const url = new URL(endpoint, 'http://localhost');
+    return SupabaseAPI.getProducts({
+      category: url.searchParams.get('category') || undefined,
+      search: url.searchParams.get('search') || undefined,
+      featured: url.searchParams.get('featured') === 'true' ? true : undefined,
+      limit: parseInt(url.searchParams.get('limit') || '50', 10),
+      offset: parseInt(url.searchParams.get('offset') || '0', 10),
+    });
+  }},
 ];
 
 /**
@@ -152,7 +167,7 @@ const directSupabaseRoutes: DirectSupabaseRoute[] = [
 async function tryDirectSupabase<T>(
   endpoint: string,
   method: string,
-  data?: any
+  data?: Record<string, unknown>
 ): Promise<T | null> {
   if (!isUsingSupabase()) {
     return null;
@@ -169,12 +184,13 @@ async function tryDirectSupabase<T>(
       try {
         const result = await route.handler({ method, endpoint, data, matches });
         return result as T;
-      } catch (error: any) {
+      } catch (error) {
         console.error('[API] Direct Supabase error:', error);
+        const err = error as { message?: string; code?: string };
         throw new ApiError(
-          error.message || 'Supabase operation failed',
-          error.code === 'PGRST116' ? 404 : 500,
-          error
+          err.message || 'Supabase operation failed',
+          err.code === 'PGRST116' ? 404 : 500,
+          error instanceof Error ? { message: error.message } : {}
         );
       }
     }
@@ -243,7 +259,7 @@ export async function apiGet<T>(endpoint: string, token?: string): Promise<T> {
 
 export async function apiPost<T>(
   endpoint: string,
-  data?: any,
+  data?: Record<string, unknown> | FormData,
   token?: string
 ): Promise<T> {
   // Try direct Supabase first (except for FormData which needs HTTP)
@@ -266,7 +282,7 @@ export async function apiPost<T>(
 
 export async function apiPut<T>(
   endpoint: string,
-  data?: any,
+  data?: Record<string, unknown>,
   token?: string
 ): Promise<T> {
   // Try direct Supabase first
@@ -300,7 +316,7 @@ export async function apiDelete<T>(
 
 export async function apiPatch<T>(
   endpoint: string,
-  data?: any,
+  data?: Record<string, unknown>,
   token?: string
 ): Promise<T> {
   // Try direct Supabase first

@@ -19,9 +19,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Sharing from 'expo-sharing';
 import * as Haptics from 'expo-haptics';
+import * as FileSystem from 'expo-file-system';
 import ViewShot from 'react-native-view-shot';
 import QRCode from 'react-native-qrcode-svg';
 import { Download, Share2, Instagram, MessageCircle, X, Copy } from 'lucide-react-native';
+import * as Linking from 'expo-linking';
 
 import { apiGet, apiPost } from '../lib/api/client';
 import { useAuth } from '../lib/auth/context';
@@ -122,7 +124,7 @@ export function ShareScreen() {
         if (isAvailable) {
           await Sharing.shareAsync(uri, {
             mimeType: 'image/png',
-            dialogTitle: 'Share your SheMax score',
+            dialogTitle: 'Share your BlackPill score',
           });
         } else {
           Alert.alert('Sharing not available', 'Sharing is not available on this device');
@@ -140,10 +142,26 @@ export function ShareScreen() {
     try {
       const uri = await captureCard();
       if (uri) {
-        // TODO: Save to camera roll using expo-media-library
-        Alert.alert('Success', 'Card saved to your photos!');
+        // Save to a permanent location in the app's document directory
+        const filename = `blackpill-score-${Date.now()}.png`;
+        const destination = `${FileSystem.documentDirectory}${filename}`;
+        await FileSystem.copyAsync({ from: uri, to: destination });
+
+        // Use sharing to allow user to save to camera roll or other apps
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
+          await Sharing.shareAsync(destination, {
+            mimeType: 'image/png',
+            dialogTitle: 'Save your BlackPill score card',
+            UTI: 'public.png',
+          });
+          Alert.alert('Success', 'Card ready to save!');
+        } else {
+          Alert.alert('Saved', `Card saved to app storage: ${filename}`);
+        }
       }
     } catch (error) {
+      console.error('Save error:', error);
       Alert.alert('Error', 'Failed to save card');
     }
   };
@@ -230,9 +248,55 @@ export function ShareScreen() {
         <Animated.View style={[styles.shareOptions, buttonsAnimatedStyle]}>
           <Text style={styles.shareOptionsTitle}>Share to</Text>
           <View style={styles.shareOptionsRow}>
-            <ShareOption icon={<Instagram size={24} />} label="Instagram" />
-            <ShareOption icon={<MessageCircle size={24} />} label="iMessage" />
-            <ShareOption icon={<Copy size={24} />} label="Copy Link" />
+            <ShareOption
+              icon={<Instagram size={24} />}
+              label="Instagram"
+              onPress={async () => {
+                const uri = await captureCard();
+                if (uri) {
+                  // Open Instagram Stories if available
+                  const instagramUrl = 'instagram-stories://share';
+                  const canOpen = await Linking.canOpenURL(instagramUrl);
+                  if (canOpen) {
+                    await Sharing.shareAsync(uri, { mimeType: 'image/png' });
+                  } else {
+                    Alert.alert('Instagram not available', 'Please install Instagram to share stories');
+                  }
+                }
+              }}
+            />
+            <ShareOption
+              icon={<MessageCircle size={24} />}
+              label="iMessage"
+              onPress={async () => {
+                const uri = await captureCard();
+                if (uri) {
+                  await Sharing.shareAsync(uri, {
+                    mimeType: 'image/png',
+                    dialogTitle: 'Share via Messages',
+                  });
+                }
+              }}
+            />
+            <ShareOption
+              icon={<Copy size={24} />}
+              label="Copy Link"
+              onPress={async () => {
+                const shareUrl = `https://black-pill.app/share/${analysisId}`;
+                // Open system share dialog with the URL
+                const canOpen = await Linking.canOpenURL(`sms:&body=${encodeURIComponent(shareUrl)}`);
+                if (canOpen) {
+                  await Linking.openURL(`sms:&body=${encodeURIComponent(shareUrl)}`);
+                } else {
+                  Alert.alert(
+                    'Share Link',
+                    shareUrl,
+                    [{ text: 'OK', style: 'default' }],
+                    { cancelable: true }
+                  );
+                }
+              }}
+            />
           </View>
         </Animated.View>
       </ScrollView>
@@ -264,7 +328,7 @@ function ShareCard({
   const scoreColor = getScoreColor(score);
 
   const metrics = [
-    { label: 'Femininity', value: breakdown.jawline },
+    { label: 'Masculinity', value: breakdown.jawline },
     { label: 'Skin Quality', value: breakdown.skin },
     { label: 'Jawline', value: breakdown.jawline },
     { label: 'Cheekbones', value: breakdown.bone_structure },
@@ -322,11 +386,11 @@ function ShareCard({
 
       {/* Watermark only */}
       <View style={shareCardStyles.footer}>
-        <Text style={shareCardStyles.watermark}>shemax.app</Text>
+        <Text style={shareCardStyles.watermark}>black-pill.app</Text>
       </View>
 
       {/* Watermark */}
-      <Text style={shareCardStyles.watermark}>shemax.app</Text>
+      <Text style={shareCardStyles.watermark}>black-pill.app</Text>
     </View>
   );
 }
@@ -335,12 +399,13 @@ function ShareCard({
 interface ShareOptionProps {
   icon: React.ReactNode;
   label: string;
+  onPress: () => void;
 }
 
-function ShareOption({ icon, label }: ShareOptionProps) {
+function ShareOption({ icon, label, onPress }: ShareOptionProps) {
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // TODO: Implement specific share actions
+    onPress();
   };
 
   return (

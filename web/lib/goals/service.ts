@@ -29,13 +29,27 @@ export async function updateGoalsFromAnalysis(
       return { updatedGoals, completedMilestones };
     }
 
+    // Category mapping from goal categories to breakdown fields
+    const categoryToBreakdownKey: Record<string, keyof typeof breakdown> = {
+      skin: 'skin',
+      jawline: 'jawline',
+      cheekbones: 'bone_structure',
+      eyes: 'eyes',
+      symmetry: 'symmetry',
+      lips: 'lips',
+    };
+
     // Update each relevant goal
     for (const goal of activeGoals) {
       let currentValue = score;
 
-      // For category_improvement goals, we'd need to check the breakdown
-      // For now, we'll use overall score for all goals
-      // TODO: In the future, match category_improvement goals to specific breakdown categories
+      // For category_improvement goals, use the specific category score from breakdown
+      if (goal.goal_type === 'category_improvement' && goal.category && breakdown) {
+        const breakdownKey = categoryToBreakdownKey[goal.category];
+        if (breakdownKey && breakdown[breakdownKey] !== undefined) {
+          currentValue = breakdown[breakdownKey];
+        }
+      }
 
       // Update goal's current value
       await supabaseAdmin
