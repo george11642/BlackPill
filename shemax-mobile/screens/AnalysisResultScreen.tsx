@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -257,98 +257,103 @@ export function AnalysisResultScreen() {
     );
   }
 
-  // Calculate metrics
-  const feminityFeature = analysis.breakdown.femininity || analysis.breakdown.jawline;
-  const cheekbonesFeature = analysis.breakdown.cheekbones || analysis.breakdown.bone_structure;
+  // Calculate metrics - memoized to avoid recalculation on every render
+  const { metrics, strengths, weaknesses } = useMemo(() => {
+    const feminityFeature = analysis.breakdown.femininity || analysis.breakdown.jawline;
+    const cheekbonesFeature = analysis.breakdown.cheekbones || analysis.breakdown.bone_structure;
 
-  const metrics: MetricData[] = [
-    {
-      label: 'Femininity',
-      value: getFeatureScore(feminityFeature),
-      key: 'femininity',
-      description: getFeatureDescription(
-        analysis.breakdown.femininity,
-        'Overall facial harmony, softness, and feminine features'
-      ),
-      improvement: getFeatureImprovement(analysis.breakdown.femininity),
-    },
-    {
-      label: 'Skin Quality',
-      value: getFeatureScore(analysis.breakdown.skin),
-      key: 'skin',
-      description: getFeatureDescription(
-        analysis.breakdown.skin,
-        'Texture, clarity, tone, and overall skin health'
-      ),
-      improvement: getFeatureImprovement(analysis.breakdown.skin),
-    },
-    {
-      label: 'Jawline',
-      value: getFeatureScore(analysis.breakdown.jawline),
-      key: 'jawline',
-      description: getFeatureDescription(
-        analysis.breakdown.jawline,
-        'Definition, angularity, and sharpness of the jaw'
-      ),
-      improvement: getFeatureImprovement(analysis.breakdown.jawline),
-    },
-    {
-      label: 'Cheekbones',
-      value: getFeatureScore(cheekbonesFeature),
-      key: 'cheekbones',
-      description: getFeatureDescription(
-        analysis.breakdown.cheekbones || analysis.breakdown.bone_structure,
-        'Prominence and structure of cheekbone area'
-      ),
-      improvement: getFeatureImprovement(analysis.breakdown.cheekbones || analysis.breakdown.bone_structure),
-    },
-    {
-      label: 'Eyes',
-      value: getFeatureScore(analysis.breakdown.eyes),
-      key: 'eyes',
-      description: getFeatureDescription(
-        analysis.breakdown.eyes,
-        'Shape, symmetry, and overall eye appeal'
-      ),
-      improvement: getFeatureImprovement(analysis.breakdown.eyes),
-    },
-    {
-      label: 'Symmetry',
-      value: getFeatureScore(analysis.breakdown.symmetry),
-      key: 'symmetry',
-      description: getFeatureDescription(
-        analysis.breakdown.symmetry,
-        'Overall facial balance and proportional harmony'
-      ),
-      improvement: getFeatureImprovement(analysis.breakdown.symmetry),
-    },
-    {
-      label: 'Lips',
-      value: getFeatureScore(analysis.breakdown.lips),
-      key: 'lips',
-      description: getFeatureDescription(
-        analysis.breakdown.lips,
-        'Fullness, shape, and proportion of the lips'
-      ),
-      improvement: getFeatureImprovement(analysis.breakdown.lips),
-    },
-    {
-      label: 'Hair Quality',
-      value: getFeatureScore(analysis.breakdown.hair),
-      key: 'hair',
-      description: getFeatureDescription(
-        analysis.breakdown.hair,
-        'Texture, thickness, hairline, and styling'
-      ),
-      improvement: getFeatureImprovement(analysis.breakdown.hair),
-    },
-  ];
+    const metricsData: MetricData[] = [
+      {
+        label: 'Femininity',
+        value: getFeatureScore(feminityFeature),
+        key: 'femininity',
+        description: getFeatureDescription(
+          analysis.breakdown.femininity,
+          'Overall facial harmony, softness, and feminine features'
+        ),
+        improvement: getFeatureImprovement(analysis.breakdown.femininity),
+      },
+      {
+        label: 'Skin Quality',
+        value: getFeatureScore(analysis.breakdown.skin),
+        key: 'skin',
+        description: getFeatureDescription(
+          analysis.breakdown.skin,
+          'Texture, clarity, tone, and overall skin health'
+        ),
+        improvement: getFeatureImprovement(analysis.breakdown.skin),
+      },
+      {
+        label: 'Jawline',
+        value: getFeatureScore(analysis.breakdown.jawline),
+        key: 'jawline',
+        description: getFeatureDescription(
+          analysis.breakdown.jawline,
+          'Definition, angularity, and sharpness of the jaw'
+        ),
+        improvement: getFeatureImprovement(analysis.breakdown.jawline),
+      },
+      {
+        label: 'Cheekbones',
+        value: getFeatureScore(cheekbonesFeature),
+        key: 'cheekbones',
+        description: getFeatureDescription(
+          analysis.breakdown.cheekbones || analysis.breakdown.bone_structure,
+          'Prominence and structure of cheekbone area'
+        ),
+        improvement: getFeatureImprovement(analysis.breakdown.cheekbones || analysis.breakdown.bone_structure),
+      },
+      {
+        label: 'Eyes',
+        value: getFeatureScore(analysis.breakdown.eyes),
+        key: 'eyes',
+        description: getFeatureDescription(
+          analysis.breakdown.eyes,
+          'Shape, symmetry, and overall eye appeal'
+        ),
+        improvement: getFeatureImprovement(analysis.breakdown.eyes),
+      },
+      {
+        label: 'Symmetry',
+        value: getFeatureScore(analysis.breakdown.symmetry),
+        key: 'symmetry',
+        description: getFeatureDescription(
+          analysis.breakdown.symmetry,
+          'Overall facial balance and proportional harmony'
+        ),
+        improvement: getFeatureImprovement(analysis.breakdown.symmetry),
+      },
+      {
+        label: 'Lips',
+        value: getFeatureScore(analysis.breakdown.lips),
+        key: 'lips',
+        description: getFeatureDescription(
+          analysis.breakdown.lips,
+          'Fullness, shape, and proportion of the lips'
+        ),
+        improvement: getFeatureImprovement(analysis.breakdown.lips),
+      },
+      {
+        label: 'Hair Quality',
+        value: getFeatureScore(analysis.breakdown.hair),
+        key: 'hair',
+        description: getFeatureDescription(
+          analysis.breakdown.hair,
+          'Texture, thickness, hairline, and styling'
+        ),
+        improvement: getFeatureImprovement(analysis.breakdown.hair),
+      },
+    ];
 
-  const sortedMetrics = [...metrics].sort((a, b) => b.value - a.value);
-  const strengths = sortedMetrics.slice(0, 2);
-  const weaknesses = sortedMetrics.slice(-2).reverse();
+    const sorted = [...metricsData].sort((a, b) => b.value - a.value);
+    return {
+      metrics: metricsData,
+      strengths: sorted.slice(0, 2),
+      weaknesses: sorted.slice(-2).reverse(),
+    };
+  }, [analysis.breakdown]);
 
-  const renderPage = ({ item, index }: { item: PageItem; index: number }) => {
+  const renderPage = useCallback(({ item, index }: { item: PageItem; index: number }) => {
     const { Component } = item;
     return (
       <View style={styles.pageContainer}>
@@ -372,7 +377,7 @@ export function AnalysisResultScreen() {
         </ScrollView>
       </View>
     );
-  };
+  }, [analysis, metrics, strengths, weaknesses, previousAnalysis, routineSuggestion, navigation, isUnblurred, currentIndex, handleShare]);
 
   return (
     <View style={styles.container}>
