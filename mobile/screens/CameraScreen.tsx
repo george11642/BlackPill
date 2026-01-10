@@ -404,8 +404,25 @@ export function CameraScreen() {
       });
 
       if (!analysisResponse.ok) {
-        const errorData = await analysisResponse.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${analysisResponse.status}`);
+        const errorText = await analysisResponse.text();
+        let errorMessage = `HTTP ${analysisResponse.status}`;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+          console.error('[CameraScreen] Server error:', {
+            status: analysisResponse.status,
+            error: errorData,
+          });
+        } catch {
+          console.error('[CameraScreen] Server error (non-JSON):', {
+            status: analysisResponse.status,
+            body: errorText.substring(0, 500),
+          });
+          if (errorText) {
+            errorMessage = errorText.substring(0, 200);
+          }
+        }
+        throw new Error(errorMessage);
       }
 
       const analysisData = await analysisResponse.json();
