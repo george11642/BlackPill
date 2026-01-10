@@ -36,15 +36,28 @@ async function refreshSignedUrl(signedUrl: string | undefined, width = 1920, hei
   try {
     // Extract the path from the signed URL
     // Format: https://<project>.supabase.co/storage/v1/object/sign/analyses/<user_id>/<file_id>.jpg?token=...
+    // Also handles render/image format: https://<project>.supabase.co/storage/v1/render/image/sign/analyses/<user_id>/<file_id>.jpg?token=...
     const url = new URL(signedUrl);
-    const pathMatch = url.pathname.match(/\/storage\/v1\/object\/sign\/analyses\/(.+)/);
+
+    // Try multiple path patterns
+    let pathMatch = url.pathname.match(/\/storage\/v1\/(?:object|render\/image)\/sign\/analyses\/([^?]+)/);
 
     if (!pathMatch) {
-      console.warn('[Supabase] Could not extract path from URL:', signedUrl);
+      // Try alternate pattern without transform
+      pathMatch = url.pathname.match(/\/analyses\/([^?]+)/);
+    }
+
+    if (!pathMatch) {
+      console.warn('[Supabase] Could not extract path from URL:', url.pathname);
       return signedUrl; // Return original if we can't parse
     }
 
-    const storagePath = decodeURIComponent(pathMatch[1]);
+    // Clean the path - remove any transform params that might be in the path
+    let storagePath = decodeURIComponent(pathMatch[1]);
+    // Remove any query-like parts from the path
+    storagePath = storagePath.split('?')[0];
+
+    console.log('[Supabase] Refreshing signed URL for path:', storagePath);
 
     // Generate a fresh signed URL
     const { data, error } = await supabase.storage
@@ -59,7 +72,7 @@ async function refreshSignedUrl(signedUrl: string | undefined, width = 1920, hei
       });
 
     if (error) {
-      console.warn('[Supabase] Failed to refresh URL:', error);
+      console.warn('[Supabase] Failed to refresh URL:', error.message);
       return signedUrl; // Return original on error
     }
 
@@ -91,8 +104,9 @@ async function refreshAnalysisImages(analysis: Analysis | null): Promise<Analysi
 
 /**
  * Get analysis history for the current user
+ * Automatically refreshes signed URLs if they may be expired
  */
-export async function getAnalysesHistory(limit = 50, offset = 0): Promise<Analysis[]> {
+export async function getAnalysesHistory(limit = 50, offset = 0, refreshUrls = true): Promise<Analysis[]> {
   const { data, error } = await supabase
     .from('analyses')
     .select('*')
@@ -104,7 +118,20 @@ export async function getAnalysesHistory(limit = 50, offset = 0): Promise<Analys
     throw error;
   }
 
-  return data || [];
+  if (!data || data.length === 0) return [];
+
+  // Refresh image URLs for all analyses to handle expiration
+  if (refreshUrls) {
+    const refreshedAnalyses = await Promise.all(
+      data.map(async (analysis) => {
+        const refreshed = await refreshAnalysisImages(analysis);
+        return refreshed || analysis;
+      })
+    );
+    return refreshedAnalyses;
+  }
+
+  return data;
 }
 
 /**
