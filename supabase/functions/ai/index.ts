@@ -103,21 +103,31 @@ async function handleAnalyze(
   await analyzeRateLimit(user.id, tier);
 
   // Parse form data
+  console.log("[analyze] Parsing form data...");
   const formData = await req.formData();
   const imageFile = formData.get("image") as File | null;
 
   if (!imageFile) {
+    console.error("[analyze] No image in form data. Keys:", [...formData.keys()]);
     return createErrorResponse("No image provided", 400, requestId);
   }
 
+  console.log("[analyze] Image received:", {
+    name: imageFile.name,
+    type: imageFile.type,
+    size: imageFile.size,
+  });
+
   // Validate file type
   if (!imageFile.type || !imageFile.type.startsWith("image/")) {
+    console.error("[analyze] Invalid file type:", imageFile.type);
     return createErrorResponse("Only image files are allowed", 400, requestId);
   }
 
   // Validate file size (must be > 0 and < 10MB for raw upload)
   const maxSize = 10 * 1024 * 1024; // 10MB for raw (will be resized via transform)
   if (imageFile.size === 0) {
+    console.error("[analyze] Image file is empty (0 bytes)");
     return createErrorResponse(
       "Image file is empty. Please try taking the photo again.",
       400,
@@ -126,16 +136,20 @@ async function handleAnalyze(
   }
 
   if (imageFile.size > maxSize) {
+    console.error("[analyze] Image too large:", imageFile.size, "bytes");
     return createErrorResponse("Image must be less than 10MB", 400, requestId);
   }
 
   // Convert File to Uint8Array for Supabase upload
+  console.log("[analyze] Converting to Uint8Array...");
   const arrayBuffer = await imageFile.arrayBuffer();
   const imageData = new Uint8Array(arrayBuffer);
+  console.log("[analyze] Uint8Array length:", imageData.length);
 
   // Generate unique filename
   const fileId = crypto.randomUUID();
   const fileName = `${user.id}/${fileId}.jpg`;
+  console.log("[analyze] Uploading to bucket 'analyses' as:", fileName);
 
   // Upload raw image to Supabase Storage
   const { error: uploadError } = await supabaseAdmin.storage
@@ -146,12 +160,20 @@ async function handleAnalyze(
     });
 
   if (uploadError) {
-    console.error("[analyze] Upload error:", uploadError);
+    console.error("[analyze] Upload error:", {
+      message: uploadError.message,
+      name: uploadError.name,
+      cause: uploadError.cause,
+      stack: uploadError.stack,
+    });
     throw new Error(`Failed to upload image: ${uploadError.message}`);
   }
 
+  console.log("[analyze] Upload successful:", fileName);
+
   // Get signed URL with transform for OpenAI (resize to 1920x1920, contain)
   // TTL: 7 days (604800 seconds) to prevent expired URLs in history
+  console.log("[analyze] Creating signed URL for:", fileName);
   const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin.storage
     .from("analyses")
     .createSignedUrl(fileName, 604800, {
@@ -164,10 +186,12 @@ async function handleAnalyze(
     });
 
   if (signedUrlError || !signedUrlData) {
+    console.error("[analyze] Signed URL error:", signedUrlError);
     throw new Error(`Failed to create signed URL: ${signedUrlError?.message || "Unknown error"}`);
   }
 
   const imageUrl = signedUrlData.signedUrl;
+  console.log("[analyze] Signed URL created successfully");
 
   // Analyze with OpenAI Vision API
   const analysisResult = await analyzeFacialAttractiveness(imageUrl);
@@ -382,7 +406,7 @@ async function updateGoals(
   try {
     // Get active goals for user
     const { data: goals } = await supabaseAdmin
-      .from("goals")
+      .from("user_goals")
       .select("*")
       .eq("user_id", userId)
       .eq("status", "active");
@@ -404,7 +428,7 @@ async function updateGoals(
       const isCompleted = currentValue >= goal.target_value;
 
       const { data: updatedGoal } = await supabaseAdmin
-        .from("goals")
+        .from("user_goals")
         .update({
           current_value: currentValue,
           progress_percentage: progress,
