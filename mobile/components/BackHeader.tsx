@@ -111,7 +111,7 @@ export function BackHeader({ title, rightElement, onBackPress, subtitle, variant
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             numberOfLines={1}
-            style={{ textAlign: 'center' }}
+            align="center"
           />
           {subtitle && <Text style={dynamicStyles.subtitle}>{subtitle}</Text>}
         </View>
@@ -140,7 +140,7 @@ export function BackHeader({ title, rightElement, onBackPress, subtitle, variant
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           numberOfLines={1}
-          style={{ textAlign: 'center' }}
+          align="center"
         />
         {subtitle && <Text style={dynamicStyles.subtitle}>{subtitle}</Text>}
       </View>

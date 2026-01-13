@@ -17,11 +17,11 @@ import { supabase } from './client';
 export interface Analysis {
   id: string;
   user_id: string;
-  overall_score: number;
+  score: number;
+  breakdown?: Record<string, any>;
+  tips?: Array<any>;
   image_url?: string;
   image_thumbnail_url?: string;
-  facial_features?: Record<string, any>;
-  recommendations?: string[];
   is_public?: boolean;
   created_at: string;
 }
@@ -105,11 +105,13 @@ async function refreshAnalysisImages(analysis: Analysis | null): Promise<Analysi
 /**
  * Get analysis history for the current user
  * Automatically refreshes signed URLs if they may be expired
+ * Returns { analyses: [...] } to match expected API format
  */
-export async function getAnalysesHistory(limit = 50, offset = 0, refreshUrls = true): Promise<Analysis[]> {
+export async function getAnalysesHistory(limit = 50, offset = 0, refreshUrls = true): Promise<{ analyses: Analysis[] }> {
   const { data, error } = await supabase
     .from('analyses')
     .select('*')
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -118,7 +120,7 @@ export async function getAnalysesHistory(limit = 50, offset = 0, refreshUrls = t
     throw error;
   }
 
-  if (!data || data.length === 0) return [];
+  if (!data || data.length === 0) return { analyses: [] };
 
   // Refresh image URLs for all analyses to handle expiration
   if (refreshUrls) {
@@ -128,10 +130,10 @@ export async function getAnalysesHistory(limit = 50, offset = 0, refreshUrls = t
         return refreshed || analysis;
       })
     );
-    return refreshedAnalyses;
+    return { analyses: refreshedAnalyses };
   }
 
-  return data;
+  return { analyses: data };
 }
 
 /**
@@ -667,12 +669,16 @@ export async function deleteConversation(id: string): Promise<void> {
 // ============================================================================
 
 export interface UserStats {
-  total_analyses: number;
-  current_streak: number;
-  longest_streak: number;
-  avg_score?: number;
-  best_score?: number;
-  score_improvement?: number;
+  overall_score: number;
+  potential_score: number;
+  streak: number;
+  weekly_streak?: number;
+  monthly_streak?: number;
+  scans_remaining?: number;
+  tier: string;
+  avatar_url?: string;
+  latest_analysis_image?: string;
+  global_rank?: number;
 }
 
 export interface UserProfile {
@@ -684,25 +690,70 @@ export interface UserProfile {
 }
 
 /**
- * Get user stats
+ * Get user stats for profile display
  */
 export async function getUserStats(): Promise<UserStats | null> {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return null;
 
-  const { data, error } = await supabase
-    .from('users')
-    .select('total_analyses, current_streak, longest_streak, avg_score, best_score, score_improvement')
-    .eq('id', user.id)
-    .single();
+  try {
+    // Get latest analysis
+    const { data: latestAnalysis } = await supabase
+      .from('analyses')
+      .select('score, image_url')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-  if (error) {
+    // Get user profile data
+    const { data: userData } = await supabase
+      .from('users')
+      .select('current_streak, avatar_url, avg_score')
+      .eq('id', user.id)
+      .single();
+
+    // Get subscription
+    const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select('tier, scans_remaining')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    // Calculate global rank (users with higher avg_score)
+    let globalRank: number | undefined;
+    if (userData?.avg_score) {
+      const { count } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .gt('avg_score', userData.avg_score);
+      globalRank = count !== null ? count + 1 : undefined;
+    }
+
+    // Refresh the image URL if it exists
+    let latestImageUrl = latestAnalysis?.image_url;
+    if (latestImageUrl) {
+      latestImageUrl = await refreshSignedUrl(latestImageUrl);
+    }
+
+    const score = latestAnalysis?.score ? parseFloat(latestAnalysis.score) : 0;
+
+    return {
+      overall_score: score,
+      potential_score: Math.min(score + 1.5, 10),
+      streak: userData?.current_streak || 0,
+      scans_remaining: subscription?.scans_remaining,
+      tier: subscription?.tier || 'free',
+      avatar_url: userData?.avatar_url,
+      latest_analysis_image: latestImageUrl,
+      global_rank: globalRank,
+    };
+  } catch (error) {
     console.error('[Supabase] Error fetching user stats:', error);
     throw error;
   }
-
-  return data;
 }
 
 /**

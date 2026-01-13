@@ -11,6 +11,7 @@
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 import OpenAI from "https://esm.sh/openai@4.20.1";
 import {
   handleCors,
@@ -171,9 +172,18 @@ async function handleAnalyze(
 
   console.log("[analyze] Upload successful:", fileName);
 
-  // Get signed URL with transform for OpenAI (resize to 1920x1920, contain)
+  // Convert image to base64 for OpenAI using Deno's built-in encoder
+  // This is more reliable than signed URLs which OpenAI may not be able to fetch
+  console.log("[analyze] Converting image to base64 for OpenAI...");
+  const base64Image = base64Encode(imageData);
+  console.log("[analyze] Base64 length:", base64Image.length, "Original size:", imageData.length);
+
+  // Analyze with OpenAI Vision API using base64
+  const analysisResult = await analyzeFacialAttractiveness(base64Image, imageFile.type);
+
+  // Get signed URL with transform for storage/display (resize to 1920x1920, contain)
   // TTL: 7 days (604800 seconds) to prevent expired URLs in history
-  console.log("[analyze] Creating signed URL for:", fileName);
+  console.log("[analyze] Creating display signed URL...");
   const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin.storage
     .from("analyses")
     .createSignedUrl(fileName, 604800, {
@@ -186,15 +196,12 @@ async function handleAnalyze(
     });
 
   if (signedUrlError || !signedUrlData) {
-    console.error("[analyze] Signed URL error:", signedUrlError);
+    console.error("[analyze] Display signed URL error:", signedUrlError);
     throw new Error(`Failed to create signed URL: ${signedUrlError?.message || "Unknown error"}`);
   }
 
   const imageUrl = signedUrlData.signedUrl;
-  console.log("[analyze] Signed URL created successfully");
-
-  // Analyze with OpenAI Vision API
-  const analysisResult = await analyzeFacialAttractiveness(imageUrl);
+  console.log("[analyze] Display signed URL created successfully");
 
   // Get signed URL with transform for thumbnail (200x200, cover)
   // TTL: 7 days (604800 seconds) to prevent expired URLs in history
@@ -827,11 +834,12 @@ Return JSON: {
   for (let i = 0; i < tasks.length; i++) {
     await supabaseAdmin.from("routine_tasks").insert({
       routine_id: routine.id,
-      name: tasks[i].name,
+      title: tasks[i].name,
       description: tasks[i].description,
-      time_of_day: tasks[i].time_of_day || "anytime",
+      time_of_day: [tasks[i].time_of_day || "anytime"],
       duration_minutes: tasks[i].duration_minutes || 5,
       category: tasks[i].category || "grooming",
+      frequency: "daily",
       order_index: i,
     });
   }

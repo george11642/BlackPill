@@ -75,6 +75,29 @@ const directSupabaseRoutes: DirectSupabaseRoute[] = [
     SupabaseAPI.getMessages(data?.conversation_id) },
 
   // Routines
+  { pattern: /^\/api\/routines\/generate$/, handler: async ({ data }) => {
+    const { supabase } = await import('../supabase/client');
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error('Not authenticated');
+
+    const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
+    if (!SUPABASE_URL) {
+      throw new Error('EXPO_PUBLIC_SUPABASE_URL environment variable is not set');
+    }
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/ai?action=routines`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    return response.json();
+  }},
   { pattern: /^\/api\/routines\/today\/tasks/, handler: () => SupabaseAPI.getTodayTasks() },
   { pattern: /^\/api\/routines\/complete-task/, handler: ({ data }) =>
     SupabaseAPI.completeTask(data?.task_id) },
