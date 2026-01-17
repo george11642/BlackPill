@@ -14,15 +14,15 @@ import { BlurredContent } from '../BlurredContent';
 import { DarkTheme } from '../../lib/theme';
 import { AnalysisPageProps, getRatingCategory, getCategoryColor } from './types';
 
-// Category distribution data (hardcoded based on PSL scale)
+// Progress level distribution data
 const CATEGORY_DISTRIBUTION = [
-  { name: 'True Adam', range: '9.5+', percent: 0.1, color: '#AA44FF' },
-  { name: 'Chad', range: '8-9.4', percent: 2, color: '#44AAFF' },
-  { name: 'Chadlite', range: '7-7.9', percent: 8, color: '#44CC88' },
-  { name: 'HTN', range: '5.5-6.9', percent: 25, color: '#88CC44' },
-  { name: 'MTN', range: '4.5-5.4', percent: 35, color: '#FFAA44' },
-  { name: 'LTN', range: '3-4.4', percent: 22, color: '#FF8844' },
-  { name: 'Developing', range: '<3', percent: 7.9, color: '#FF4444' },
+  { name: 'Elite', range: '9.5+', percent: 0.1, color: '#AA44FF' },
+  { name: 'Excellent', range: '8-9.4', percent: 2, color: '#44AAFF' },
+  { name: 'Above Average', range: '7-7.9', percent: 8, color: '#44CC88' },
+  { name: 'Average', range: '5.5-6.9', percent: 25, color: '#88CC44' },
+  { name: 'Developing', range: '4.5-5.4', percent: 35, color: '#FFAA44' },
+  { name: 'Foundation', range: '3-4.4', percent: 22, color: '#FF8844' },
+  { name: 'Starting', range: '<3', percent: 7.9, color: '#FF4444' },
 ];
 
 // Success stats based on score ranges (hardcoded motivational data)
@@ -75,18 +75,18 @@ export function RankingPage({
       <BlurredContent isBlurred={!isUnblurred}>
         {/* Bell Curve Distribution */}
         <GlassCard variant="subtle" style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Ranking</Text>
+          <Text style={styles.sectionTitle}>Your Journey</Text>
           <BellCurve score={analysis.score} delay={isActive ? 200 : 0} />
         </GlassCard>
 
-        {/* Category Distribution */}
+        {/* Progress Levels */}
         <GlassCard variant="subtle" style={styles.section}>
           <View style={styles.sectionHeader}>
             <Users size={18} color={DarkTheme.colors.primary} />
-            <Text style={styles.sectionTitle}>Category Distribution</Text>
+            <Text style={styles.sectionTitle}>Progress Levels</Text>
           </View>
           <Text style={styles.sectionSubtitle}>
-            Where you stand among all users
+            Your position on the improvement scale
           </Text>
 
           <View style={styles.distributionContainer}>

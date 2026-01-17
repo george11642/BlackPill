@@ -88,24 +88,24 @@ export function getFeatureImprovement(feature: FeatureAnalysis | number | undefi
   return feature.improvement;
 }
 
-// PSL Scale: Rating category based on score
+// Rating category based on score (neutral, self-improvement focused)
 export function getRatingCategory(score: number): string {
-  if (score >= 9.5) return 'True Eve';
-  if (score >= 8) return 'Stacy';
-  if (score >= 7) return 'Stacylite';
-  if (score >= 5.5) return 'HTN';
-  if (score >= 4.5) return 'MTN';
-  if (score >= 3) return 'LTN';
-  return 'Developing';
+  if (score >= 9.5) return 'Elite';
+  if (score >= 8) return 'Excellent';
+  if (score >= 7) return 'Above Average';
+  if (score >= 5.5) return 'Average';
+  if (score >= 4.5) return 'Developing';
+  if (score >= 3) return 'Foundation';
+  return 'Starting';
 }
 
-// PSL Scale: Category color based on score
+// Category color based on score
 export function getCategoryColor(score: number): string {
-  if (score >= 9.5) return '#AA44FF'; // True Adam - Purple
-  if (score >= 8) return '#44AAFF';   // Chad - Blue
-  if (score >= 7) return '#44CC88';   // Chadlite - Teal
-  if (score >= 5.5) return '#88CC44'; // HTN - Green
-  if (score >= 4.5) return '#FFAA44'; // MTN - Orange
-  if (score >= 3) return '#FF8844';   // LTN - Light Orange
-  return '#FF4444';                   // Developing - Red
+  if (score >= 9.5) return '#AA44FF'; // Elite - Purple
+  if (score >= 8) return '#44AAFF';   // Excellent - Blue
+  if (score >= 7) return '#44CC88';   // Above Average - Teal
+  if (score >= 5.5) return '#88CC44'; // Average - Green
+  if (score >= 4.5) return '#FFAA44'; // Developing - Orange
+  if (score >= 3) return '#FF8844';   // Foundation - Light Orange
+  return '#FF4444';                   // Starting - Red
 }
