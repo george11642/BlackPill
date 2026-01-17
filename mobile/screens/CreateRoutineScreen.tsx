@@ -252,10 +252,17 @@ export function CreateRoutineScreen() {
 
   const getWeakAreas = () => {
     if (!latestAnalysis?.breakdown) return [];
+    // Handle both object format {score, description, improvement} and legacy number format
+    const getScore = (value: any): number => {
+      if (typeof value === 'object' && value !== null && 'score' in value) {
+        return value.score;
+      }
+      return typeof value === 'number' ? value : 0;
+    };
     return Object.entries(latestAnalysis.breakdown)
-      .filter(([, score]) => (score as number) < 7.0)
-      .sort((a, b) => (a[1] as number) - (b[1] as number))
-      .map(([area, score]) => ({ area, score: score as number }));
+      .filter(([, value]) => getScore(value) < 7.0)
+      .sort((a, b) => getScore(a[1]) - getScore(b[1]))
+      .map(([area, value]) => ({ area, score: getScore(value) }));
   };
 
   if (loading) {

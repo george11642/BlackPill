@@ -425,9 +425,10 @@ async function updateGoals(
     for (const goal of goals) {
       let currentValue = score;
 
-      // If goal targets specific breakdown category
+      // If goal targets specific breakdown category - handle both object and legacy number format
       if (goal.target_category && breakdown[goal.target_category] !== undefined) {
-        currentValue = breakdown[goal.target_category];
+        const value = breakdown[goal.target_category];
+        currentValue = typeof value === 'object' && value !== null ? (value as any).score : value;
       }
 
       // Update progress
@@ -534,7 +535,10 @@ async function handleCoach(
 
   const weakAreas = latestAnalysis?.breakdown
     ? Object.entries(latestAnalysis.breakdown)
-        .filter(([_, value]) => (value as number) < 7.0)
+        .filter(([_, value]) => {
+          const score = typeof value === 'object' && value !== null ? (value as any).score : value;
+          return typeof score === 'number' && score < 7.0;
+        })
         .map(([key]) => key)
         .join(", ")
     : "none";
@@ -614,10 +618,16 @@ async function handleRecommend(
     return createErrorResponse("Analysis not found", 404, requestId);
   }
 
-  // Get weak areas
+  // Get weak areas - handle both object format and legacy number format
   const weakAreas = Object.entries(analysis.breakdown)
-    .filter(([_, value]) => (value as number) < 7.0)
-    .map(([key, value]) => ({ category: key, score: value }));
+    .filter(([_, value]) => {
+      const score = typeof value === 'object' && value !== null ? (value as any).score : value;
+      return typeof score === 'number' && score < 7.0;
+    })
+    .map(([key, value]) => {
+      const score = typeof value === 'object' && value !== null ? (value as any).score : value;
+      return { category: key, score };
+    });
 
   // Get available products
   const { data: allProducts } = await supabaseAdmin
@@ -787,9 +797,16 @@ async function handleRoutines(
     return createErrorResponse("No analysis found", 404, requestId);
   }
 
+  // Handle both object format {score, description, improvement} and legacy number format
   const weakAreas = Object.entries(analysis.breakdown)
-    .filter(([_, value]) => (value as number) < 7.0)
-    .map(([key, value]) => `${key}: ${value}/10`)
+    .filter(([_, value]) => {
+      const score = typeof value === 'object' && value !== null ? (value as any).score : value;
+      return typeof score === 'number' && score < 7.0;
+    })
+    .map(([key, value]) => {
+      const score = typeof value === 'object' && value !== null ? (value as any).score : value;
+      return `${key}: ${score}/10`;
+    })
     .join(", ");
 
   const prompt = `Create a personalized improvement routine:
@@ -814,15 +831,14 @@ Return JSON: {
 
   const aiResult = JSON.parse(completion.choices[0].message.content || "{}");
 
-  // Create routine
+  // Create routine (table uses 'goal' not 'description')
   const { data: routine, error: routineError } = await supabaseAdmin
     .from("routines")
     .insert({
       user_id: user.id,
       name: aiResult.routine_name || "Custom Routine",
-      description: aiResult.description,
+      goal: aiResult.description,
       is_active: true,
-      is_ai_generated: true,
     })
     .select()
     .single();

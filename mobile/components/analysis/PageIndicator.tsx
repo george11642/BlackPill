@@ -34,9 +34,6 @@ export function PageIndicator({
           </TouchableOpacity>
         ))}
       </View>
-      {labels && labels[activeIndex] && (
-        <Text style={styles.label}>{labels[activeIndex]}</Text>
-      )}
     </View>
   );
 }
@@ -73,7 +70,7 @@ const styles = StyleSheet.create({
     marginTop: DarkTheme.spacing.xs,
     fontSize: 12,
     fontWeight: '600',
-    color: DarkTheme.colors.textSecondary,
+    color: DarkTheme.colors.primary,
     fontFamily: DarkTheme.typography.fontFamily,
     textTransform: 'uppercase',
     letterSpacing: 1,

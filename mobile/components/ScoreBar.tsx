@@ -209,10 +209,10 @@ export function ScoreMetric({
       )}
       
       <View style={styles.metricHeader}>
-        <Text style={styles.metricLabel}>{label}</Text>
+        <Text style={[styles.metricLabel, isHighScore && styles.metricLabelHighScore]}>{label}</Text>
         {hasDetails && (
           <Animated.View style={animatedChevronStyle}>
-            <ChevronDown size={16} color={DarkTheme.colors.textTertiary} />
+            <ChevronDown size={16} color={isHighScore ? DarkTheme.colors.text : DarkTheme.colors.textTertiary} />
           </Animated.View>
         )}
       </View>
@@ -374,6 +374,10 @@ const styles = StyleSheet.create({
     fontFamily: DarkTheme.typography.fontFamily,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  metricLabelHighScore: {
+    color: DarkTheme.colors.text,
+    fontWeight: '600',
   },
   metricScoreRow: {
     flexDirection: 'row',

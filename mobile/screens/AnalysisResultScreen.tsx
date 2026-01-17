@@ -206,18 +206,6 @@ export function AnalysisResultScreen() {
     }
   };
 
-  const handleShare = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const appUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://www.black-pill.app';
-    try {
-      await Share.share({
-        message: `I just got a ${analysis?.score.toFixed(1)}/10 on BlackPill! Check out your score: ${appUrl}`,
-      });
-    } catch (error) {
-      console.error('Share failed:', error);
-    }
-  };
-
   const handlePageChange = useCallback((event: any) => {
     const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     setCurrentIndex(index);
@@ -228,37 +216,12 @@ export function AnalysisResultScreen() {
     setCurrentIndex(index);
   }, []);
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <BackHeader title="Analysis" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={DarkTheme.colors.primary} />
-          <Text style={styles.loadingText}>Analyzing your features...</Text>
-        </View>
-      </View>
-    );
-  }
-
-  if (!analysis) {
-    return (
-      <View style={styles.container}>
-        <BackHeader title="Analysis" />
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Failed to load analysis</Text>
-          <PrimaryButton
-            title="Try Again"
-            onPress={loadAnalysis}
-            variant="outline"
-            style={{ marginTop: DarkTheme.spacing.lg }}
-          />
-        </View>
-      </View>
-    );
-  }
-
-  // Calculate metrics - memoized to avoid recalculation on every render
+  // Calculate metrics - memoized and placed BEFORE early returns to follow React hooks rules
   const { metrics, strengths, weaknesses } = useMemo(() => {
+    if (!analysis) {
+      return { metrics: [], strengths: [], weaknesses: [] };
+    }
+
     const masculinityFeature = analysis.breakdown.masculinity || analysis.breakdown.jawline;
     const cheekbonesFeature = analysis.breakdown.cheekbones || analysis.breakdown.bone_structure;
 
@@ -351,7 +314,19 @@ export function AnalysisResultScreen() {
       strengths: sorted.slice(0, 2),
       weaknesses: sorted.slice(-2).reverse(),
     };
-  }, [analysis.breakdown]);
+  }, [analysis]);
+
+  const handleShare = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const appUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://www.black-pill.app';
+    try {
+      await Share.share({
+        message: `I just got a ${analysis?.score.toFixed(1)}/10 on BlackPill! Check out your score: ${appUrl}`,
+      });
+    } catch (error) {
+      console.error('Share failed:', error);
+    }
+  }, [analysis?.score]);
 
   const renderPage = useCallback(({ item, index }: { item: PageItem; index: number }) => {
     const { Component } = item;
@@ -368,7 +343,7 @@ export function AnalysisResultScreen() {
             weaknesses={weaknesses}
             previousAnalysis={previousAnalysis}
             routineSuggestion={routineSuggestion}
-            tips={analysis.tips}
+            tips={analysis?.tips}
             navigation={navigation}
             isUnblurred={isUnblurred}
             isActive={currentIndex === index}
@@ -378,6 +353,35 @@ export function AnalysisResultScreen() {
       </View>
     );
   }, [analysis, metrics, strengths, weaknesses, previousAnalysis, routineSuggestion, navigation, isUnblurred, currentIndex, handleShare]);
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <BackHeader title="Analysis" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={DarkTheme.colors.primary} />
+          <Text style={styles.loadingText}>Analyzing your features...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (!analysis) {
+    return (
+      <View style={styles.container}>
+        <BackHeader title="Analysis" />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Failed to load analysis</Text>
+          <PrimaryButton
+            title="Try Again"
+            onPress={loadAnalysis}
+            variant="outline"
+            style={{ marginTop: DarkTheme.spacing.lg }}
+          />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

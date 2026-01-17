@@ -302,7 +302,7 @@ export function SubscriptionScreen() {
         style={styles.background}
       />
 
-      <BackHeader title="Premium" variant="large" onBackPress={() => navigation.goBack()} transparent />
+      <BackHeader title="" onBackPress={() => navigation.goBack()} transparent />
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -471,8 +471,10 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 24,
     marginBottom: 24,
+    width: '100%',
   },
   crownContainer: {
     width: 72,
@@ -489,6 +491,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: DarkTheme.colors.textSecondary,
     marginTop: 8,
+    textAlign: 'center',
   },
   mainContent: {
     paddingHorizontal: 16,

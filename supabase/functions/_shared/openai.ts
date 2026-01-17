@@ -1,9 +1,15 @@
 /**
- * OpenAI utilities for Edge Functions
+ * AI utilities for Edge Functions
+ * Uses Google Gemini for vision analysis, OpenAI for chat
  */
 
 import OpenAI from "https://esm.sh/openai@4.70.0";
 
+// Gemini config for vision analysis
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "AIzaSyDXywy_X3ngpdbPLOKxxMR8-wiQ1gIvWIU";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent";
+
+// OpenAI config for chat
 let _openai: OpenAI | null = null;
 
 function getOpenAI(): OpenAI {
@@ -19,16 +25,24 @@ function getOpenAI(): OpenAI {
   return _openai;
 }
 
+// Feature analysis with score, description, and improvement tip
+interface FeatureAnalysis {
+  score: number;
+  description: string;
+  improvement: string;
+}
+
 export interface FacialAnalysisResult {
   score: number;
   breakdown: {
-    symmetry: number;
-    jawline: number;
-    eyes: number;
-    lips: number;
-    skin: number;
-    bone_structure: number;
-    hair: number;
+    masculinity: FeatureAnalysis;
+    symmetry: FeatureAnalysis;
+    jawline: FeatureAnalysis;
+    cheekbones: FeatureAnalysis;
+    eyes: FeatureAnalysis;
+    lips: FeatureAnalysis;
+    skin: FeatureAnalysis;
+    hair: FeatureAnalysis;
   };
   tips: Array<{
     title: string;
@@ -41,86 +55,177 @@ export interface FacialAnalysisResult {
 }
 
 /**
- * Analyze facial attractiveness using OpenAI Vision API
+ * Analyze facial features using Google Gemini Vision API
+ * @param imageData - Either a URL string or base64 encoded image data
+ * @param mimeType - Required when passing base64 data (e.g., "image/jpeg")
  */
 export async function analyzeFacialAttractiveness(
-  imageUrl: string
+  imageData: string,
+  mimeType?: string
 ): Promise<FacialAnalysisResult> {
-  const openai = getOpenAI();
+  // Determine if input is URL or base64
+  const isBase64 = mimeType !== undefined;
 
-  const prompt = `You are an expert facial aesthetics consultant. Analyze this facial photo and provide a detailed attractiveness assessment.
+  console.log("[Gemini] Image input type:", isBase64 ? "base64" : "url");
+  if (isBase64) {
+    console.log("[Gemini] Base64 data preview:", imageData.substring(0, 50) + "...");
+    console.log("[Gemini] Base64 length:", imageData.length);
+  }
 
-Please evaluate the following aspects on a scale of 1-10:
-1. Symmetry - how balanced are the facial features?
-2. Jawline - definition and structure
-3. Eyes - size, shape, and positioning
-4. Lips - fullness and proportions
-5. Skin Quality - texture, clarity, complexion
-6. Bone Structure - overall facial structure and proportions
-7. Hair Quality - texture, thickness, hairline, and styling
+  const prompt = `You are an expert facial aesthetics analyst using strict professional standards. Analyze this facial photo and provide a detailed, honest assessment.
 
-IMPORTANT VALIDATION:
+SCORING GUIDELINES (be strict - most people score 4.0-6.0):
+- 9.0-10.0: Model-tier, exceptional genetics (top 1%)
+- 7.5-8.9: Very attractive, well above average (top 10%)
+- 6.0-7.4: Above average, good-looking (top 30%)
+- 4.5-5.9: Average, typical features (middle 40%)
+- 3.0-4.4: Below average (bottom 30%)
+- 1.0-2.9: Significant room for improvement
+
+Evaluate these aspects on a scale of 1.0-10.0 (use ONE decimal place, e.g., 5.2, 6.5, 4.8):
+1. Masculinity - overall masculine appearance, strong features, dominance signals
+2. Symmetry - how balanced are the facial features
+3. Jawline - definition and structure
+4. Cheekbones - prominence and structure
+5. Eyes - size, shape, and positioning
+6. Lips - fullness and proportions
+7. Skin - texture, clarity, and complexion
+8. Hair - quality, texture, and styling
+
+VALIDATION:
 - If no face is clearly visible, respond with: {"error": "No face detected", "message": "Please upload a clear photo of your face"}
 - If multiple faces are detected, respond with: {"error": "Multiple faces", "message": "Please upload a photo with only one person"}
-- If the image is blurred or low quality, respond with: {"error": "blurred", "message": "Please upload a clearer photo"}
-- If the image contains inappropriate content, respond with: {"error": "inappropriate content", "message": "Please upload an appropriate photo"}
+- If the image is blurry, respond with: {"error": "blurred", "message": "Please upload a clearer photo"}
 
-If the photo is valid, provide your analysis in JSON format with:
+For valid photos, respond ONLY with this JSON (no other text):
 {
-  "score": (overall 1-10),
+  "score": <overall score with 1 decimal, e.g., 7.3>,
   "breakdown": {
-    "symmetry": (1-10),
-    "jawline": (1-10),
-    "eyes": (1-10),
-    "lips": (1-10),
-    "skin": (1-10),
-    "bone_structure": (1-10),
-    "hair": (1-10)
+    "masculinity": {
+      "score": <score with 1 decimal>,
+      "description": "<1-2 sentence UNIQUE analysis specific to THIS person's masculine features>",
+      "improvement": "<specific actionable tip to improve this feature>"
+    },
+    "symmetry": {
+      "score": <score with 1 decimal>,
+      "description": "<1-2 sentence UNIQUE analysis specific to THIS person's symmetry>",
+      "improvement": "<specific actionable tip to improve this feature>"
+    },
+    "jawline": {
+      "score": <score with 1 decimal>,
+      "description": "<1-2 sentence UNIQUE analysis specific to THIS person's jawline>",
+      "improvement": "<specific actionable tip to improve this feature>"
+    },
+    "cheekbones": {
+      "score": <score with 1 decimal>,
+      "description": "<1-2 sentence UNIQUE analysis specific to THIS person's cheekbones>",
+      "improvement": "<specific actionable tip to improve this feature>"
+    },
+    "eyes": {
+      "score": <score with 1 decimal>,
+      "description": "<1-2 sentence UNIQUE analysis specific to THIS person's eyes>",
+      "improvement": "<specific actionable tip to improve this feature>"
+    },
+    "lips": {
+      "score": <score with 1 decimal>,
+      "description": "<1-2 sentence UNIQUE analysis specific to THIS person's lips>",
+      "improvement": "<specific actionable tip to improve this feature>"
+    },
+    "skin": {
+      "score": <score with 1 decimal>,
+      "description": "<1-2 sentence UNIQUE analysis specific to THIS person's skin>",
+      "improvement": "<specific actionable tip to improve this feature>"
+    },
+    "hair": {
+      "score": <score with 1 decimal>,
+      "description": "<1-2 sentence UNIQUE analysis specific to THIS person's hair>",
+      "improvement": "<specific actionable tip to improve this feature>"
+    }
   },
   "tips": [
     {
-      "category": "category name",
-      "tip": "actionable improvement",
+      "category": "<category name>",
+      "tip": "<specific actionable recommendation>",
       "priority": "high|medium|low",
-      "timeframe": "realistic timeframe"
+      "timeframe": "<realistic timeframe>"
     }
   ],
-  "strengths": ["strength 1", "strength 2"],
-  "areasForImprovement": ["area 1", "area 2"]
+  "strengths": ["<strength 1>", "<strength 2>"],
+  "areasForImprovement": ["<area 1>", "<area 2>"]
 }
 
-Be honest but constructive. Focus on objective facial features. Provide at least 3-5 actionable tips.
-NEVER use blackpill, incel, or derogatory terminology. Focus on positive, actionable improvements.`;
+IMPORTANT:
+- All scores MUST have exactly one decimal place (e.g., 5.0, 6.5, 4.2). Never use whole numbers.
+- Each breakdown feature MUST include score, description, and improvement fields.
+- Be STRICT with scoring - avoid inflating scores. Most features should fall in the 4.0-6.0 range for average people.
+- Do NOT give scores above 7.5 unless the feature is genuinely exceptional.
+- Be honest but constructive. Provide 3-5 actionable tips focusing on skincare, grooming, and styling.`;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
+    console.log("[Gemini] Calling Gemini 3 Flash vision API...");
+
+    // Build request body for Gemini API
+    const requestBody: any = {
+      contents: [
         {
-          role: "user",
-          content: [
+          parts: [
             {
-              type: "image_url",
-              image_url: {
-                url: imageUrl,
-                detail: "high",
-              },
-            },
-            {
-              type: "text",
               text: prompt,
             },
           ],
         },
       ],
-      max_tokens: 1500,
-      temperature: 0.7,
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 4096,
+      },
+    };
+
+    // Add image to the request
+    if (isBase64) {
+      // For base64, add inline_data
+      requestBody.contents[0].parts.unshift({
+        inline_data: {
+          mime_type: mimeType || "image/jpeg",
+          data: imageData,
+        },
+      });
+    } else {
+      // For URL, use file_data (note: Gemini may not support all URLs)
+      requestBody.contents[0].parts.unshift({
+        file_data: {
+          file_uri: imageData,
+          mime_type: "image/jpeg",
+        },
+      });
+    }
+
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error("No response from OpenAI");
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[Gemini] API error:", response.status, errorText);
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
     }
+
+    const data = await response.json();
+    console.log("[Gemini] Raw response:", JSON.stringify(data).substring(0, 500));
+
+    // Extract text content from Gemini response
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!content) {
+      console.error("[Gemini] No content in response:", JSON.stringify(data));
+      throw new Error("No response from Gemini");
+    }
+
+    console.log("[Gemini] Raw response content:", content.substring(0, 500));
 
     // Parse JSON from response
     let jsonStr = content;
@@ -134,37 +239,76 @@ NEVER use blackpill, incel, or derogatory terminology. Focus on positive, action
       }
     }
 
-    const analysis = JSON.parse(jsonStr);
+    // Clean up common JSON issues from LLM output
+    jsonStr = jsonStr
+      .replace(/,\s*}/g, '}')  // Remove trailing commas before }
+      .replace(/,\s*]/g, ']')  // Remove trailing commas before ]
+      .replace(/[\x00-\x1F\x7F]/g, ' '); // Remove control characters
+
+    console.log("[Gemini] JSON to parse (first 1000 chars):", jsonStr.substring(0, 1000));
+
+    let analysis;
+    try {
+      analysis = JSON.parse(jsonStr);
+    } catch (parseError) {
+      console.error("[Gemini] JSON parse error:", parseError);
+      console.error("[Gemini] Full JSON string:", jsonStr);
+      throw new Error(`Failed to parse Gemini response: ${parseError}`);
+    }
 
     // Check for error responses
     if (analysis.error) {
       throw new Error(analysis.message || analysis.error);
     }
 
-    // Validate required fields exist
-    if (typeof analysis.score !== 'number') {
-      throw new Error("Invalid analysis: missing score");
+    // Log raw response types for debugging
+    console.log("[Gemini] Raw response type check:", {
+      scoreType: typeof analysis.score,
+      scoreValue: analysis.score,
+      hasBreakdown: !!analysis.breakdown,
+    });
+
+    // Validate required fields exist (coerce strings to numbers)
+    const score = Number(analysis.score);
+    if (isNaN(score)) {
+      throw new Error("Invalid analysis: missing or invalid score");
     }
     if (!analysis.breakdown || typeof analysis.breakdown !== 'object') {
       throw new Error("Invalid analysis: missing breakdown");
     }
 
     // Validate and clamp scores
-    analysis.score = Math.max(1, Math.min(10, analysis.score));
+    analysis.score = Math.max(1, Math.min(10, score));
 
     // Ensure breakdown has all required fields with defaults
-    const requiredBreakdownFields = ['symmetry', 'jawline', 'eyes', 'lips', 'skin', 'bone_structure', 'hair'];
+    // Supports both new object format {score, description, improvement} and legacy number format
+    const requiredBreakdownFields = ['masculinity', 'symmetry', 'jawline', 'cheekbones', 'eyes', 'lips', 'skin', 'hair'];
     for (const key of requiredBreakdownFields) {
-      if (typeof analysis.breakdown[key] !== 'number') {
-        analysis.breakdown[key] = 5.0; // Default to neutral
+      const field = analysis.breakdown[key];
+
+      if (field && typeof field === 'object') {
+        // New object format: {score, description, improvement}
+        const score = Number(field.score);
+        if (isNaN(score)) {
+          field.score = 5.0;
+        } else {
+          field.score = Math.max(1, Math.min(10, score));
+        }
+        // Ensure description and improvement exist
+        field.description = field.description || '';
+        field.improvement = field.improvement || '';
       } else {
-        analysis.breakdown[key] = Math.max(1, Math.min(10, analysis.breakdown[key]));
+        // Legacy number format or missing - convert to object
+        const value = Number(field);
+        analysis.breakdown[key] = {
+          score: isNaN(value) ? 5.0 : Math.max(1, Math.min(10, value)),
+          description: '',
+          improvement: '',
+        };
       }
     }
 
     // Transform tips to match mobile app expected format
-    // OpenAI returns: { category, tip, priority, timeframe }
-    // Mobile expects: { title, description, timeframe }
     if (Array.isArray(analysis.tips)) {
       analysis.tips = analysis.tips.map((tip: any) => ({
         title: tip.category || tip.title || 'Improvement',
@@ -176,10 +320,10 @@ NEVER use blackpill, incel, or derogatory terminology. Focus on positive, action
       analysis.tips = [];
     }
 
-    console.log("[OpenAI] Analysis validated successfully");
+    console.log("[Gemini] Analysis validated successfully");
     return analysis as FacialAnalysisResult;
   } catch (error) {
-    console.error("[OpenAI] Analysis error:", error);
+    console.error("[Gemini] Analysis error:", error);
     throw error;
   }
 }
