@@ -9,12 +9,12 @@ export default function PrivacyPage() {
   return (
     <>
       <Navigation />
-      
-      <Section title="Privacy Policy" subtitle="Last Updated: November 29, 2025">
+
+      <Section title="Privacy Policy" subtitle="Last Updated: January 20, 2026">
         <div className="prose max-w-4xl mx-auto text-secondary">
           <h3>1. Introduction</h3>
           <p>
-            Welcome to BlackPill ("we," "our," or "us"). We respect your privacy and are committed to protecting your personal data. 
+            Welcome to BlackPill ("we," "our," or "us"). We respect your privacy and are committed to protecting your personal data.
             This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application and website.
           </p>
 
